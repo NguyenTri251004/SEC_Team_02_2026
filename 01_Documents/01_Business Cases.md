@@ -46,16 +46,16 @@ Tài liệu mô tả nhu cầu quản lý nguyên vật liệu theo đúng quy �
 ## 4. Mục tiêu chiến lược của dự án
 - **Thay thế thủ công:** Loại bỏ 100% các công việc quản lý bằng giấy tờ và nhập tay.
 - **Tuân thủ pháp luật:** Đảm bảo hệ thống đáp ứng 100% các chuẩn quy định của pháp luật về quản lý vật tư và chứng từ.
-- **Độ sẵn sàng cao:** Cam kết uptime đạt **99.99%**.
+- **Độ sẵn sàng cao:** Cam kết uptime đạt **99.9%**.
 - **Sự hài lòng:** Đạt **90%** người dùng đánh giá tốt sau khi trải nghiệm.
 - **Dữ liệu lớn:** Hệ thống có khả năng hỗ trợ và xử lý dữ liệu lớn (Big Data) một cách ổn định.
 - **Báo cáo:** Hệ thống báo cáo đầy đủ, chi tiết từ chi tiết đến tổng hợp phục vụ thanh tra, kiểm tra.
 
 ## 5. Phạm vi không bao gồm (Out of Scope)
-- **CIM & Monet:** Không tích hợp và không phát triển các tính năng liên quan đến hệ thống CIM và Monet.
 - **Quản lý nhà cung cấp:** Hệ thống không quản lý danh mục, thông tin hoặc đánh giá nhà cung cấp (Supplier Management).
 - **Mobile App:** Dự án chỉ tập trung vào nền tảng Web, không phát triển ứng dụng di động (Mobile Application).
-- **Tự động hóa sản xuất:** Không bao gồm các module điều khiển máy móc hoặc tích hợp dây chuyền sản xuất tự động.
+- **Tài chính / Kế toán:** Hệ thống không bao gồm các tính năng quản lý tài chính, kế toán như quản lý công nợ, dòng tiền, xử lý hóa đơn VAT, báo cáo thuế, lập sổ sách kế toán, xuất báo cáo tài chính,...
+- **Quản lý quan hệ khách hàng:** Hệ thống không bao gồm hệ thống quản lý quan hệ khách hàng (CRM).
 
 ## 5. Các nội dung cần có trong dự án Inventory Management
 - Quản lý danh mục: nguyên vật liệu, đơn vị tính, nhà cung cấp, kho/bộ phận.
