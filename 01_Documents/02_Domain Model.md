@@ -1,53 +1,122 @@
-# 02. Domain Model
+# Domain Model: Hệ thống Quản lý Kho
 
-## 1. Tổng quan về Inventory Management
-Dự án quản lý kho (Inventory Management) được xây dựng dựa trên các trụ cột chính để đảm bảo tính minh bạch, tuân thủ pháp luật và hiệu quả vận hành, tập trung vào nền tảng Web và xử lý dữ liệu lớn.
+Tài liệu này mô tả chi tiết mô hình dữ liệu, các thực thể nghiệp vụ và quy tắc chuyển đổi trạng thái.
 
-## 2. Chi tiết yêu cầu cho 4 Trụ cột chính (Domain Pillars)
+## 1. Mô hình Thực thể (Entities)
 
-### 2.1 Material Management (Quản lý vật tư)
-Trụ cột này tập trung vào việc số hóa toàn bộ danh mục và thuộc tính vật tư để thay thế việc ghi chép sổ sách.
-- **REQ-MM-01 (Quản lý danh mục):** Cho phép tạo, sửa, xóa và lưu trữ thông tin vật tư (Mã, Tên, Mô tả, Phân loại).
-- **REQ-MM-02 (Quản lý Đơn vị tính - UoM):** Hỗ trợ đa đơn vị tính và quy tắc chuyển đổi (ví dụ: Thùng sang Chai).
-- **REQ-MM-03 (Thiết lập định mức):** Cho phép thiết lập ngưỡng tồn kho tối thiểu (Safety Stock) để hệ thống tự động cảnh báo khi sắp hết hàng.
-- **REQ-MM-04 (Điều kiện bảo quản):** Ghi chú các điều kiện bảo quản đặc biệt (nhiệt độ, độ ẩm) để phục vụ công tác kiểm soát chất lượng (QC).
-- **REQ-MM-05 (Trạng thái vật tư):** Quản lý vòng đời vật tư từ khi kích hoạt đến khi ngừng sử dụng hoặc loại bỏ.
+### 1.1. Nguyên vật liệu (Material)
+Đại diện cho định nghĩa "Master Data" của một loại hàng hóa.
+*   **Thông tin định danh:** Mã định danh (Material ID), Tên, Mô tả.
+*   **Thông số kỹ thuật:** Các chỉ số kỹ thuật, điều kiện bảo quản.
+*   **Thông tin tuân thủ:** Các quy định pháp luật liên quan (Regulatory info).
+*   **Phân loại:** Nhóm nguyên vật liệu (Material Group).
+*   **Quản lý phiên bản:** Lưu trữ lịch sử thay đổi và quản lý version của định nghĩa vật liệu.
 
-### 2.2 Inventory Lot Tracking (Truy vết theo lô)
-Đây là yêu cầu then chốt để đảm bảo 100% tuân thủ pháp luật về truy xuất nguồn gốc và hạn sử dụng.
-- **REQ-LT-01 (Tự động hóa số lô):** Hệ thống tự động sinh số lô (Lot Number) hoặc cho phép nhập mã lô từ nhà cung cấp khi thực hiện nhập kho.
-- **REQ-LT-02 (Quản lý Hạn sử dụng - Expire Date):** Bắt buộc nhập ngày sản xuất và hạn sử dụng cho từng lô hàng.
-- **REQ-LT-03 (Chiến lược xuất kho):** Hệ thống tự động gợi ý xuất kho theo quy tắc FEFO (Hàng hết hạn trước xuất trước) hoặc FIFO (Hàng nhập trước xuất trước).
-- **REQ-LT-04 (Truy vết ngược - Recall):** Có khả năng tìm kiếm và liệt kê toàn bộ vị trí/trạng thái của một mã lô cụ thể trong trường hợp cần thu hồi hàng loạt.
-- **REQ-LT-05 (Lịch sử biến động lô):** Ghi lại mọi giao dịch (nhập, xuất, chuyển kho) gắn liền với số lô để đối soát chứng từ.
+### 1.2. Lô hàng (Lot Tracking & Control)
+Đại diện cho một đợt hàng cụ thể (Instance) của một Nguyên vật liệu. Đây là đối tượng chính của việc truy xuất nguồn gốc.
+*   **Thông tin lô:** Mã lô (Lot Number), Nhà cung cấp, Số lượng ban đầu, Số lượng hiện tại.
+*   **Thời gian:** Ngày sản xuất, Ngày nhập kho, **Ngày hết hạn (Expiration Date)**.
+*   **Trạng thái (Status):**
+    *   `Quarantined` (Đang chờ kiểm định): Trạng thái mặc định khi nhập kho.
+    *   `Accepted` (Chấp nhận): Đã qua QC, được phép sử dụng.
+    *   `Rejected` (Từ chối): Không đạt QC, cần trả về hoặc hủy.
+    *   `Depleted` (Đã hết hàng): Số lượng về 0.
+*   **Nhật ký (Logging):** Ghi lại toàn bộ lịch sử nhập, xuất, kiểm kê, chuyển giao gắn với mã lô.
 
-### 2.3 Label Generation (Khởi tạo nhãn dán)
-Yêu cầu về công cụ để số hóa việc nhận diện vật tư trên nền tảng Web.
-- **REQ-LG-01 (Tạo mã QR tự động):** Tự động tạo mã QR chứa thông tin tích hợp (Mã vật tư + Mã lô + Ngày nhập) ngay khi hoàn tất phiếu nhận hàng.
-- **REQ-LG-02 (Thiết kế nhãn chuẩn):** Cung cấp các mẫu nhãn (Label Template) chuẩn hóa, hiển thị thông tin rõ ràng theo quy định pháp luật.
-- **REQ-LG-03 (In ấn trực tiếp từ Web):** Hỗ trợ lệnh in nhãn trực tiếp từ trình duyệt đến các máy in nhãn chuyên dụng.
-- **REQ-LG-04 (Tích hợp quét mã):** Cho phép sử dụng máy quét hoặc thiết bị đầu cuối để đọc mã QR, tự động điền thông tin vào các phiếu xuất/kiểm kho thay vì nhập tay.
-- **REQ-LG-05 (Quản lý nhãn vị trí):** Tạo và in nhãn cho các vị trí kệ kho (Bin/Location) để quản lý sơ đồ kho chính xác.
+**Quy tắc nghiệp vụ quan trọng:**
+> **AUTO-BLOCK:** Hệ thống tự động **CHẶN/KHÓA** mọi thao tác xuất kho đối với các lô hàng có trạng thái là **Rejected** hoặc **Đã quá hạn sử dụng**.
 
-### 2.4 Reporting (Hệ thống báo cáo)
-Yêu cầu về đầu ra dữ liệu phục vụ quản lý và kiểm tra pháp lý trên quy mô dữ liệu lớn.
-- **REQ-RP-01 (Báo cáo Nhập-Xuất-Tồn):** Xuất báo cáo tổng hợp theo thời gian thực về lượng hàng biến động.
-- **REQ-RP-02 (Cảnh báo hạn dùng):** Báo cáo danh sách các lô hàng sắp hết hạn trong vòng 30/60/90 ngày.
-- **REQ-RP-03 (Báo cáo chênh lệch kiểm kê):** Tự động so sánh số liệu thực tế và số liệu hệ thống, xuất biên bản chênh lệch có chữ ký điện tử.
-- **REQ-RP-04 (Truy xuất nhật ký Audit Log):** Xuất báo cáo lịch sử thao tác của người dùng (ai đã sửa, sửa lúc nào, giá trị cũ/mới) để phục vụ thanh tra.
-- **REQ-RP-05 (Hiệu suất dữ liệu lớn):** Đảm bảo các báo cáo tổng hợp trên hàng triệu bản ghi được xử lý ổn định và nhanh chóng trong dưới 5 giây.
+### 1.3. Tem nhãn (Labeling & Printing)
+*   **Tạo nhãn:** Tự động sinh mã nhãn (Barcode/QR) khi tiếp nhận lô hàng.
+*   **Nội dung nhãn:** Mã vật liệu, Tên, Mã lô, Thông tin người nhận, Số lượng, Nhà cung cấp, Các tiêu chí kiểm định (nếu có).
+*   **Mục đích:** Quét mã để thực hiện nhập/xuất kho nhanh chóng.
 
-## 3. Danh sách các thực thể chính (Entities)
-*(Giữ nguyên bảng thực thể cũ nhưng bổ sung các trường liên quan đến yêu cầu mới)*
+## 2. Sơ đồ Quan hệ (Entity Relationship Diagram)
 
-| Nhóm | Thực thể | Thuộc tính chính |
-| :--- | :--- | :--- |
-| **Cấu hình** | `Material`, `UoM`, `Warehouse` | Name, Code, MinStock, StorageCondition |
-| **Giao dịch** | `Receipt`, `Issue`, `Stocktake` | Date, OperatorID, QC_Status, TotalQty |
-| **Truy vết** | `InventoryLot` | LotNo, ManufactureDate, ExpiryDate, CurrentQty |
-| **Vận hành** | `Label`, `AuditLog` | QR_Content, ActionType, OldValue, NewValue, Timestamp |
+```mermaid
+erDiagram
+    MATERIAL ||--o{ LOT : "has instances"
+    LOT ||--o{ LABEL : "identified by"
+    LOT ||--o{ AUDIT_LOG : "tracked history"
+    MATERIAL ||--o{ MATERIAL_VERSION : "has history"
 
-## 4. Các thành phần loại trừ (Out of Scope)
-- **CIM & Monet:** Không tích hợp.
-- **Quản lý nhà cung cấp (Supplier Management):** Không quản lý danh mục và đánh giá.
-- **Mobile App:** Hệ thống chỉ chạy trên nền tảng Web.
+    MATERIAL {
+        string material_id PK
+        string name
+        string description
+        string technical_specs
+        string regulatory_info
+        string group_id
+    }
+
+    LOT {
+        string lot_number PK
+        string material_id FK
+        string supplier_id
+        float quantity
+        date expiration_date
+        enum status "Quarantined|Accepted|Rejected|Depleted"
+    }
+
+    LABEL {
+        string label_code PK
+        string lot_number FK
+        string receiver_info
+        string qc_criteria
+        datetime printed_at
+    }
+
+    AUDIT_LOG {
+        int log_id PK
+        string lot_number FK
+        string action_type
+        string user_id
+        datetime timestamp
+    }
+```
+
+## 3. Biểu đồ Trạng thái Lô hàng (Lot State Diagram)
+
+Mô tả vòng đời và các quy tắc chuyển đổi trạng thái của một lô hàng.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Quarantined : 1. Receive Material (Nhập kho)
+    
+    state Quarantined {
+        [*] --> Sampling
+        Sampling --> Testing
+    }
+
+    Quarantined --> Accepted : 2. QC Pass (Đạt)
+    Quarantined --> Rejected : 2. QC Fail (Không đạt)
+
+    Accepted --> Depleted : 3. Usage/Export (Xuất hết)
+    Accepted --> Expired : 4. Auto-check Date (Hết hạn)
+
+    Rejected --> Locked : Auto-Block
+    Expired --> Locked : Auto-Block
+
+    Locked --> Returned : Trả Nhà cung cấp
+    Locked --> Destroyed : Tiêu hủy
+
+    Depleted --> [*]
+    Returned --> [*]
+    Destroyed --> [*]
+
+    note right of Locked
+        Hệ thống tự động KHÓA.
+        Không cho phép xuất kho sản xuất.
+    end note
+```
+
+## 4. Chiến lược Truy xuất & Kiểm soát
+
+### 4.1. Quy trình Kiểm soát (Control)
+*   Khi nhập kho, lô hàng auto ở trạng thái `Quarantined`. Kho không được phép cấp phát lô này cho đến khi có kết quả QC.
+*   QC cập nhật trạng thái trên hệ thống -> Nếu `Accepted`, lô hàng khả dụng (Available stock).
+*   Cronjob chạy hàng ngày kiểm tra `Expiration Date` -> Nếu quá hạn, tự động chuyển trạng thái sang `Expired` (hoặc Rejected vì lý do hết hạn) và khóa lô.
+
+### 4.2. Nhật ký hệ thống (Audit Trail)
+*   Mọi thay đổi số lượng (Nhập/Xuất/Kiểm kê) đều sinh ra bản ghi Log.
+*   Mọi thay đổi trạng thái (QC Approve/Reject) đều lưu lại: Ai làm? Lúc nào? Lý do là gì?
