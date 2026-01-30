@@ -64,10 +64,12 @@ Dựa trên [Database Schema](https://nhbien.github.io/inventory-mangement-syste
 - **Các môi trường:** Dev, Test, Production.
 
 ### 2.5. Góc nhìn bảo mật (Security View)
-- **Xác thực:** Đăng nhập tài khoản, có thể mở rộng OAuth/JWT.
-- **Phân quyền:** RBAC (Role‑Based Access Control).
-- **Bảo vệ dữ liệu:** Mã hóa dữ liệu nhạy cảm, sao lưu định kỳ.
-- **Audit:** Ghi log thao tác quan trọng (nhập/xuất, chỉnh sửa dữ liệu).
+- **Identity Provider:** Keycloak (Self-hosted, Open Source)
+- **Xác thực:** OAuth 2.0 / OpenID Connect (OIDC)
+- **Phân quyền:** RBAC (Role‑Based Access Control) - 5 roles được quản lý trong Keycloak
+- **Token:** JWT Access Token + Refresh Token
+- **Bảo vệ dữ liệu:** HTTPS, mã hóa dữ liệu nhạy cảm, sao lưu định kỳ
+- **Audit:** Ghi log thao tác quan trọng (nhập/xuất, chỉnh sửa dữ liệu)
 
 ## 3. Công nghệ và công cụ lựa chọn
 
@@ -86,10 +88,11 @@ Dựa trên [Database Schema](https://nhbien.github.io/inventory-mangement-syste
 │  │  • State:        React Query (server state) + Zustand (client state)    │   │
 │  │  • Routing:      React Router v6                                         │   │
 │  │  • Build Tool:   Vite                                                    │   │
+│  │  • Auth Client:  @react-keycloak/web                                     │   │
 │  │  • Charts:       Recharts hoặc Chart.js                                  │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 │                              │                                                  │
-│                              │ REST API (JSON)                                  │
+│                              │ REST API (JSON) + JWT Token                      │
 │                              ▼                                                  │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
 │  │  BACKEND (Server)                                                        │   │
@@ -98,7 +101,7 @@ Dựa trên [Database Schema](https://nhbien.github.io/inventory-mangement-syste
 │  │  • Framework:    Express.js + TypeScript                                 │   │
 │  │  • ORM:          Sequelize v6 (match với database schema)               │   │
 │  │  • Validation:   Joi / Zod                                               │   │
-│  │  • Auth:         JWT + bcrypt (như schema Users)                        │   │
+│  │  • Auth:         Keycloak JWT Verify (keycloak-connect)                 │   │
 │  │  • API Docs:     Swagger / OpenAPI 3.0                                   │   │
 │  │  • Logging:      Winston                                                 │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
@@ -112,6 +115,16 @@ Dựa trên [Database Schema](https://nhbien.github.io/inventory-mangement-syste
 │  │  • Features:     UUID, ENUM, DECIMAL(10,3), JSONB                       │   │
 │  │  • Migration:    Sequelize CLI                                           │   │
 │  │  • Backup:       pg_dump (automated)                                     │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │  IDENTITY & ACCESS MANAGEMENT                                            │   │
+│  │  ────────────────────────────────────────────────────────────────────── │   │
+│  │  • Provider:     Keycloak 24+ (Self-hosted, Open Source)                │   │
+│  │  • Protocol:     OAuth 2.0 / OpenID Connect (OIDC)                      │   │
+│  │  • Features:     SSO, RBAC, User Federation, Social Login               │   │
+│  │  • Database:     PostgreSQL (shared or separate)                        │   │
+│  │  • Admin UI:     http://localhost:8080/admin                            │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 │                                                                                 │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
@@ -137,10 +150,131 @@ Dựa trên [Database Schema](https://nhbien.github.io/inventory-mangement-syste
 | **Node.js + Express** | Backend | Cùng ngôn ngữ TypeScript với FE, async I/O, NPM ecosystem |
 | **Sequelize** | ORM | Database schema đã thiết kế theo Sequelize syntax, dễ migration |
 | **PostgreSQL** | Database | Hỗ trợ UUID native, ENUM, DECIMAL precision cao, JSON queries |
-| **JWT + bcrypt** | Auth | Schema Users đã dùng bcrypt hash, stateless authentication |
+| **Keycloak** | Identity Provider | Free, Open Source, RBAC đầy đủ, Docker-ready, OAuth2/OIDC |
 | **Docker** | Container | Đồng nhất môi trường dev/test/prod |
 
-### 3.3. Alternative Options
+### 3.3. Keycloak Configuration
+
+#### Tại sao chọn Keycloak thay vì Okta?
+
+| Tiêu chí | Keycloak | Okta |
+|----------|----------|------|
+| Chi phí | **Free** (Open Source) | Trả phí (Free: 15k MAU) |
+| Hosting | Self-hosted (Docker) | Cloud-managed |
+| Customization | **Cao** (full control) | Hạn chế |
+| Learning | **Nhiều hơn** | Ít hands-on |
+| Data Privacy | **Full control** | Cloud vendor |
+| Docker Support | **Official image** | Không cần |
+
+#### Keycloak Realm Setup
+
+```
+Realm: inventory-management
+├── Clients
+│   ├── inventory-frontend (public, SPA)
+│   └── inventory-backend (confidential, bearer-only)
+│
+├── Roles (Realm Roles)
+│   ├── admin
+│   ├── inventory_manager
+│   ├── quality_control
+│   ├── production
+│   └── viewer
+│
+├── Users
+│   ├── admin1 → [admin]
+│   ├── jdoe → [inventory_manager]
+│   ├── qc1 → [quality_control]
+│   ├── qc_super → [quality_control]
+│   └── prod1 → [production]
+│
+└── Authentication
+    ├── Browser flow (for frontend)
+    └── Direct Grant flow (for API testing)
+```
+
+#### Docker Compose cho Keycloak
+
+```yaml
+# docker-compose.yml
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=keycloak
+    command: start-dev
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
+```
+
+#### Frontend Integration (React)
+
+```typescript
+// keycloak.ts
+import Keycloak from 'keycloak-js';
+
+const keycloak = new Keycloak({
+  url: 'http://localhost:8080',
+  realm: 'inventory-management',
+  clientId: 'inventory-frontend',
+});
+
+export default keycloak;
+```
+
+#### Backend Integration (Express)
+
+```typescript
+// middleware/auth.ts
+import { expressjwt } from 'express-jwt';
+import jwksRsa from 'jwks-rsa';
+
+export const checkJwt = expressjwt({
+  secret: jwksRsa.expressJwtSecret({
+    jwksUri: 'http://localhost:8080/realms/inventory-management/protocol/openid-connect/certs',
+  }),
+  audience: 'inventory-backend',
+  issuer: 'http://localhost:8080/realms/inventory-management',
+  algorithms: ['RS256'],
+});
+
+// Role-based middleware
+export const requireRole = (roles: string[]) => {
+  return (req, res, next) => {
+    const userRoles = req.auth?.realm_access?.roles || [];
+    if (roles.some(role => userRoles.includes(role))) {
+      next();
+    } else {
+      res.status(403).json({ error: 'Forbidden' });
+    }
+  };
+};
+```
+
+### 3.4. Alternative Options
 
 | Layer | Option A (Recommended) | Option B | Option C |
 |-------|------------------------|----------|----------|
@@ -148,8 +282,9 @@ Dựa trên [Database Schema](https://nhbien.github.io/inventory-mangement-syste
 | Backend | Node.js + Express | Spring Boot (Java) | FastAPI (Python) |
 | ORM | Sequelize | TypeORM | Prisma |
 | Database | PostgreSQL | MySQL 8.0 | SQL Server |
+| Auth/IAM | **Keycloak** | Okta | Auth0 |
 
-### 3.4. Special Features Implementation
+### 3.5. Special Features Implementation
 
 | Feature | Technology | Notes |
 |---------|------------|-------|
