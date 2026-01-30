@@ -57,12 +57,6 @@ flowchart TB
         LBL_STATUS["🏷️ Generate Label<br/>Status Label"]
     end
 
-    subgraph SAMPLE["🧫 SAMPLE MANAGEMENT"]
-        SAMPLE_LOT["📦 Create Sample Lot<br/>is_sample = true<br/>parent_lot_id"]
-        TXN_SPLIT["💾 Transaction: SPLIT<br/>-quantity from parent"]
-        LBL_SAMPLE["🏷️ Generate Label<br/>Sample Label"]
-    end
-
     subgraph PRODUCTION["�icing PRODUCTION"]
         BATCH["📦 Production Batch<br/>batch_number, product_id<br/>batch_size"]
         BATCH_STATUS{"Status?"}
@@ -97,12 +91,6 @@ flowchart TB
     STATUS_REJ -->|"Update Lot status"| LBL_STATUS
     LBL -.->|"use template"| LBL_STATUS
     
-    %% SAMPLE FLOW: Lot → Sample Lot → Transaction → Label
-    STATUS_ACC -.->|"Optional: Split"| SAMPLE_LOT
-    SAMPLE_LOT -->|"Record split"| TXN_SPLIT
-    SAMPLE_LOT -->|"Generate from Sample Lot"| LBL_SAMPLE
-    LBL -.->|"use template"| LBL_SAMPLE
-    
     %% PRODUCTION FLOW
     STATUS_ACC --> BATCH
     MAT -->|"Product reference"| BATCH
@@ -135,10 +123,8 @@ flowchart TB
     style BATCH fill:#4169E1,stroke:#3457B8,color:#fff
     style BATCH_COMP fill:#32CD32,stroke:#28A428,color:#fff
     style FIN fill:#228B22,stroke:#1B6E1B,color:#fff
-    style SAMPLE_LOT fill:#9370DB,stroke:#7B68EE,color:#fff
     style LBL_RM fill:#FFD700,stroke:#DAA520
     style LBL_STATUS fill:#FFD700,stroke:#DAA520
-    style LBL_SAMPLE fill:#FFD700,stroke:#DAA520
     style LBL_FIN fill:#FFD700,stroke:#DAA520
 ```
 
@@ -266,7 +252,6 @@ flowchart TB
 |-----------------|-------------|-----------------|
 | **Receipt** | Nhận nguyên liệu vào kho | +quantity |
 | **Usage** | Sử dụng cho production batch | -quantity |
-| **Split** | Tách lot (tạo sample) | -quantity (parent) |
 | **Transfer** | Chuyển location | 0 (location change) |
 | **Adjustment** | Điều chỉnh số lượng | ±quantity |
 | **Disposal** | Hủy bỏ | -quantity |
@@ -278,7 +263,6 @@ flowchart TB
 | Label Type | Sử dụng cho | Thời điểm generate |
 |------------|-------------|-------------------|
 | **Raw Material** | InventoryLot | Khi nhận nguyên liệu |
-| **Sample** | InventoryLot (is_sample=true) | Khi tạo sample lot |
 | **API** | InventoryLot (API materials) | Khi nhận API |
 | **Status** | InventoryLot | Khi status thay đổi |
 | **Intermediate** | ProductionBatch | Trong quá trình sản xuất |
@@ -349,30 +333,23 @@ flowchart TB
    └─► Update lot status: QUARANTINE → ACCEPTED
        └─► Generate: STATUS LABEL (Accepted)
 
-4. (Optional) CREATE Sample Lot
-   ├─► parent_lot_id: lot-uuid-001
-   ├─► is_sample: true
-   ├─► quantity: 0.5 kg
-   └─► Transaction: SPLIT -0.5 kg
-       └─► Generate: SAMPLE LABEL
-
-5. CREATE ProductionBatch (batch-uuid-001)
+4. CREATE ProductionBatch (batch-uuid-001)
    ├─► product_id: PROD-001
    ├─► batch_size: 1000 units
    └─► status: PLANNED
 
-6. ADD BatchComponent
+5. ADD BatchComponent
    ├─► batch_id: batch-uuid-001
    ├─► lot_id: lot-uuid-001
    ├─► planned_qty: 2 kg
    └─► Transaction: USAGE -2 kg
 
-7. COMPLETE Batch
+6. COMPLETE Batch
    └─► status: IN PROGRESS → COMPLETE
        └─► Generate: FINISHED PRODUCT LABEL
 
-8. FINAL State
-   ├─► lot-uuid-001: 23 kg remaining (25.5 - 0.5 - 2)
+7. FINAL State
+   ├─► lot-uuid-001: 23.5 kg remaining (25.5 - 2)
    └─► batch-uuid-001: 1000 units complete
 ```
 

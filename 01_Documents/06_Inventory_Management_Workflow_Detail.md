@@ -558,173 +558,10 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 ---
 
 # ═══════════════════════════════════════════════════════════════
-# PHASE 3: TẠO MẪU THỬ (SAMPLE CREATION) - Optional
+# PHASE 3: TẠO LÔ SẢN XUẤT (PRODUCTION BATCH)
 # ═══════════════════════════════════════════════════════════════
 
-## STEP 3.1: Tạo Sample Lot (Tách mẫu từ lot gốc)
-
-### 📋 ACTION: INSERT vào bảng `InventoryLots` (lot mới với is_sample=true)
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  🔵 BẢNG: InventoryLots                                                         │
-│  📝 ACTION: INSERT (Tạo lot sample mới)                                         │
-│  👤 PERFORMED BY: qc1 (QualityControl)                                          │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  ┌──────────────────────────┬────────────────────────────────────────────────┐  │
-│  │ Column                   │ Value                                          │  │
-│  ├──────────────────────────┼────────────────────────────────────────────────┤  │
-│  │ lot_id                   │ 🆕 "lot-uuid-002"                              │  │
-│  │ material_id              │ 🆕 "MAT-001"  (cùng material với parent)       │  │
-│  │ manufacturer_name        │ 🆕 "Acme Pharma" (copy từ parent)              │  │
-│  │ manufacturer_lot         │ 🆕 "MFR-2025-001" (copy từ parent)             │  │
-│  │ supplier_name            │ 🆕 "Acme Supply" (copy từ parent)              │  │
-│  │ received_date            │ 🆕 "2025-01-15" (ngày tạo sample)              │  │
-│  │ expiration_date          │ 🆕 "2026-01-10" (copy từ parent)               │  │
-│  │ in_use_expiration_date   │ 🆕 NULL                                        │  │
-│  │ status                   │ 🆕 "Accepted" (inherit từ parent)              │  │
-│  │ quantity                 │ 🆕 0.500  ⚠️ (số lượng sample)                 │  │
-│  │ unit_of_measure          │ 🆕 "kg"                                        │  │
-│  │ storage_location         │ 🆕 "QC-LAB-01" (location mới)                  │  │
-│  │ is_sample                │ 🆕 true  ⚠️ (đánh dấu là sample)              │  │
-│  │ parent_lot_id            │ 🆕 "lot-uuid-001" ⚠️ (link đến lot gốc)       │  │
-│  │ po_number                │ 🆕 NULL                                        │  │
-│  │ receiving_form_id        │ 🆕 NULL                                        │  │
-│  │ created_date             │ 🆕 "2025-01-15 10:00:00"                       │  │
-│  │ modified_date            │ 🆕 "2025-01-15 10:00:00"                       │  │
-│  └──────────────────────────┴────────────────────────────────────────────────┘  │
-│                                                                                 │
-│  💡 QUAN TRỌNG:                                                                 │
-│     • is_sample = true: Đánh dấu đây là lot sample                              │
-│     • parent_lot_id = "lot-uuid-001": Link đến lot gốc                          │
-│     • quantity = 0.500 kg: Số lượng được tách ra                                │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## STEP 3.2: Cập nhật số lượng Lot gốc
-
-### 📋 ACTION: UPDATE bảng `InventoryLots` (giảm quantity của lot gốc)
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  🔵 BẢNG: InventoryLots                                                         │
-│  📝 ACTION: UPDATE (Giảm quantity lot gốc)                                      │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  UPDATE InventoryLots SET quantity, modified_date                               │
-│  WHERE lot_id = 'lot-uuid-001'                                                  │
-│                                                                                 │
-│  ⚡ THAY ĐỔI:                                                                   │
-│  ┌──────────────────────────┬─────────────────┬───────────────────────────┐     │
-│  │ Column                   │ Old Value       │ New Value                 │     │
-│  ├──────────────────────────┼─────────────────┼───────────────────────────┤     │
-│  │ lot_id                   │ lot-uuid-001    │ (không đổi)               │     │
-│  │ quantity                 │ 25.500          │ 🔄 25.000 (-0.500)       │     │
-│  │ modified_date            │ 2025-01-14 09:30│ 🔄 "2025-01-15 10:00:00" │     │
-│  │ (các cột khác)           │ ...             │ (không đổi)               │     │
-│  └──────────────────────────┴─────────────────┴───────────────────────────┘     │
-│                                                                                 │
-│  📊 TÍNH TOÁN: 25.500 - 0.500 = 25.000 kg còn lại                              │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## STEP 3.3: Ghi nhận Transaction Split
-
-### 📋 ACTION: INSERT vào bảng `InventoryTransactions`
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  🔵 BẢNG: InventoryTransactions                                                 │
-│  📝 ACTION: INSERT (Ghi nhận việc tách sample)                                  │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  ┌──────────────────────┬──────────────────────────────────────────────────┐    │
-│  │ Column               │ Value                                            │    │
-│  ├──────────────────────┼──────────────────────────────────────────────────┤    │
-│  │ transaction_id       │ 🆕 "txn-uuid-002"                                │    │
-│  │ lot_id               │ 🆕 "lot-uuid-001" (lot gốc bị trừ)               │    │
-│  │ transaction_type     │ 🆕 "Split" ✂️                                    │    │
-│  │ quantity             │ 🆕 -0.500   (số âm = xuất ra)                    │    │
-│  │ unit_of_measure      │ 🆕 "kg"                                          │    │
-│  │ reference_id         │ 🆕 "lot-uuid-002" (link đến sample lot)          │    │
-│  │ notes                │ 🆕 "Split to create QC sample"                   │    │
-│  │ performed_by         │ 🆕 "qc1"                                         │    │
-│  │ transaction_date     │ 🆕 "2025-01-15 10:00:00"                         │    │
-│  │ created_date         │ 🆕 "2025-01-15 10:00:00"                         │    │
-│  └──────────────────────┴──────────────────────────────────────────────────┘    │
-│                                                                                 │
-│  💡 reference_id chứa lot_id của sample mới tạo để track nguồn gốc             │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## STEP 3.4: Generate Sample Label
-
-### 📋 ACTION: SELECT từ `LabelTemplates` + Data từ `InventoryLots`
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  🏷️ GENERATE LABEL                                                              │
-│  📝 ACTION: SELECT template WHERE label_type = 'Sample'                         │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  OUTPUT (Label cho sample):                                                     │
-│  ┌──────────────────────────────────────────────────────────────────────────┐   │
-│  │  ┌────────────────────────────────────────┐                              │   │
-│  │  │  🧫 SAMPLE                             │                              │   │
-│  │  │  VITAMIN D3 100K                       │  ◄── material_name           │   │
-│  │  │  Sample Lot: lot-uuid-002              │  ◄── lot_id                  │   │
-│  │  │  From Parent: lot-uuid-001             │  ◄── parent_lot_id           │   │
-│  │  │  Qty: 0.500 kg                         │  ◄── quantity                │   │
-│  │  │  Date: 2025-01-15                      │  ◄── received_date           │   │
-│  │  └────────────────────────────────────────┘                              │   │
-│  │  Size: 1.00" x 1.00"                                                     │   │
-│  └──────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📊 TRẠNG THÁI DATABASE SAU PHASE 3
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  📊 DATABASE STATE AFTER PHASE 3 (SAMPLE CREATION)                              │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  Materials: 2 records                                                           │
-│  Users: 5 records                                                               │
-│  LabelTemplates: 4 records                                                      │
-│  InventoryLots: 2 records (THÊM 1!)                                             │
-│    ├─► lot-uuid-001: quantity=25.000 kg (đã giảm 0.5), status=Accepted          │
-│    └─► lot-uuid-002: quantity=0.500 kg, is_sample=true, parent=lot-uuid-001     │
-│  InventoryTransactions: 2 records (THÊM 1!)                                     │
-│    ├─► txn-uuid-001: Receipt +25.500 kg                                         │
-│    └─► txn-uuid-002: Split -0.500 kg (từ lot-uuid-001)                          │
-│  QCTests: 2 records                                                             │
-│  ProductionBatches: 0 records                                                   │
-│  BatchComponents: 0 records                                                     │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-# ═══════════════════════════════════════════════════════════════
-# PHASE 4: TẠO LÔ SẢN XUẤT (PRODUCTION BATCH)
-# ═══════════════════════════════════════════════════════════════
-
-## STEP 4.1: Tạo Production Batch
+## STEP 3.1: Tạo Production Batch
 
 ### 📋 ACTION: INSERT vào bảng `ProductionBatches`
 
@@ -762,7 +599,7 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 
 ---
 
-## STEP 4.2: Cập nhật Status → In Progress
+## STEP 3.2: Cập nhật Status → In Progress
 
 ### 📋 ACTION: UPDATE bảng `ProductionBatches`
 
@@ -794,7 +631,7 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 
 ---
 
-## STEP 4.3: Thêm Batch Component (Sử dụng nguyên liệu)
+## STEP 3.3: Thêm Batch Component (Sử dụng nguyên liệu)
 
 ### 📋 ACTION: INSERT vào bảng `BatchComponents`
 
@@ -831,7 +668,7 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 
 ---
 
-## STEP 4.4: Cập nhật số lượng Inventory Lot (Usage)
+## STEP 3.4: Cập nhật số lượng Inventory Lot (Usage)
 
 ### 📋 ACTION: UPDATE bảng `InventoryLots`
 
@@ -865,7 +702,7 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 
 ---
 
-## STEP 4.5: Ghi nhận Transaction Usage
+## STEP 3.5: Ghi nhận Transaction Usage
 
 ### 📋 ACTION: INSERT vào bảng `InventoryTransactions`
 
@@ -897,23 +734,21 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 
 ---
 
-## 📊 TRẠNG THÁI DATABASE SAU PHASE 4
+## 📊 TRẠNG THÁI DATABASE SAU PHASE 3
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│  📊 DATABASE STATE AFTER PHASE 4 (PRODUCTION IN PROGRESS)                       │
+│  📊 DATABASE STATE AFTER PHASE 3 (PRODUCTION IN PROGRESS)                       │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │  Materials: 2 records                                                           │
 │  Users: 5 records                                                               │
 │  LabelTemplates: 4 records                                                      │
-│  InventoryLots: 2 records                                                       │
-│    ├─► lot-uuid-001: quantity=23.000 kg (đã giảm thêm 2), status=Accepted       │
-│    └─► lot-uuid-002: quantity=0.500 kg, is_sample=true                          │
-│  InventoryTransactions: 3 records (THÊM 1!)                                     │
+│  InventoryLots: 1 record                                                        │
+│    └─► lot-uuid-001: quantity=23.500 kg (đã giảm 2), status=Accepted            │
+│  InventoryTransactions: 2 records (THÊM 1!)                                     │
 │    ├─► txn-uuid-001: Receipt +25.500 kg                                         │
-│    ├─► txn-uuid-002: Split -0.500 kg                                            │
-│    └─► txn-uuid-003: Usage -2.000 kg (cho PB-2025-0001)                         │
+│    └─► txn-uuid-002: Usage -2.000 kg (cho PB-2025-0001)                         │
 │  QCTests: 2 records                                                             │
 │  ProductionBatches: 1 record (MỚI!)                                             │
 │    └─► batch-uuid-001: status=In Progress, batch_size=1000 units                │
@@ -926,10 +761,10 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 ---
 
 # ═══════════════════════════════════════════════════════════════
-# PHASE 5: HOÀN THÀNH SẢN XUẤT (PRODUCTION COMPLETE)
+# PHASE 4: HOÀN THÀNH SẢN XUẤT (PRODUCTION COMPLETE)
 # ═══════════════════════════════════════════════════════════════
 
-## STEP 5.1: Cập nhật Status → Complete
+## STEP 4.1: Cập nhật Status → Complete
 
 ### 📋 ACTION: UPDATE bảng `ProductionBatches`
 
@@ -967,7 +802,7 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 
 ---
 
-## STEP 5.2: Generate Finished Product Label
+## STEP 4.2: Generate Finished Product Label
 
 ### 📋 ACTION: SELECT từ `LabelTemplates` + Data từ `ProductionBatches` + `Materials`
 
@@ -1043,27 +878,24 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 │  │ TPL-FP-01   │ Finished Product 3x2 │ Finished Product │ 3.00  │ 2.00   │    │
 │                                                                                 │
 │  ══════════════════════════════════════════════════════════════════════════     │
-│  🔵 InventoryLots (2 records)                                                   │
+│  🔵 InventoryLots (1 record)                                                    │
 │  ══════════════════════════════════════════════════════════════════════════     │
 │  │ lot_id       │ material_id │ quantity │ status   │ is_sample │ parent_lot  ││
 │  ├──────────────┼─────────────┼──────────┼──────────┼───────────┼─────────────┤│
-│  │ lot-uuid-001 │ MAT-001     │ 23.000   │ Accepted │ false     │ NULL        ││
-│  │ lot-uuid-002 │ MAT-001     │ 0.500    │ Accepted │ true      │ lot-uuid-001││
+│  │ lot-uuid-001 │ MAT-001     │ 23.500   │ Accepted │ false     │ NULL        ││
 │                                                                                 │
 │  📊 lot-uuid-001 QUANTITY HISTORY:                                              │
 │     Initial:    25.500 kg (Receipt)                                             │
-│     - Split:     0.500 kg (Sample creation)                                     │
 │     - Usage:     2.000 kg (Production)                                          │
-│     = Final:    23.000 kg                                                       │
+│     = Final:    23.500 kg                                                       │
 │                                                                                 │
 │  ══════════════════════════════════════════════════════════════════════════     │
-│  🔵 InventoryTransactions (3 records)                                           │
+│  🔵 InventoryTransactions (2 records)                                           │
 │  ══════════════════════════════════════════════════════════════════════════     │
 │  │ transaction_id │ lot_id       │ type    │ quantity │ reference_id      │    │
 │  ├────────────────┼──────────────┼─────────┼──────────┼───────────────────┤    │
 │  │ txn-uuid-001   │ lot-uuid-001 │ Receipt │ +25.500  │ NULL              │    │
-│  │ txn-uuid-002   │ lot-uuid-001 │ Split   │ -0.500   │ lot-uuid-002      │    │
-│  │ txn-uuid-003   │ lot-uuid-001 │ Usage   │ -2.000   │ PB-2025-0001      │    │
+│  │ txn-uuid-002   │ lot-uuid-001 │ Usage   │ -2.000   │ PB-2025-0001      │    │
 │                                                                                 │
 │  ══════════════════════════════════════════════════════════════════════════     │
 │  🔵 QCTests (2 records)                                                         │
@@ -1105,7 +937,6 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 > | Label Type | Data Source |
 > |------------|-------------|
 > | Raw Material | InventoryLot + Material |
-> | Sample | InventoryLot (is_sample=true) + Material |
 > | Status | InventoryLot (status field) |
 > | Finished Product | ProductionBatch + Material |
 
@@ -1159,62 +990,39 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 │                             │                    │                                          │
 │  ═══════════════════════════════════════════════════════════════════════════════════════   │
 │                             │                    │                                          │
-│  PHASE 3: SAMPLE (Optional) │                    │                                          │
-│  ══════════════════════     │                    │                                          │
+│  PHASE 3: PRODUCTION        │                    │                                          │
+│  ═══════════════════        │                    │                                          │
 │                             │                    │                                          │
-│   ⑤ Parent Lot ───► ┌───────────────┐            │                                          │
-│      (FK)           │ InventoryLots │────────────┼────► 🏷️ SAMPLE LABEL                    │
-│                     │ lot-uuid-002  │            │      (data từ Sample Lot)                │
-│                     │ is_sample:true│            │                                          │
-│                     │ parent: 001   │            │                                          │
-│                     └───────┬───────┘            │                                          │
-│                             │                    │                                          │
-│   ⑥ Update parent   ┌───────▼───────┐            │                                          │
-│      qty            │ InventoryLots │            │                                          │
-│                     │ lot-uuid-001  │            │                                          │
-│                     │ qty: 25.000   │            │                                          │
-│                     └───────┬───────┘            │                                          │
-│                             │                    │                                          │
-│   ⑦ Record split    ┌───────▼───────────┐        │                                          │
-│                     │ InventoryTxn      │        │                                          │
-│                     │ Split -0.500      │        │                                          │
-│                     └───────────────────┘        │                                          │
-│                                                  │                                          │
-│  ═══════════════════════════════════════════════════════════════════════════════════════   │
-│                                                  │                                          │
-│  PHASE 4: PRODUCTION                             │                                          │
-│  ═══════════════════                             │                                          │
-│                                                  │                                          │
-│   ⑧ Product Material ► ┌──────────────────┐      │                                          │
+│   ⑤ Product Material ► ┌──────────────────┐      │                                          │
 │      (FK)               │ ProductionBatch  │     │                                          │
 │                         │ batch-uuid-001   │     │                                          │
 │                         │ status: Planned  │     │                                          │
 │                         │    ↓ In Progress │     │                                          │
 │                         └────────┬─────────┘     │                                          │
 │                                  │               │                                          │
-│   ⑨ Lot + Batch ───────► ┌──────▼───────────┐    │                                          │
+│   ⑥ Lot + Batch ───────► ┌──────▼───────────┐    │                                          │
 │      (FKs)               │ BatchComponents  │    │                                          │
 │                          │ lot_id: 001      │    │                                          │
 │                          │ batch_id: 001    │    │                                          │
 │                          │ actual: 2.000 kg │    │                                          │
 │                          └────────┬─────────┘    │                                          │
 │                                   │              │                                          │
-│   ⑩ Update Lot qty ──────► ┌──────▼──────┐       │                                          │
+│   ⑦ Update Lot qty ──────► ┌──────▼──────┐       │                                          │
 │                            │ InventoryLots│      │                                          │
-│                            │ qty: 23.000  │      │                                          │
+│                            │ qty: 23.500  │      │                                          │
 │                            └─────────────┘       │                                          │
 │                                   │              │                                          │
-│   ⑪ Record usage ────────► ┌──────▼──────────┐   │                                          │
+│   ⑧ Record usage ────────► ┌──────▼──────────┐   │                                          │
 │                            │ InventoryTxn   │   │                                          │
 │                            │ Usage -2.000   │   │                                          │
 │                            └────────────────┘   │                                          │
 │                                                  │                                          │
 │  ═══════════════════════════════════════════════════════════════════════════════════════   │
 │                                                  │                                          │
-│  PHASE 5: COMPLETE                               │                                          │
+│  PHASE 4: COMPLETE                               │                                          │
 │  ═════════════════                               │                                          │
 │                                                  │                                          │
-│   ⑫ Complete Batch ────► ┌──────────────────┐    │                                          │
+│   ⑨ Complete Batch ────► ┌──────────────────┐    │                                          │
 │                          │ ProductionBatch  │────┼────► 🏷️ FINISHED PRODUCT LABEL          │
 │                          │ batch-uuid-001   │    │      (data từ Batch + Product Material)  │
 │                          │ status: Complete │    │                                          │
@@ -1232,14 +1040,11 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 | ② | Record receipt | InventoryLots → Transactions | INSERT | Ghi nhận nhận hàng |
 | ③ | QC Testing | InventoryLots → QCTests | INSERT | Thực hiện test |
 | ④ | Update status | InventoryLots | UPDATE | Quarantine → Accepted |
-| ⑤ | Create sample | InventoryLots | INSERT | is_sample=true, parent_lot_id |
-| ⑥ | Update parent qty | InventoryLots | UPDATE | Trừ số lượng sample |
-| ⑦ | Record split | InventoryTransactions | INSERT | type=Split |
-| ⑧ | Create batch | Materials → ProductionBatches | INSERT | product_id FK |
-| ⑨ | Add component | Lots + Batches → BatchComponents | INSERT | Link lot vào batch |
-| ⑩ | Update lot qty | InventoryLots | UPDATE | Trừ số lượng sử dụng |
-| ⑪ | Record usage | InventoryTransactions | INSERT | type=Usage |
-| ⑫ | Complete batch | ProductionBatches | UPDATE | status=Complete |
+| ⑤ | Create batch | Materials → ProductionBatches | INSERT | product_id FK |
+| ⑥ | Add component | Lots + Batches → BatchComponents | INSERT | Link lot vào batch |
+| ⑦ | Update lot qty | InventoryLots | UPDATE | Trừ số lượng sử dụng |
+| ⑧ | Record usage | InventoryTransactions | INSERT | type=Usage |
+| ⑨ | Complete batch | ProductionBatches | UPDATE | status=Complete |
 
 ---
 
