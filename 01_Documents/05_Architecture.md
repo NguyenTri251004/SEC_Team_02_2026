@@ -1,4 +1,4 @@
-﻿# 05_Architecture
+# 05_Architecture
 
 ## 1. Tổng quan kiến trúc
 Hệ thống **Inventory Management System** được thiết kế theo mô hình nhiều lớp (multi‑layer) kết hợp hướng dịch vụ (service‑oriented) để đảm bảo:
@@ -9,9 +9,21 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 ## 2. Các mô hình và góc nhìn kiến trúc
 
 ### 2.1. Góc nhìn nghiệp vụ (Business View)
-- **Tác nhân chính:** Quản trị viên, Nhân viên kho, Kế toán, Nhà cung cấp.
-- **Quy trình chính:** Nhập kho, Xuất kho, Kiểm kê, Báo cáo.
-- **Mục tiêu:** Tăng khả năng kiểm soát tồn kho, giảm sai sót, cung cấp dữ liệu báo cáo kịp thời.
+- **Tác nhân chính (User Roles):**
+  - `Admin` - Quản trị toàn bộ hệ thống
+  - `InventoryManager` - Quản lý kho, nhập/xuất hàng
+  - `QualityControl` - Kiểm tra chất lượng, approve/reject lots
+  - `Production` - Tạo và quản lý lô sản xuất
+  - `Viewer` - Chỉ xem báo cáo
+
+- **Quy trình chính:**
+  - Receiving: Nhập kho nguyên vật liệu → Tạo InventoryLot
+  - QC Testing: Kiểm tra chất lượng → Approve/Reject lots
+  - Production: Tạo lô sản xuất → Sử dụng nguyên liệu
+  - Labeling: In nhãn cho lots và batches
+  - Reporting: Báo cáo tồn kho, truy xuất nguồn gốc
+
+- **Mục tiêu:** Kiểm soát chất lượng nguyên liệu, truy xuất nguồn gốc (traceability), quản lý sản xuất.
 
 ### 2.2. Góc nhìn logic (Logical View)
 - **Mô hình phân lớp (Layered Architecture):**
@@ -22,12 +34,28 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 - **Mô hình MVC/MVVM** (tùy công nghệ frontend): tách giao diện và xử lý dữ liệu.
 
 ### 2.3. Góc nhìn dữ liệu (Data View)
-- **Thực thể chính:** Sản phẩm, Phiếu nhập, Phiếu xuất, Tồn kho, Nhà cung cấp, Người dùng, Phân quyền.
-- **Quan hệ:**
-  - Sản phẩm – Nhà cung cấp (1‑n)
-  - Phiếu nhập/xuất – Chi tiết phiếu (1‑n)
-  - Người dùng – Vai trò/Quyền (n‑n)
-- **Lưu trữ:** CSDL quan hệ với các bảng chuẩn hóa, đảm bảo tính toàn vẹn.
+
+Dựa trên [Database Schema](https://nhbien.github.io/inventory-mangement-system-database-schema/)
+
+- **Thực thể chính (8 bảng):**
+  - `Users` - Người dùng và phân quyền
+  - `Materials` - Master data nguyên vật liệu
+  - `LabelTemplates` - Mẫu nhãn in
+  - `InventoryLots` - Lô hàng nhập kho
+  - `InventoryTransactions` - Lịch sử giao dịch
+  - `QCTests` - Kết quả kiểm tra chất lượng
+  - `ProductionBatches` - Lô sản xuất
+  - `BatchComponents` - Thành phần lô sản xuất
+
+- **Quan hệ chính:**
+  - Materials → InventoryLots (1:N)
+  - InventoryLots → InventoryTransactions (1:N)
+  - InventoryLots → QCTests (1:N)
+  - ProductionBatches → BatchComponents (1:N)
+  - InventoryLots → BatchComponents (1:N)
+  - Materials → ProductionBatches (1:N, product_id)
+
+- **Lưu trữ:** PostgreSQL với UUID primary keys, ENUM types, DECIMAL(10,3) cho quantity.
 
 ### 2.4. Góc nhìn triển khai (Deployment/Physical View)
 - **Client:** Trình duyệt Web hoặc ứng dụng desktop/mobile.
@@ -43,14 +71,127 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 
 ## 3. Công nghệ và công cụ lựa chọn
 
-> Lưu ý: Các mục dưới đây là khung mô tả. Cập nhật theo công nghệ thực tế nhóm lựa chọn.
+### 3.1. Technology Stack (Recommended)
 
-- **Frontend:** [Framework/Library – ví dụ: React/Angular/Vue/Flutter]
-- **Backend:** [Ngôn ngữ + Framework – ví dụ: Node.js + Express / .NET / Spring]
-- **Database:** [MySQL/PostgreSQL/SQL Server]
-- **Authentication:** [JWT / OAuth2 / Session]
-- **DevOps/CI-CD:** [GitHub Actions/GitLab CI/Jenkins]
-- **Tools:** [Postman, Docker, ORM, v.v.]
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              TECHNOLOGY STACK                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │  FRONTEND (Client)                                                       │   │
+│  │  ────────────────────────────────────────────────────────────────────── │   │
+│  │  • Framework:    React 18 + TypeScript                                   │   │
+│  │  • UI Library:   Ant Design 5.x (tables, forms, dashboard)              │   │
+│  │  • State:        React Query (server state) + Zustand (client state)    │   │
+│  │  • Routing:      React Router v6                                         │   │
+│  │  • Build Tool:   Vite                                                    │   │
+│  │  • Charts:       Recharts hoặc Chart.js                                  │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                              │                                                  │
+│                              │ REST API (JSON)                                  │
+│                              ▼                                                  │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │  BACKEND (Server)                                                        │   │
+│  │  ────────────────────────────────────────────────────────────────────── │   │
+│  │  • Runtime:      Node.js 20 LTS                                          │   │
+│  │  • Framework:    Express.js + TypeScript                                 │   │
+│  │  • ORM:          Sequelize v6 (match với database schema)               │   │
+│  │  • Validation:   Joi / Zod                                               │   │
+│  │  • Auth:         JWT + bcrypt (như schema Users)                        │   │
+│  │  • API Docs:     Swagger / OpenAPI 3.0                                   │   │
+│  │  • Logging:      Winston                                                 │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                              │                                                  │
+│                              │ Sequelize ORM                                    │
+│                              ▼                                                  │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │  DATABASE                                                                │   │
+│  │  ────────────────────────────────────────────────────────────────────── │   │
+│  │  • RDBMS:        PostgreSQL 15+                                          │   │
+│  │  • Features:     UUID, ENUM, DECIMAL(10,3), JSONB                       │   │
+│  │  • Migration:    Sequelize CLI                                           │   │
+│  │  • Backup:       pg_dump (automated)                                     │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │  DEVOPS & TOOLS                                                          │   │
+│  │  ────────────────────────────────────────────────────────────────────── │   │
+│  │  • Version Control:    Git + GitHub                                      │   │
+│  │  • CI/CD:              GitHub Actions                                    │   │
+│  │  • Container:          Docker + Docker Compose                           │   │
+│  │  • API Testing:        Postman / Thunder Client                          │   │
+│  │  • Code Quality:       ESLint + Prettier                                 │   │
+│  │  • Testing:            Jest + React Testing Library                      │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 3.2. Lý do lựa chọn
+
+| Component | Choice | Lý do |
+|-----------|--------|-------|
+| **React + TypeScript** | Frontend | Type-safe, component reusable, ecosystem lớn, phổ biến nhất |
+| **Ant Design** | UI Library | Có sẵn Table, Form, Modal, DatePicker - phù hợp inventory management |
+| **Node.js + Express** | Backend | Cùng ngôn ngữ TypeScript với FE, async I/O, NPM ecosystem |
+| **Sequelize** | ORM | Database schema đã thiết kế theo Sequelize syntax, dễ migration |
+| **PostgreSQL** | Database | Hỗ trợ UUID native, ENUM, DECIMAL precision cao, JSON queries |
+| **JWT + bcrypt** | Auth | Schema Users đã dùng bcrypt hash, stateless authentication |
+| **Docker** | Container | Đồng nhất môi trường dev/test/prod |
+
+### 3.3. Alternative Options
+
+| Layer | Option A (Recommended) | Option B | Option C |
+|-------|------------------------|----------|----------|
+| Frontend | React + Ant Design | Angular + Material | Vue.js + Vuetify |
+| Backend | Node.js + Express | Spring Boot (Java) | FastAPI (Python) |
+| ORM | Sequelize | TypeORM | Prisma |
+| Database | PostgreSQL | MySQL 8.0 | SQL Server |
+
+### 3.4. Special Features Implementation
+
+| Feature | Technology | Notes |
+|---------|------------|-------|
+| **Label Printing** | react-to-print + jsPDF | Generate PDF labels from templates |
+| **Barcode/QR** | qrcode.react + react-barcode | Display và print barcodes |
+| **Excel Export** | xlsx / ExcelJS | Export reports to Excel |
+| **Real-time Updates** | Socket.io (optional) | Inventory quantity changes |
+| **Scheduled Jobs** | node-cron | Expiration date checking |
+
+### 3.5. Project Structure
+
+```
+inventory-management-system/
+├── frontend/                    # React Application
+│   ├── src/
+│   │   ├── components/          # Reusable UI components
+│   │   ├── pages/               # Page components (routes)
+│   │   ├── hooks/               # Custom React hooks
+│   │   ├── services/            # API calls
+│   │   ├── store/               # State management
+│   │   ├── types/               # TypeScript interfaces
+│   │   └── utils/               # Helper functions
+│   ├── package.json
+│   └── vite.config.ts
+│
+├── backend/                     # Express Application
+│   ├── src/
+│   │   ├── controllers/         # Route handlers
+│   │   ├── models/              # Sequelize models
+│   │   ├── routes/              # API routes
+│   │   ├── middleware/          # Auth, validation, error handling
+│   │   ├── services/            # Business logic
+│   │   ├── utils/               # Helpers (JWT, bcrypt)
+│   │   └── config/              # DB config, env
+│   ├── migrations/              # Database migrations
+│   ├── seeders/                 # Test data
+│   └── package.json
+│
+├── docker-compose.yml           # PostgreSQL + pgAdmin
+├── .github/workflows/           # CI/CD
+└── README.md
+```
 
 ## 4. Diễn giải kiến trúc theo các mô hình phổ biến
 
