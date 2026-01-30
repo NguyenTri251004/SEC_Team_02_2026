@@ -294,7 +294,7 @@ export const requireRole = (roles: string[]) => {
 | **Real-time Updates** | Socket.io (optional) | Inventory quantity changes |
 | **Scheduled Jobs** | node-cron | Expiration date checking |
 
-### 3.5. Project Structure
+### 3.6. Project Structure
 
 ```
 inventory-management-system/
@@ -306,7 +306,9 @@ inventory-management-system/
 │   │   ├── services/            # API calls
 │   │   ├── store/               # State management
 │   │   ├── types/               # TypeScript interfaces
-│   │   └── utils/               # Helper functions
+│   │   ├── utils/               # Helper functions
+│   │   └── auth/                # Keycloak configuration
+│   │       └── keycloak.ts
 │   ├── package.json
 │   └── vite.config.ts
 │
@@ -315,15 +317,21 @@ inventory-management-system/
 │   │   ├── controllers/         # Route handlers
 │   │   ├── models/              # Sequelize models
 │   │   ├── routes/              # API routes
-│   │   ├── middleware/          # Auth, validation, error handling
+│   │   ├── middleware/          # Auth (Keycloak), validation, error handling
+│   │   │   └── auth.ts          # JWT verify + role check
 │   │   ├── services/            # Business logic
-│   │   ├── utils/               # Helpers (JWT, bcrypt)
-│   │   └── config/              # DB config, env
+│   │   ├── utils/               # Helpers
+│   │   └── config/              # DB config, Keycloak config, env
 │   ├── migrations/              # Database migrations
 │   ├── seeders/                 # Test data
 │   └── package.json
 │
-├── docker-compose.yml           # PostgreSQL + pgAdmin
+├── keycloak/                    # Keycloak Configuration
+│   ├── realm-export.json        # Realm config (import on startup)
+│   └── themes/                  # Custom login themes (optional)
+│
+├── docker-compose.yml           # PostgreSQL + Keycloak + pgAdmin
+├── init-db.sql                  # Initialize databases
 ├── .github/workflows/           # CI/CD
 └── README.md
 ```
