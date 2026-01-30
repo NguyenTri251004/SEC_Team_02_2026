@@ -31,6 +31,10 @@ Dựa trên database schema từ [Inventory Management System Database Schema](h
 
 ## 2. Main Workflow Diagram
 
+> **Luồng chính theo tài liệu:** Material → InventoryLot → Transaction → Label Generation
+> 
+> Label được generate từ dữ liệu của **InventoryLot** (kết hợp với Material), không phải từ Transaction.
+
 ```mermaid
 flowchart TB
     subgraph MASTER["📦 MASTER DATA"]
@@ -40,7 +44,7 @@ flowchart TB
     end
 
     subgraph RECEIVING["📥 RECEIVING PROCESS"]
-        RCV["📋 Receive Inventory Lot<br/>manufacturer_lot<br/>received_date, quantity"]
+        LOT["📦 Create InventoryLot<br/>lot_id, material_id<br/>quantity, status=Quarantine"]
         TXN_RCV["💾 Transaction: RECEIPT<br/>+quantity"]
         LBL_RM["🏷️ Generate Label<br/>Raw Material Label"]
     end
@@ -54,7 +58,7 @@ flowchart TB
     end
 
     subgraph SAMPLE["🧫 SAMPLE MANAGEMENT"]
-        SAMPLE_CREATE["📤 Create Sample Lot<br/>is_sample = true<br/>parent_lot_id"]
+        SAMPLE_LOT["📦 Create Sample Lot<br/>is_sample = true<br/>parent_lot_id"]
         TXN_SPLIT["💾 Transaction: SPLIT<br/>-quantity from parent"]
         LBL_SAMPLE["🏷️ Generate Label<br/>Sample Label"]
     end
@@ -78,48 +82,52 @@ flowchart TB
         LBL_FIN["🏷️ Generate Label<br/>Finished Product Label"]
     end
 
-    %% Connections
-    MAT --> RCV
-    RCV --> TXN_RCV
-    TXN_RCV --> LBL_RM
-    LBL_RM --> QC_TEST
+    %% RECEIVING FLOW: Material → Lot → Transaction → Label
+    MAT -->|"1. Reference"| LOT
+    LOT -->|"2. Record movement"| TXN_RCV
+    LOT -->|"3. Generate from Lot data"| LBL_RM
+    LBL -.->|"use template"| LBL_RM
     
+    %% QC FLOW
+    LOT -->|"4. QC Testing"| QC_TEST
     QC_TEST --> QC_PASS
-    QC_PASS -->|Yes| STATUS_ACC
-    QC_PASS -->|No| STATUS_REJ
-    STATUS_ACC --> LBL_STATUS
-    STATUS_REJ --> LBL_STATUS
+    QC_PASS -->|"Pass"| STATUS_ACC
+    QC_PASS -->|"Fail"| STATUS_REJ
+    STATUS_ACC -->|"Update Lot status"| LBL_STATUS
+    STATUS_REJ -->|"Update Lot status"| LBL_STATUS
+    LBL -.->|"use template"| LBL_STATUS
     
-    STATUS_ACC -.->|Optional| SAMPLE_CREATE
-    SAMPLE_CREATE --> TXN_SPLIT
-    TXN_SPLIT --> LBL_SAMPLE
+    %% SAMPLE FLOW: Lot → Sample Lot → Transaction → Label
+    STATUS_ACC -.->|"Optional: Split"| SAMPLE_LOT
+    SAMPLE_LOT -->|"Record split"| TXN_SPLIT
+    SAMPLE_LOT -->|"Generate from Sample Lot"| LBL_SAMPLE
+    LBL -.->|"use template"| LBL_SAMPLE
     
+    %% PRODUCTION FLOW
     STATUS_ACC --> BATCH
+    MAT -->|"Product reference"| BATCH
     BATCH --> BATCH_STATUS
     BATCH_STATUS --> BATCH_PLAN
     BATCH_PLAN --> BATCH_PROG
     BATCH_PROG --> COMP
-    COMP --> TXN_USE
+    COMP -->|"Link Lot to Batch"| TXN_USE
     TXN_USE --> BATCH_COMP
     BATCH_COMP --> FIN
-    FIN --> LBL_FIN
+    FIN -->|"Generate from Batch data"| LBL_FIN
+    LBL -.->|"use template"| LBL_FIN
     
-    BATCH_STATUS -->|Fail| BATCH_REJ
+    BATCH_STATUS -->|"Fail"| BATCH_REJ
     
-    LBL --> LBL_RM
-    LBL --> LBL_STATUS
-    LBL --> LBL_SAMPLE
-    LBL --> LBL_FIN
-    
-    USR -.->|performs| TXN_RCV
-    USR -.->|performs| QC_TEST
-    USR -.->|performs| COMP
+    %% User performs actions
+    USR -.->|"performs"| LOT
+    USR -.->|"performs"| QC_TEST
+    USR -.->|"performs"| COMP
 
     %% Styling
     style MAT fill:#4A90D9,stroke:#2E5C8A,color:#fff
     style LBL fill:#F5A623,stroke:#C78A1B,color:#fff
     style USR fill:#7B68EE,stroke:#5B4AC9,color:#fff
-    style RCV fill:#50C878,stroke:#3D9660,color:#fff
+    style LOT fill:#50C878,stroke:#3D9660,color:#fff
     style TXN_RCV fill:#90EE90,stroke:#6DC76D
     style QC_TEST fill:#FF8C00,stroke:#CC7000,color:#fff
     style STATUS_ACC fill:#32CD32,stroke:#28A428,color:#fff
@@ -127,7 +135,23 @@ flowchart TB
     style BATCH fill:#4169E1,stroke:#3457B8,color:#fff
     style BATCH_COMP fill:#32CD32,stroke:#28A428,color:#fff
     style FIN fill:#228B22,stroke:#1B6E1B,color:#fff
+    style SAMPLE_LOT fill:#9370DB,stroke:#7B68EE,color:#fff
+    style LBL_RM fill:#FFD700,stroke:#DAA520
+    style LBL_STATUS fill:#FFD700,stroke:#DAA520
+    style LBL_SAMPLE fill:#FFD700,stroke:#DAA520
+    style LBL_FIN fill:#FFD700,stroke:#DAA520
 ```
+
+### Giải thích luồng chính:
+
+| Bước | Từ | Đến | Mô tả |
+|------|-----|-----|-------|
+| 1 | Materials | InventoryLot | Lot tham chiếu đến Material (material_id) |
+| 2 | InventoryLot | InventoryTransaction | Ghi nhận giao dịch Receipt (+quantity) |
+| 3 | InventoryLot | Label (Raw Material) | Generate label từ dữ liệu Lot + Material |
+| 4 | InventoryLot | QCTests | Thực hiện kiểm tra chất lượng |
+| 5 | QCTests Pass | InventoryLot | Cập nhật status: Quarantine → Accepted |
+| 6 | InventoryLot | Label (Status) | Generate label trạng thái mới |
 
 ---
 
@@ -136,24 +160,35 @@ flowchart TB
 ### 3.1 Material Receipt Flow
 
 ```
-┌────────────────────────────────────────────────────────────────────────────┐
-│                         MATERIAL RECEIPT FLOW                              │
-├────────────────────────────────────────────────────────────────────────────┤
-│                                                                            │
-│  ┌─────────────┐    ┌─────────────────┐    ┌─────────────────────────┐    │
-│  │  Materials  │───►│  Create         │───►│  InventoryTransaction   │    │
-│  │  (Master)   │    │  InventoryLot   │    │  Type: RECEIPT          │    │
-│  └─────────────┘    └─────────────────┘    │  Quantity: +25.5 kg     │    │
-│                              │              └─────────────────────────┘    │
-│                              │                                             │
-│                              ▼                                             │
-│                     ┌─────────────────┐                                    │
-│                     │  Generate Label │                                    │
-│                     │  Type: Raw      │                                    │
-│                     │  Material       │                                    │
-│                     └─────────────────┘                                    │
-│                                                                            │
-└────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                           MATERIAL RECEIPT FLOW                                   │
+│   Theo tài liệu: Material → InventoryLot → Transaction → Label                   │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  STEP 1              STEP 2                    STEP 3                            │
+│  ┌─────────────┐     ┌─────────────────────┐   ┌─────────────────────────┐       │
+│  │  Materials  │────►│  Create             │──►│  InventoryTransaction   │       │
+│  │  (Master)   │     │  InventoryLot       │   │  Type: RECEIPT          │       │
+│  │  MAT-001    │     │  lot_id: lot-001    │   │  Quantity: +25.5 kg     │       │
+│  └─────────────┘     │  material_id: MAT-001│   │  lot_id: lot-001        │       │
+│        │             │  quantity: 25.5 kg  │   └─────────────────────────┘       │
+│        │             │  status: Quarantine │                                     │
+│        │             └──────────┬──────────┘                                     │
+│        │                        │                                                │
+│        │                        │ STEP 4: Generate Label từ dữ liệu Lot          │
+│        │                        ▼                                                │
+│        │             ┌─────────────────────┐   ┌─────────────────────────┐       │
+│        │             │  LabelTemplates     │──►│  🏷️ RAW MATERIAL LABEL │       │
+│        └────────────►│  Type: Raw Material │   │  Material: Vitamin D3   │       │
+│                      │  TPL-RM-01          │   │  Lot: lot-001           │       │
+│                      └─────────────────────┘   │  Qty: 25.5 kg           │       │
+│                                                │  Status: ⚠️ QUARANTINE  │       │
+│                                                └─────────────────────────┘       │
+│                                                                                  │
+│  📌 Label data comes from: InventoryLot (lot_id, quantity, status, exp_date)    │
+│                          + Materials (material_name, storage_conditions)         │
+│                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 3.2 Quality Control Flow
