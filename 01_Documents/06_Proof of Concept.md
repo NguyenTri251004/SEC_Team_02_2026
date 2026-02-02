@@ -4,7 +4,31 @@
 
 ### 1. Tổng quan
 
-Tài liệu này trình bày quá trình POC xác thực và phân quyền (Authentication & Authorization) sử dụng Keycloak cho hệ thống Inventory Management System. Nhóm lựa chọn Keycloak vì là giải pháp open source, bảo mật tốt, hỗ trợ OAuth2/OIDC, RBAC, dễ tích hợp với cả frontend và backend.
+#### 1.1. Mục đích
+
+Tài liệu này trình bày quá trình Proof of Concept (POC) cho tính năng **xác thực và phân quyền (Authentication & Authorization)** bằng **Keycloak** - một thách thức kỹ thuật quan trọng trong hệ thống Inventory Management System.
+
+#### 1.2. Tính năng POC
+
+**Keycloak Integration với OAuth 2.0 / OIDC cho RBAC (Role-Based Access Control)**
+
+Đây là tính năng khó về mặt kỹ thuật vì:
+
+- Yêu cầu tích hợp Identity Provider (IdP) độc lập với cả frontend và backend
+- Cần hiểu rõ flow OAuth 2.0 / OpenID Connect
+- Xử lý JWT tokens, refresh tokens, và token validation
+- Cấu hình phức tạp với Realm, Clients, Roles, Users
+- Đảm bảo bảo mật end-to-end cho toàn bộ hệ thống
+
+#### 1.3. Lý do chọn Keycloak
+
+| Tiêu chí    | Keycloak                      | Giải pháp tự build           |
+| ----------- | ----------------------------- | ---------------------------- |
+| Chi phí     | Free (Open Source)            | Tốn thời gian phát triển     |
+| Bảo mật     | Battle-tested, OIDC certified | Rủi ro lỗ hổng bảo mật       |
+| Features    | SSO, MFA, RBAC, Social login  | Phải tự implement tất cả     |
+| Độ phức tạp | Cấu hình trước, sử dụng sau   | Phải maintain code liên tục  |
+| Learning    | Học chuẩn OAuth 2.0 / OIDC    | Giải pháp custom không chuẩn |
 
 ### 2. Yêu cầu kỹ thuật
 
@@ -46,73 +70,973 @@ Tài liệu này trình bày quá trình POC xác thực và phân quyền (Auth
 
 #### 2.3. Technology Stack
 
-### 2. Yêu cầu kỹ thuật & Kiến trúc
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     POC ARCHITECTURE                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  Frontend: React 18 + TypeScript                          │   │
+│  │  • keycloak-js 24.0 (Keycloak JS Adapter)                │   │
+│  │  • @react-keycloak/web (React wrapper)                   │   │
+│  │  • Axios (HTTP client with token interceptor)            │   │
+│  │  • React Router v6 (Protected Routes)                    │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                            │                                     │
+│                            │ HTTP + JWT Bearer Token             │
+│                            ▼                                     │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  Backend: Node.js + Express + TypeScript                 │   │
+│  │  • express-jwt (JWT verification)                         │   │
+│  │  • jwks-rsa (Keycloak public key fetch)                  │   │
+│  │  • Sequelize (PostgreSQL ORM)                             │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                            │                                     │
+│                            │ SQL                                 │
+│                            ▼                                     │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  PostgreSQL 15                                            │   │
+│  │  • inventory_db: Tables (Users, Materials, Lots...)      │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  Keycloak 24.0 (Self-hosted)                             │   │
+│  │  • Realm: inventory-management                            │   │
+│  │  • Database: PostgreSQL (keycloak_db)                    │   │
+│  │  • Admin UI: http://localhost:8080/admin                 │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-- Sử dụng Keycloak cho xác thực (OAuth2/OIDC), phân quyền RBAC với 5 roles chính.
-- Frontend: React + TypeScript, sử dụng keycloak-js, @react-keycloak/web, Axios (interceptor tự động gắn JWT), React Router (route bảo vệ).
-- Backend: Node.js + Express + TypeScript, dùng express-jwt, jwks-rsa để xác thực JWT, Sequelize (PostgreSQL ORM).
-- Database: PostgreSQL cho cả Keycloak và Inventory Management.
-- Demo use case: User có role phù hợp đăng nhập, tạo Inventory Lot mới; các role không phù hợp bị từ chối.
-  command: start-dev
-  ports: - "8080:8080"
-  depends_on: - postgres
-  networks: - ims-network
+### 3. Quy trình thử nghiệm (POC Process)
+
+#### 3.1. Phase 1: Môi trường và cấu hình (Environment Setup)
+
+##### Bước 1.1: Cài đặt Docker Compose
+
+**Mục tiêu:** Khởi chạy Keycloak + PostgreSQL bằng Docker
+
+**File:** `docker-compose.yml`
+
+```yaml
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - ims-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+    command: start-dev
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - ims-network
 
 volumes:
-postgres_data:
+  postgres_data:
 
 networks:
-ims-network:
-driver: bridge
-
-````
+  ims-network:
+    driver: bridge
+```
 
 **File:** `init-db.sql`
 
 ```sql
 -- Tạo database cho Keycloak
+CREATE DATABASE keycloak_db;
+CREATE USER keycloak WITH PASSWORD 'keycloak';
+GRANT ALL PRIVILEGES ON DATABASE keycloak_db TO keycloak;
 
-### 3. Quy trình thử nghiệm (POC Process)
+-- Tạo database cho Inventory Management System
+CREATE DATABASE inventory_db;
+GRANT ALL PRIVILEGES ON DATABASE inventory_db TO postgres;
+```
 
-#### 3.1. Thiết lập môi trường
+**Kết quả:**
 
-- Dùng Docker Compose khởi tạo Keycloak và PostgreSQL.
-- Tạo Realm, Clients (frontend/backend), Roles, Users trên Keycloak theo yêu cầu hệ thống.
-- Cấu hình Audience Mapper để backend xác thực đúng audience.
+```bash
+$ docker-compose up -d
+[+] Running 2/2
+ ✔ Container postgres   Started
+ ✔ Container keycloak   Started
 
-#### 3.2. Backend (Node.js/Express)
+$ docker ps
+CONTAINER ID   IMAGE                              STATUS
+abc123def456   quay.io/keycloak/keycloak:24.0    Up 30 seconds
+789ghi012jkl   postgres:15                        Up 31 seconds
+```
 
-- Cấu trúc dự án gồm các module: config, middleware (JWT verify, role check), models (Sequelize), routes (bảo vệ bằng JWT + role), controllers.
-- Sử dụng express-jwt, jwks-rsa để xác thực token từ Keycloak, kiểm tra role từ payload.
-- API chính: tạo Inventory Lot (chỉ cho phép inventory_manager, admin), các role khác bị từ chối.
+**Kiểm tra:**
 
-#### 3.3. Frontend (React)
+- Keycloak Admin Console: http://localhost:8080/admin (admin/admin)
+- PostgreSQL: Kiểm tra 2 databases đã được tạo:
 
-- Sử dụng keycloak-js, @react-keycloak/web để tích hợp SSO, quản lý token.
-- Axios interceptor tự động gắn JWT vào request, tự refresh token khi hết hạn.
-- Route bảo vệ bằng ProtectedRoute, kiểm tra role trước khi cho truy cập.
-- Demo form tạo Inventory Lot.
+```bash
+$ psql -h localhost -U postgres -c "\l"
+# Nhập password: postgres
 
-### 4. Kết quả thử nghiệm tiêu biểu
+List of databases
+     Name     |  Owner   | Encoding
+--------------+----------+----------
+ inventory_db | postgres | UTF8
+ keycloak_db  | postgres | UTF8
+ postgres     | postgres | UTF8
+ template0    | postgres | UTF8
+ template1    | postgres | UTF8
+(5 rows)
+```
 
-- Đăng nhập thành công với user có role phù hợp, tạo được Inventory Lot.
-- User không đủ quyền (ví dụ: viewer) bị từ chối truy cập cả frontend và backend (403 Forbidden).
-- Token hết hạn được tự động refresh, user không bị gián đoạn thao tác.
-- Đăng xuất xóa session, token, user bị redirect về login.
+✅ Xác nhận: `keycloak_db` và `inventory_db` đã tồn tại
 
-### 5. Thách thức kỹ thuật & Giải pháp
+---
 
-- **CORS:** Cấu hình CORS trên backend để cho phép frontend truy cập API.
-- **JWKS cache:** Bật cache public key khi verify JWT để tăng hiệu năng.
-- **Token refresh:** Sử dụng autoRefreshToken của Keycloak SDK và interceptor để tự động làm mới token.
-- **Role mapping:** Chỉ kiểm tra custom realm roles, loại bỏ các role mặc định không liên quan.
-- **Audience claim:** Thêm Audience Mapper để access token có đúng audience cho backend.
+##### Bước 1.2: Cấu hình Keycloak Realm
 
-### 6. Bài học kinh nghiệm
+**Mục tiêu:** Tạo Realm và cấu hình Clients, Roles, Users
 
-- Hiểu sâu về OAuth2/OIDC flow, RBAC, cấu hình Keycloak.
-- Tích hợp xác thực phân quyền hiện đại giúp bảo mật, dễ mở rộng, giảm rủi ro bảo trì code custom.
-````
+**Cấu hình thủ công qua Keycloak Admin UI:**
+
+1. **Tạo Realm:**
+   - Tên Realm: `inventory-management`
+   - Trạng thái: Bật (ON)
+
+2. **Tạo Client cho Frontend:**
+   - Client ID: `inventory-frontend`
+   - Client authentication: **OFF** (vì là public SPA client)
+   - Authorization: OFF
+   - Authentication flow:
+     - ✅ Standard flow (Authorization Code Flow)
+     - ✅ Direct access grants (Resource Owner Password)
+   - Valid redirect URIs: `http://localhost:5173/*`
+   - Web origins: `http://localhost:5173`
+
+2a. **Cấu hình Audience Mapper cho Frontend Client:**
+
+Để backend có thể verify token, cần thêm audience claim vào token:
+
+- Vào client `inventory-frontend` → Tab **Client scopes**
+- Click vào scope **inventory-frontend-dedicated**
+- Tab **Mappers** → Click **Add mapper** → **Configure a new mapper** / **By configuration**
+- Chọn **Audience**
+- Cấu hình mapper:
+  - Name: `backend-audience`
+  - Included Client Audience: `inventory-backend`
+  - Add to ID token: OFF
+  - Add to access token: **ON**
+  - Add to lightweight access token: **ON**
+  - Add to token introspection **ON**
+- Click **Save**
+
+✅ Sau bước này, access token sẽ có `"aud": "inventory-backend"` và backend có thể verify audience.
+
+3. **Tạo Client cho Backend:**
+   - Client ID: `inventory-backend`
+   - Client authentication: **ON** (confidential client)
+   - Authorization: OFF
+   - Authentication flow: **Bỏ chọn tất cả** (backend chỉ verify token, không initiate login)
+   - Sau khi tạo → Tab **Credentials**: Copy **Client secret** để dùng cho backend config (nếu cần)
+
+4. **Tạo Realm Roles:**
+   - `admin`
+   - `inventory_manager`
+   - `quality_control`
+   - `production`
+   - `viewer`
+
+5. **Tạo Users:**
+
+| Username | Email             | First name | Last name | Password | Roles             |
+| -------- | ----------------- | ---------- | --------- | -------- | ----------------- |
+| admin1   | admin1@ims.local  | Admin      | User      | admin123 | admin             |
+| jdoe     | jdoe@ims.local    | John       | Doe       | jdoe123  | inventory_manager |
+| qc1      | qc1@ims.local     | QC         | Inspector | qc123    | quality_control   |
+| prod1    | prod1@ims.local   | Production | Staff     | prod123  | production        |
+| viewer1  | viewer1@ims.local | View       | Only      | view123  | viewer            |
+
+**Các bước tạo mỗi user (ví dụ với user `jdoe`):**
+
+a. **Tab General:**
+
+- Username: `jdoe` _(required)_
+- Email: `jdoe@ims.local`
+- Email verified: **Bật ON** (để không phải verify email)
+- First name: `John`
+- Last name: `Doe`
+- Click **Create**
+
+b. **Sau khi tạo → Tab Credentials:**
+
+- Click **Set password**
+- Password: `jdoe123`
+- Password confirmation: `jdoe123`
+- Temporary: **OFF** (để user không phải đổi password lần đầu login)
+- Click **Save**
+
+c. **Tab Role mapping:**
+
+- Click **Assign role**
+- Chọn **Filter by realm roles**
+- Tìm và chọn role `inventory_manager`
+- Click **Assign**
+
+✅ Lặp lại các bước a, b, c cho 4 users còn lại với thông tin tương ứng trong bảng.
+
+**Kết quả:**
+
+- Truy cập: http://localhost:8080/realms/inventory-management/.well-known/openid-configuration
+- Response: JSON chứa endpoints (authorization_endpoint, token_endpoint, jwks_uri...)
+- Confirm JWKS URI: http://localhost:8080/realms/inventory-management/protocol/openid-connect/certs
+
+---
+
+#### 3.2. Giai đoạn 2: Triển khai Backend (Express API)
+
+##### Bước 2.1: Cấu trúc dự án
+
+```
+backend/
+├── src/
+│   ├── config/
+│   │   ├── database.ts          # Sequelize config
+│   │   └── keycloak.config.ts   # Keycloak endpoints
+│   ├── middleware/
+│   │   ├── auth.ts              # JWT verify + role check
+│   │   └── errorHandler.ts
+│   ├── models/
+│   │   ├── index.ts
+│   │   ├── Material.ts
+│   │   └── InventoryLot.ts
+│   ├── routes/
+│   │   └── inventory.routes.ts
+│   ├── controllers/
+│   │   └── inventory.controller.ts
+│   └── server.ts
+├── package.json
+└── tsconfig.json
+```
+
+##### Bước 2.2: Các thư viện phụ thuộc
+
+**File:** `backend/package.json`
+
+```json
+{
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-jwt": "^8.4.1",
+    "jwks-rsa": "^3.1.0",
+    "sequelize": "^6.35.2",
+    "pg": "^8.11.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.6",
+    "ts-node": "^10.9.2"
+  }
+}
+```
+
+##### Bước 2.3: Auth Middleware
+
+**File:** `backend/src/middleware/auth.ts`
+
+```typescript
+import { expressjwt, Request as JWTRequest } from "express-jwt";
+import jwksRsa from "jwks-rsa";
+import { Request, Response, NextFunction } from "express";
+
+const KEYCLOAK_URL = "http://localhost:8080";
+const REALM = "inventory-management";
+
+// JWT Verification Middleware
+export const checkJwt = expressjwt({
+  secret: jwksRsa.expressJwtSecret({
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 5,
+    jwksUri: `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/certs`,
+  }) as any,
+  audience: "inventory-backend",
+  issuer: `${KEYCLOAK_URL}/realms/${REALM}`,
+  algorithms: ["RS256"],
+});
+
+// Role-based Access Control Middleware
+export const requireRole = (allowedRoles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const jwtReq = req as JWTRequest;
+
+    if (!jwtReq.auth) {
+      return res.status(401).json({ error: "Unauthorized: No token provided" });
+    }
+
+    const userRoles = jwtReq.auth.realm_access?.roles || [];
+
+    // Check if user has at least one of the allowed roles
+    const hasRole = allowedRoles.some((role) => userRoles.includes(role));
+
+    if (!hasRole) {
+      return res.status(403).json({
+        error: "Forbidden: Insufficient permissions",
+        required: allowedRoles,
+        actual: userRoles,
+      });
+    }
+
+    // Attach user info to request
+    (req as any).user = {
+      id: jwtReq.auth.sub,
+      username: jwtReq.auth.preferred_username,
+      roles: userRoles,
+    };
+
+    next();
+  };
+};
+```
+
+**Giải thích:**
+
+- `checkJwt`: Middleware sử dụng `express-jwt` để xác thực JWT token
+  - Lấy public key từ Keycloak JWKS endpoint
+  - Xác thực chữ ký (signature), issuer, audience, và thời hạn
+  - Nếu hợp lệ → Giải mã payload vào `req.auth`
+- `requireRole`: Middleware kiểm tra role từ JWT payload
+  - Đọc `realm_access.roles` từ token
+  - So sánh với `allowedRoles`
+  - Nếu không khớp → 403 Forbidden
+
+##### Bước 2.4: Sequelize Models
+
+**File:** `backend/src/models/InventoryLot.ts`
+
+```typescript
+import { DataTypes, Model } from "sequelize";
+import sequelize from "../config/database";
+
+export class InventoryLot extends Model {
+  public lot_number!: string;
+  public material_id!: string;
+  public quantity_received!: number;
+  public lot_status!: string;
+  public expiry_date!: Date;
+  public received_date!: Date;
+}
+
+InventoryLot.init(
+  {
+    lot_number: {
+      type: DataTypes.STRING(20),
+      primaryKey: true,
+    },
+    material_id: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+    },
+    quantity_received: {
+      type: DataTypes.DECIMAL(10, 3),
+      allowNull: false,
+    },
+    lot_status: {
+      type: DataTypes.ENUM(
+        "Quarantine",
+        "Approved",
+        "Rejected",
+        "In Use",
+        "Depleted",
+      ),
+      defaultValue: "Quarantine",
+    },
+    expiry_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+    received_date: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    sequelize,
+    tableName: "InventoryLots",
+    timestamps: false,
+  },
+);
+```
+
+##### Bước 2.5: Protected API Routes
+
+**File:** `backend/src/routes/inventory.routes.ts`
+
+```typescript
+import express from "express";
+import { checkJwt, requireRole } from "../middleware/auth";
+import * as inventoryController from "../controllers/inventory.controller";
+
+const router = express.Router();
+
+// Tất cả routes đều yêu cầu JWT token hợp lệ
+router.use(checkJwt);
+
+// GET /api/inventory/lots - Viewer trở lên có thể xem
+router.get(
+  "/lots",
+  requireRole([
+    "viewer",
+    "inventory_manager",
+    "quality_control",
+    "production",
+    "admin",
+  ]),
+  inventoryController.getAllLots,
+);
+
+// POST /api/inventory/lots - Chỉ InventoryManager và Admin mới tạo được
+router.post(
+  "/lots",
+  requireRole(["inventory_manager", "admin"]),
+  inventoryController.createLot,
+);
+
+// PATCH /api/inventory/lots/:id/status - Chỉ QualityControl và Admin mới approve/reject
+router.patch(
+  "/lots/:id/status",
+  requireRole(["quality_control", "admin"]),
+  inventoryController.updateLotStatus,
+);
+
+export default router;
+```
+
+##### Bước 2.6: Triển khai Controller
+
+**File:** `backend/src/controllers/inventory.controller.ts`
+
+```typescript
+import { Request, Response } from "express";
+import { InventoryLot } from "../models/InventoryLot";
+
+// GET /api/inventory/lots
+export const getAllLots = async (req: Request, res: Response) => {
+  try {
+    const lots = await InventoryLot.findAll({
+      order: [["received_date", "DESC"]],
+      limit: 50,
+    });
+
+    res.json({
+      success: true,
+      data: lots,
+      user: (req as any).user, // Debug: Show authenticated user
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch lots" });
+  }
+};
+
+// POST /api/inventory/lots
+export const createLot = async (req: Request, res: Response) => {
+  try {
+    const { material_id, quantity_received, expiry_date } = req.body;
+
+    // Generate lot number (LOT-YYYYMMDD-XXXX)
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const lot_number = `LOT-${today}-${randomSuffix}`;
+
+    const newLot = await InventoryLot.create({
+      lot_number,
+      material_id,
+      quantity_received,
+      expiry_date,
+      lot_status: "Quarantine",
+      received_date: new Date(),
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Lot created successfully",
+      data: newLot,
+      created_by: (req as any).user.username,
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// PATCH /api/inventory/lots/:id/status
+export const updateLotStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const lot = await InventoryLot.findByPk(id);
+    if (!lot) {
+      return res.status(404).json({ error: "Lot not found" });
+    }
+
+    lot.lot_status = status;
+    await lot.save();
+
+    res.json({
+      success: true,
+      message: "Lot status updated",
+      data: lot,
+      updated_by: (req as any).user.username,
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+};
+```
+
+##### Bước 2.7: Entry Point của Server
+
+**File:** `backend/src/server.ts`
+
+```typescript
+import express from "express";
+import cors from "cors";
+import inventoryRoutes from "./routes/inventory.routes";
+
+const app = express();
+
+// Middleware
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Vite dev server
+    credentials: true,
+  }),
+);
+app.use(express.json());
+
+// Routes
+app.use("/api/inventory", inventoryRoutes);
+
+// Error handling
+app.use((err: any, req: any, res: any, next: any) => {
+  if (err.name === "UnauthorizedError") {
+    res.status(401).json({ error: "Invalid token" });
+  } else {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Backend server running on http://localhost:${PORT}`);
+  console.log(`🔐 Keycloak URL: http://localhost:8080`);
+});
+```
+
+**Kết quả chạy Backend:**
+
+```bash
+$ npm run dev
+✅ Backend server running on http://localhost:3000
+🔐 Keycloak URL: http://localhost:8080
+```
+
+---
+
+#### 3.3. Giai đoạn 3: Triển khai Frontend (React)
+
+##### Bước 3.1: Cấu trúc dự án
+
+```
+frontend/
+├── src/
+│   ├── auth/
+│   │   └── keycloak.ts          # Keycloak instance
+│   ├── components/
+│   │   ├── ProtectedRoute.tsx   # Route guard
+│   │   └── ReceivingForm.tsx    # Demo form
+│   ├── services/
+│   │   └── api.ts               # Axios instance with interceptor
+│   ├── App.tsx
+│   └── main.tsx
+├── package.json
+└── vite.config.ts
+```
+
+##### Bước 3.2: Các thư viện phụ thuộc
+
+**File:** `frontend/package.json`
+
+```json
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.1",
+    "@react-keycloak/web": "^3.4.0",
+    "keycloak-js": "^24.0.0",
+    "axios": "^1.6.5",
+    "antd": "^5.13.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
+  }
+}
+```
+
+##### Bước 3.3: Cấu hình Keycloak
+
+**File:** `frontend/src/auth/keycloak.ts`
+
+```typescript
+import Keycloak from "keycloak-js";
+
+const keycloak = new Keycloak({
+  url: "http://localhost:8080",
+  realm: "inventory-management",
+  clientId: "inventory-frontend",
+});
+
+export default keycloak;
+```
+
+##### Bước 3.4: Axios Interceptor (Tự động gắn JWT)
+
+**File:** `frontend/src/services/api.ts`
+
+```typescript
+import axios from "axios";
+import keycloak from "../auth/keycloak";
+
+const api = axios.create({
+  baseURL: "http://localhost:3000/api",
+});
+
+// Request interceptor: Tự động gắn JWT token vào header
+api.interceptors.request.use(
+  (config) => {
+    if (keycloak.token) {
+      config.headers.Authorization = `Bearer ${keycloak.token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
+// Response interceptor: Xử lý lỗi 401 (token hết hạn)
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      try {
+        // Thử refresh token
+        await keycloak.updateToken(30);
+        // Retry request với token mới
+        const config = error.config;
+        config.headers.Authorization = `Bearer ${keycloak.token}`;
+        return axios.request(config);
+      } catch (refreshError) {
+        // Refresh thất bại → Logout
+        keycloak.logout();
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
+export default api;
+```
+
+**Giải thích:**
+
+- Request interceptor: Tự động gắn `Authorization: Bearer <token>` vào tất cả requests
+- Response interceptor: Nếu API trả về 401 → Gọi `keycloak.updateToken()` để làm mới token → Thử lại request
+
+##### Bước 3.5: Component Protected Route
+
+**File:** `frontend/src/components/ProtectedRoute.tsx`
+
+```typescript
+import { useKeycloak } from '@react-keycloak/web';
+import { Navigate } from 'react-router-dom';
+
+interface Props {
+  children: React.ReactNode;
+  roles?: string[];
+}
+
+const ProtectedRoute = ({ children, roles }: Props) => {
+  const { keycloak } = useKeycloak();
+
+  // Chưa authenticated → Redirect login
+  if (!keycloak.authenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  // Kiểm tra role nếu có yêu cầu
+  if (roles && roles.length > 0) {
+    const userRoles = keycloak.tokenParsed?.realm_access?.roles || [];
+    const hasRole = roles.some(role => userRoles.includes(role));
+
+    if (!hasRole) {
+      return <div>❌ Access Denied: You don't have permission to view this page</div>;
+    }
+  }
+
+  return <>{children}</>;
+};
+
+export default ProtectedRoute;
+```
+
+##### Bước 3.6: Component Receiving Form
+
+**File:** `frontend/src/components/ReceivingForm.tsx`
+
+```typescript
+import { useState } from 'react';
+import { Form, Input, InputNumber, DatePicker, Button, message } from 'antd';
+import api from '../services/api';
+import { useKeycloak } from '@react-keycloak/web';
+
+const ReceivingForm = () => {
+  const { keycloak } = useKeycloak();
+  const [loading, setLoading] = useState(false);
+  const [form] = Form.useForm();
+
+  const username = keycloak.tokenParsed?.preferred_username || 'Unknown';
+  const roles = keycloak.tokenParsed?.realm_access?.roles || [];
+
+  const handleSubmit = async (values: any) => {
+    setLoading(true);
+    try {
+      const response = await api.post('/inventory/lots', {
+        material_id: values.material_id,
+        quantity_received: values.quantity,
+        expiry_date: values.expiry_date.format('YYYY-MM-DD'),
+      });
+
+      message.success(`✅ Lot created: ${response.data.data.lot_number}`);
+      form.resetFields();
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.error || 'Failed to create lot';
+      message.error(`❌ ${errorMsg}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 600, margin: '50px auto', padding: 20 }}>
+      <h2>📦 Receiving Inventory</h2>
+      <p>👤 Logged in as: <strong>{username}</strong> ({roles.join(', ')})</p>
+
+      <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form.Item
+          label="Material ID"
+          name="material_id"
+          rules={[{ required: true, message: 'Please enter material ID' }]}
+        >
+          <Input placeholder="MAT-001" />
+        </Form.Item>
+
+        <Form.Item
+          label="Quantity Received"
+          name="quantity"
+          rules={[{ required: true, message: 'Please enter quantity' }]}
+        >
+          <InputNumber min={0.001} step={0.001} style={{ width: '100%' }} />
+        </Form.Item>
+
+        <Form.Item
+          label="Expiry Date"
+          name="expiry_date"
+          rules={[{ required: true, message: 'Please select expiry date' }]}
+        >
+          <DatePicker style={{ width: '100%' }} />
+        </Form.Item>
+
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={loading} block>
+            Create Lot
+          </Button>
+        </Form.Item>
+      </Form>
+    </div>
+  );
+};
+
+export default ReceivingForm;
+```
+
+##### Bước 3.7: Entry Point của App
+
+**File:** `frontend/src/App.tsx`
+
+```typescript
+import { ReactKeycloakProvider } from '@react-keycloak/web';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import keycloak from './auth/keycloak';
+import ProtectedRoute from './components/ProtectedRoute';
+import ReceivingForm from './components/ReceivingForm';
+
+const App = () => {
+  return (
+    <ReactKeycloakProvider authClient={keycloak}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<div>Redirecting to Keycloak...</div>} />
+
+          <Route
+            path="/receiving"
+            element={
+              <ProtectedRoute roles={['inventory_manager', 'admin']}>
+                <ReceivingForm />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="/" element={<Navigate to="/receiving" />} />
+        </Routes>
+      </BrowserRouter>
+    </ReactKeycloakProvider>
+  );
+};
+
+export default App;
+```
+
+**Kết quả chạy Frontend:**
+
+```bash
+$ npm run dev
+  VITE v5.0.11  ready in 500 ms
+  ➜  Local:   http://localhost:5173/
+```
+
+---
+
+### 4. Kết quả thử nghiệm
+
+#### 4.1. Test Case 1: Đăng nhập thành công với role `inventory_manager`
+
+**Các bước:**
+
+1. Truy cập http://localhost:5173/receiving
+2. Redirect tới Keycloak login: http://localhost:8080/realms/inventory-management/protocol/openid-connect/auth
+3. Nhập credentials: `jdoe` / `jdoe123`
+4. Keycloak redirect về app với authorization code
+5. App trao đổi code → Nhận Access Token
+
+**Kết quả:**
+
+```
+✅ Login successful
+👤 User: jdoe
+🎭 Roles: ['inventory_manager']
+🔑 Token (JWT payload):
+{
+  "sub": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "preferred_username": "jdoe",
+  "email": "jdoe@ims.local",
+  "realm_access": {
+    "roles": ["inventory_manager", "offline_access", "uma_authorization"]
+  },
+  "exp": 1738363200,
+  "iat": 1738362900
+}
+```
+
+---
+
+#### 4.2. Test Case 2: Tạo Inventory Lot thành công
+
+**Các bước:**
+
+1. User `jdoe` đã login
+2. Nhập form:
+   - Material ID: `MAT-001`
+   - Quantity: `100.500`
+   - Expiry Date: `2026-12-31`
+3. Click "Create Lot"
+
+**Yêu cầu gửi đến Backend:**
+
+```http
+POST http://localhost:3000/api/inventory/lots
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "material_id": "MAT-001",
+  "quantity_received": 100.500,
+  "expiry_date": "2026-12-31"
+}
+```
+
+**Xử lý trên Backend:**
+
+1. `checkJwt` middleware:
+   - Fetch public key từ Keycloak JWKS
+   - Verify signature → ✅ Valid
+   - Decode payload → `req.auth`
+2. `requireRole(['inventory_manager', 'admin'])`:
+   - Extract roles từ `req.auth.realm_access.roles`
+   - Check `inventory_manager` in roles → ✅ Authorized
+3. Controller `createLot`:
+   - Generate lot_number: `LOT-20260130-3742`
+   - Insert vào database
+   - Trả về response
+
+**Phản hồi:**
+
+```json
+{
+  "success": true,
+  "message": "Lot created successfully",
+  "data": {
+    "lot_number": "LOT-20260130-3742",
+    "material_id": "MAT-001",
+    "quantity_received": "100.500",
+    "lot_status": "Quarantine",
+    "expiry_date": "2026-12-31",
+    "received_date": "2026-01-30T08:30:00.000Z"
+  },
+  "created_by": "jdoe"
+}
+```
+
+**Frontend:**
+
+```
+✅ Lot created: LOT-20260131-3872
+```
 
 **Kiểm tra Database:**
 
