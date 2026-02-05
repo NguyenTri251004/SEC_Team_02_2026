@@ -177,11 +177,13 @@ GRANT ALL PRIVILEGES ON DATABASE inventory_db TO postgres;
 ```
 
 **Khởi chạy:**
+
 ```bash
 $ docker-compose up -d
 ```
 
 **Xác nhận:**
+
 - ✅ Keycloak Admin Console: http://localhost:8080/admin (admin/admin)
 - ✅ PostgreSQL databases: `keycloak_db` và `inventory_db` đã được tạo
 
@@ -251,6 +253,7 @@ $ docker-compose up -d
 | viewer1  | viewer1@ims.local | View       | Only      | view123  | viewer            |
 
 **Các bước tạo user:**
+
 - Tạo user với thông tin trong bảng (username, email, first/last name)
 - Set password (tắt Temporary để không phải đổi lần đầu)
 - Assign realm role tương ứng
@@ -293,6 +296,7 @@ backend/
 ```
 
 ##### Bước 2.2: Dependencies chính
+
 - `express` - Web framework
 - `express-jwt` + `jwks-rsa` - JWT verification với Keycloak
 - `sequelize` + `pg` - PostgreSQL ORM
@@ -301,6 +305,7 @@ backend/
 ##### Bước 2.3: Auth Middleware
 
 **Cốt lõi JWT verification:**
+
 ```typescript
 export const checkJwt = expressjwt({
   secret: jwksRsa.expressJwtSecret({
@@ -314,11 +319,12 @@ export const checkJwt = expressjwt({
 ```
 
 **Role-based access control:**
+
 ```typescript
 export const requireRole = (allowedRoles: string[]) => {
   return (req, res, next) => {
     const userRoles = req.auth.realm_access?.roles || [];
-    const hasRole = allowedRoles.some(role => userRoles.includes(role));
+    const hasRole = allowedRoles.some((role) => userRoles.includes(role));
     if (!hasRole) return res.status(403).json({ error: "Forbidden" });
     next();
   };
@@ -326,6 +332,7 @@ export const requireRole = (allowedRoles: string[]) => {
 ```
 
 **Chức năng:**
+
 - `checkJwt`: Verify JWT signature bằng Keycloak public key (JWKS)
 - `requireRole`: Check user roles từ token payload
 
@@ -336,35 +343,42 @@ export const requireRole = (allowedRoles: string[]) => {
 ##### Bước 2.5: Protected API Routes
 
 **Ví dụ route với role-based authorization:**
+
 ```typescript
 router.use(checkJwt); // Tất cả routes yêu cầu JWT
 
 // POST /api/inventory/lots - Chỉ inventory_manager và admin
-router.post("/lots",
+router.post(
+  "/lots",
   requireRole(["inventory_manager", "admin"]),
-  inventoryController.createLot
+  inventoryController.createLot,
 );
 
 // PATCH /api/inventory/lots/:id/status - Chỉ quality_control và admin
-router.patch("/lots/:id/status",
+router.patch(
+  "/lots/:id/status",
   requireRole(["quality_control", "admin"]),
-  inventoryController.updateLotStatus
+  inventoryController.updateLotStatus,
 );
 ```
 
 ##### Bước 2.6: Controller Logic
 
 **Ví dụ createLot:**
+
 ```typescript
 export const createLot = async (req, res) => {
   const { material_id, quantity_received, expiry_date } = req.body;
-  const lot_number = `LOT-${new Date().toISOString().slice(0,10)}-${Math.random()}`;
-  
+  const lot_number = `LOT-${new Date().toISOString().slice(0, 10)}-${Math.random()}`;
+
   const newLot = await InventoryLot.create({
-    lot_number, material_id, quantity_received, expiry_date,
-    lot_status: "Quarantine"
+    lot_number,
+    material_id,
+    quantity_received,
+    expiry_date,
+    lot_status: "Quarantine",
   });
-  
+
   res.status(201).json({ success: true, data: newLot });
 };
 ```
@@ -402,6 +416,7 @@ frontend/
 ```
 
 ##### Bước 3.2: Dependencies chính
+
 - `react` + `react-router-dom` - UI framework và routing
 - `@react-keycloak/web` + `keycloak-js` - Keycloak integration
 - `axios` - HTTP client với interceptors
@@ -425,8 +440,9 @@ export default keycloak;
 ##### Bước 3.4: Axios Interceptor
 
 **Request interceptor - Auto attach JWT:**
+
 ```typescript
-api.interceptors.request.use(config => {
+api.interceptors.request.use((config) => {
   if (keycloak.token) {
     config.headers.Authorization = `Bearer ${keycloak.token}`;
   }
@@ -435,15 +451,16 @@ api.interceptors.request.use(config => {
 ```
 
 **Response interceptor - Auto refresh token:**
+
 ```typescript
 api.interceptors.response.use(
-  response => response,
-  async error => {
+  (response) => response,
+  async (error) => {
     if (error.response?.status === 401) {
       await keycloak.updateToken(30);
       return axios.request(error.config); // Retry
     }
-  }
+  },
 );
 ```
 
@@ -452,14 +469,14 @@ api.interceptors.response.use(
 ```typescript
 const ProtectedRoute = ({ children, roles }) => {
   const { keycloak } = useKeycloak();
-  
+
   if (!keycloak.authenticated) return <Navigate to="/login" />;
-  
+
   const userRoles = keycloak.tokenParsed?.realm_access?.roles || [];
   const hasRole = roles.some(role => userRoles.includes(role));
-  
+
   if (!hasRole) return <div>❌ Access Denied</div>;
-  
+
   return <>{children}</>;
 };
 ```
@@ -467,12 +484,13 @@ const ProtectedRoute = ({ children, roles }) => {
 ##### Bước 3.6: Receiving Form Component
 
 **Form gửi POST request:**
+
 ```typescript
 const handleSubmit = async (values) => {
-  const response = await api.post('/inventory/lots', {
+  const response = await api.post("/inventory/lots", {
     material_id: values.material_id,
     quantity_received: values.quantity,
-    expiry_date: values.expiry_date
+    expiry_date: values.expiry_date,
   });
   message.success(`Lot created: ${response.data.data.lot_number}`);
 };
@@ -504,91 +522,94 @@ const App = () => (
 
 #### 4.1. Test Case 1: Đăng nhập thành công
 
-**Flow:**
-1. Truy cập http://localhost:5173/receiving → Redirect tới Keycloak
-2. Login với `jdoe` / `jdoe123`
-3. Keycloak redirect về app với authorization code
-4. App exchange code → Nhận Access Token
+**Luồng:**
+
+1. Truy cập http://localhost:5173/receiving → Chuyển hướng tới Keycloak
+2. Đăng nhập với `jdoe` / `jdoe123`
+3. Keycloak chuyển hướng về app kèm authorization code
+4. App gửi authorization code → Nhận access token truy cập
 
 **Kết quả:**
+
 ```
-✅ Login successful
-👤 User: jdoe
-🎭 Roles: ['inventory_manager']
-🔑 Token payload chứa: sub, preferred_username, realm_access.roles
+✅ Đăng nhập thành công
+👤 Người dùng: jdoe
+🎭 Vai trò: ['inventory_manager']
+🔑 Payload token chứa: sub, preferred_username, realm_access.roles
 ```
 
 ---
 
-#### 4.2. Test Case 2: Tạo Inventory Lot thành công
+#### 4.2. Test Case 2: Tạo lô tồn kho thành công
 
-**Input:**
+**Dữ liệu vào:**
+
 - Material ID: `MAT-001`, Quantity: `100.500`, Expiry: `2026-12-31`
 
-**Backend processing:**
-1. `checkJwt`: Verify JWT signature với Keycloak JWKS → ✅ Valid
-2. `requireRole`: Check `inventory_manager` in token roles → ✅ Authorized
-3. `createLot`: Generate lot number → Insert database → Return response
+**Xử lý backend:**
+
+1. `checkJwt`: Xác minh chữ ký JWT với Keycloak JWKS → ✅ Hợp lệ
+2. `requireRole`: Kiểm tra `inventory_manager` trong roles của token → ✅ Authorized
+3. `createLot`: Sinh mã lô → Ghi vào CSDL → Trả về phản hồi
 
 **Kết quả:**
+
 ```json
 { "success": true, "data": { "lot_number": "LOT-20260130-3742", ... } }
 ```
 
-✅ Lot được tạo trong database với status "Quarantine"
+✅ Lô được tạo trong CSDL với trạng thái "Quarantine"
 
 ---
 
 #### 4.3. Test Case 3: Từ chối truy cập với role `viewer`
 
-**Kịch bản:** Login với `viewer1` / `view123` → Cố truy cập `/receiving`
+**Kịch bản:** Đăng nhập với `viewer1` / `view123` → Cố truy cập `/receiving`
 
 **Kết quả:**
+
 - Frontend: `❌ Access Denied` (ProtectedRoute blocked)
 - Backend (nếu bypass): `403 Forbidden - Insufficient permissions`
 
-✅ Role-based authorization hoạt động đúng
+✅ Phân quyền theo vai trò hoạt động đúng
 
 ---
 
-#### 4.4. Test Case 4: Auto Token Refresh
+#### 4.4. Test Case 4: Tự động làm mới token
 
-**Kịch bản:** Token expires (5 min) → User submit form sau expiry
+**Kịch bản:** Token hết hạn (5 phút) → Người dùng gửi form sau khi hết hạn
 
 **Xử lý:**
-1. Backend reject với 401 (Invalid token)
-2. Frontend interceptor bắt lỗi → Call `keycloak.updateToken(30)`
-3. Retry request với token mới → ✅ Success
 
-**Kết quả:** User không nhận ra token đã được refresh tự động
+1. Backend từ chối với 401 (Token không hợp lệ)
+2. Frontend interceptor bắt lỗi → Gọi `keycloak.updateToken(30)`
+3. Gửi lại request với token mới → ✅ Thành công
+
+**Kết quả:** Người dùng không nhận ra token đã được làm mới tự động
 
 ---
 
-#### 4.5. Test Case 5: Logout Flow
+#### 4.5. Test Case 5: Luồng đăng xuất
 
-**Flow:** User click Logout → `keycloak.logout()` → Keycloak invalidates session → Redirect to login
+**Luồng:** Người dùng bấm Logout → `keycloak.logout()` → Keycloak hủy phiên → Chuyển hướng tới trang đăng nhập
 
 **Kết quả:**
-- ✅ Token cleared từ browser
-- ✅ Keycloak session terminated
-- ✅ Truy cập protected routes → Redirect to Keycloak login
+
+- ✅ Token được xóa khỏi trình duyệt
+- ✅ Session Keycloak đã kết thúc
+- ✅ Truy cập các route được bảo vệ → Chuyển hướng tới trang đăng nhập Keycloak
 
 ---
 
 ### 5. Thách thức kỹ thuật và giải pháp
 
-| Thách thức | Vấn đề | Giải pháp |
-|-----------|--------|----------|
-| **CORS** | Frontend (5173) và Backend (3000) khác origin | Cấu hình `cors({ origin: "http://localhost:5173" })` |
-| **JWKS Cache** | Mỗi request fetch Keycloak public key → Chậm | Bật `cache: true` và `rateLimit: true` trong jwks-rsa |
-| **Token Refresh** | Token expires giữa chừng → Request fail | Dùng `autoRefreshToken: true` trong ReactKeycloakProvider |
-| **Role Mapping** | JWT chứa nhiều default roles | Filter chỉ application roles: `admin`, `inventory_manager`, etc. |
+| Thách thức         | Vấn đề                                                                               | Giải pháp                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| **CORS**           | Frontend (5173) và Backend (3000) khác origin                                        | Cấu hình `cors({ origin: "http://localhost:5173" })`                         |
+| **JWKS Cache**     | Mỗi request fetch Keycloak public key → Chậm                                         | Bật `cache: true` và `rateLimit: true` trong jwks-rsa                        |
+| **Token Refresh**  | Token expires giữa chừng → Request fail                                              | Dùng `autoRefreshToken: true` trong ReactKeycloakProvider                    |
+| **Role Mapping**   | JWT chứa nhiều default roles                                                         | Filter chỉ application roles: `admin`, `inventory_manager`, etc.             |
 | **Audience Claim** | Backend expect `aud: "inventory-backend"` nhưng token có `aud: "inventory-frontend"` | Thêm Audience Mapper trong Keycloak Client Scopes để inject backend audience |
-
-**Lợi ích Audience Mapper:**
-- ✅ Token chỉ dùng cho backend API được chỉ định
-- ✅ Ngăn token reuse từ frontend khác
-- ✅ Tuân thủ OAuth 2.0 best practices
 
 ---
 
@@ -749,10 +770,13 @@ npm run dev
 ## Elasticsearch
 
 ### 1. Tổng quan & Mục tiêu
+
 Tài liệu này cung cấp toàn bộ mã nguồn và cấu hình để triển khai tính năng **Tìm kiếm ngữ nghĩa (Semantic Search)**. Hệ thống giải quyết vấn đề chênh lệch ngôn ngữ (tìm 'Cà phê' ra 'Coffee') và lọc nhiễu thông minh.
 
 ### 2. Kiến trúc hệ thống
+
 Chúng ta sẽ xây dựng 3 thành phần chính:
+
 1.  **Database (PostgreSQL):** Lưu dữ liệu gốc (Master Data).
 2.  **Search Engine (Elasticsearch):** Lưu Vector và thực hiện tìm kiếm.
 3.  **Application (Node.js):** Chuyển đổi văn bản thành Vector (Embedding) và điều phối tìm kiếm.
@@ -762,8 +786,10 @@ Chúng ta sẽ xây dựng 3 thành phần chính:
 ### 3. Thiết lập Môi trường (Infrastructure)
 
 #### 3.1. Elasticsearch với ICU Plugin
+
 Mặc định Elasticsearch không xử lý tốt tiếng Việt. Chúng ta cần build image riêng.
 **File:** `elasticsearch/Dockerfile`
+
 ```dockerfile
 FROM docker.elastic.co/elasticsearch/elasticsearch:8.12.0
 # Cài đặt plugin ICU để xử lý token tiếng Việt chính xác
@@ -771,8 +797,10 @@ RUN bin/elasticsearch-plugin install analysis-icu
 ```
 
 #### 3.2. Docker Compose
+
 Khởi tạo PostgreSQL và Elasticsearch.
 **File:** `docker-compose.yml`
+
 ```yaml
 version: "3.8"
 
@@ -807,6 +835,7 @@ services:
 Script này sẽ tự động chạy khi Docker khởi động để tạo bảng và dữ liệu mẫu. Lưu ý các trường hợp biên: Coffee (thực phẩm), Battery (điện tử), Solvent (hóa chất).
 
 **File:** `init-db.sql`
+
 ```sql
 -- 1. Tạo bảng Materials (Sản phẩm gốc)
 CREATE TABLE materials (
@@ -825,19 +854,19 @@ CREATE TABLE lots (
 
 -- 3. Insert Dữ liệu mẫu (Data Seeding)
 -- Case 1: Cà phê
-INSERT INTO materials (material_id, name, description, group_id) VALUES 
+INSERT INTO materials (material_id, name, description, group_id) VALUES
 ('MAT-FOOD-01', 'Organic Coffee Beans (Robusta)', 'High quality roasted beans from Vietnam highlands.', 'FOOD');
 
 -- Case 2: Pin năng lượng
-INSERT INTO materials (material_id, name, description, group_id) VALUES 
+INSERT INTO materials (material_id, name, description, group_id) VALUES
 ('MAT-ELEC-01', 'Li-Ion Battery 5000mAh', 'Rechargeable battery pack for industrial use.', 'ELECTRONICS');
 
 -- Case 3: Dung môi
-INSERT INTO materials (material_id, name, description, group_id) VALUES 
+INSERT INTO materials (material_id, name, description, group_id) VALUES
 ('MAT-CHEM-01', 'Ethanol Solvent 99%', 'Industrial grade cleaning solvent. Highly flammable.', 'CHEMICALS');
 
 -- 4. Tạo các Lô hàng
-INSERT INTO lots (lot_number, material_id, expiration_date) VALUES 
+INSERT INTO lots (lot_number, material_id, expiration_date) VALUES
 ('LOT-COFFEE-OLD', 'MAT-FOOD-01', '2024-01-01'), -- Đã hết hạn
 ('LOT-BATTERY-NEW', 'MAT-ELEC-01', '2027-12-31'), -- Còn hạn xa
 ('LOT-CHEM-2026', 'MAT-CHEM-01', '2026-06-15');   -- Hết hạn năm 2026
@@ -848,203 +877,227 @@ INSERT INTO lots (lot_number, material_id, expiration_date) VALUES
 ### 5. Mã Nguồn Core (Implementation)
 
 #### 5.1. Worker Đồng bộ dữ liệu (`sync.js`)
+
 File này thực hiện 'Data Purification' (Làm sạch dữ liệu) và đẩy vào Elasticsearch. Nó sử dụng thư viện `@xenova/transformers` để tạo Vector.
 
 **File:** `src/sync.js`
+
 ```javascript
-const { Client } = require('@elastic/elasticsearch');
-const { Pool } = require('pg');
+const { Client } = require("@elastic/elasticsearch");
+const { Pool } = require("pg");
 
 // 1. Kết nối Database & ES
 const pgPool = new Pool({
-    user: 'postgres', password: 'password', host: 'localhost', database: 'inventory_db', port: 5432
+  user: "postgres",
+  password: "password",
+  host: "localhost",
+  database: "inventory_db",
+  port: 5432,
 });
-const esClient = new Client({ node: 'http://localhost:9200' });
+const esClient = new Client({ node: "http://localhost:9200" });
 
 async function runSync() {
-    console.log("🚀 Bắt đầu đồng bộ...");
-    try {
-        // 2. Load AI Model (BGE-M3)
-        const { pipeline } = await import('@xenova/transformers');
-        const generateEmbedding = await pipeline('feature-extraction', 'Xenova/bge-m3');
+  console.log("🚀 Bắt đầu đồng bộ...");
+  try {
+    // 2. Load AI Model (BGE-M3)
+    const { pipeline } = await import("@xenova/transformers");
+    const generateEmbedding = await pipeline(
+      "feature-extraction",
+      "Xenova/bge-m3",
+    );
 
-        // 3. Cấu hình Index với ICU Tokenizer (Quan trọng cho tiếng Việt)
-        const indexName = 'warehouse_vectors';
-        if (await esClient.indices.exists({ index: indexName })) {
-            await esClient.indices.delete({ index: indexName });
-        }
+    // 3. Cấu hình Index với ICU Tokenizer (Quan trọng cho tiếng Việt)
+    const indexName = "warehouse_vectors";
+    if (await esClient.indices.exists({ index: indexName })) {
+      await esClient.indices.delete({ index: indexName });
+    }
 
-        await esClient.indices.create({
-            index: indexName,
-            settings: {
-                analysis: {
-                    analyzer: {
-                        vietnamese_analyzer: {
-                            type: "custom",
-                            tokenizer: "icu_tokenizer",
-                            filter: ["lowercase", "icu_folding"]
-                        }
-                    }
-                }
+    await esClient.indices.create({
+      index: indexName,
+      settings: {
+        analysis: {
+          analyzer: {
+            vietnamese_analyzer: {
+              type: "custom",
+              tokenizer: "icu_tokenizer",
+              filter: ["lowercase", "icu_folding"],
             },
-            mappings: {
-                properties: {
-                    name: { type: 'text', analyzer: 'vietnamese_analyzer' },
-                    // Vector 1024 chiều
-                    description_vector: { type: 'dense_vector', dims: 1024, index: true, similarity: 'cosine' } 
-                }
-            }
-        });
+          },
+        },
+      },
+      mappings: {
+        properties: {
+          name: { type: "text", analyzer: "vietnamese_analyzer" },
+          // Vector 1024 chiều
+          description_vector: {
+            type: "dense_vector",
+            dims: 1024,
+            index: true,
+            similarity: "cosine",
+          },
+        },
+      },
+    });
 
-        // 4. Lấy dữ liệu từ PostgreSQL
-        const res = await pgPool.query(`
+    // 4. Lấy dữ liệu từ PostgreSQL
+    const res = await pgPool.query(`
             SELECT m.material_id, m.name, m.description, m.group_id, l.expiration_date, l.lot_number
             FROM materials m JOIN lots l ON m.material_id = l.material_id
         `);
 
-        // 5. Tạo Vector và Index
-        const dataset = [];
-        for (const row of res.rows) {
-            // Data Purification: Chỉ ghép các trường quan trọng, bỏ qua ngày tháng để tránh nhiễu vector
-            const textToEmbed = [row.group_id, row.name, row.description]
-                .filter(Boolean)
-                .join('. ')
-                .normalize('NFC'); // Chuẩn hóa Unicode
+    // 5. Tạo Vector và Index
+    const dataset = [];
+    for (const row of res.rows) {
+      // Data Purification: Chỉ ghép các trường quan trọng, bỏ qua ngày tháng để tránh nhiễu vector
+      const textToEmbed = [row.group_id, row.name, row.description]
+        .filter(Boolean)
+        .join(". ")
+        .normalize("NFC"); // Chuẩn hóa Unicode
 
-            const output = await generateEmbedding(textToEmbed, { pooling: 'cls', normalize: true });
+      const output = await generateEmbedding(textToEmbed, {
+        pooling: "cls",
+        normalize: true,
+      });
 
-            dataset.push({ index: { _index: indexName, _id: row.lot_number } });
-            dataset.push({
-                ...row,
-                // Lưu vector vào ES
-                description_vector: Array.from(output.data) 
-            });
-            console.log(`Processed: ${row.name}`);
-        }
-
-        if (dataset.length > 0) {
-            await esClient.bulk({ refresh: true, body: dataset });
-        }
-        console.log("✅ Đồng bộ hoàn tất!");
-
-    } catch (err) {
-        console.error(err);
-    } finally {
-        await pgPool.end();
+      dataset.push({ index: { _index: indexName, _id: row.lot_number } });
+      dataset.push({
+        ...row,
+        // Lưu vector vào ES
+        description_vector: Array.from(output.data),
+      });
+      console.log(`Processed: ${row.name}`);
     }
+
+    if (dataset.length > 0) {
+      await esClient.bulk({ refresh: true, body: dataset });
+    }
+    console.log("✅ Đồng bộ hoàn tất!");
+  } catch (err) {
+    console.error(err);
+  } finally {
+    await pgPool.end();
+  }
 }
 
 runSync();
 ```
 
 #### 5.2. API Tìm kiếm Thông minh (`server.js`)
+
 File này xử lý logic Hybrid Search và Date Parsing (phân tích ngày tháng từ ngôn ngữ tự nhiên).
 
 **File:** `src/server.js`
+
 ```javascript
-const express = require('express');
-const { Client } = require('@elastic/elasticsearch');
+const express = require("express");
+const { Client } = require("@elastic/elasticsearch");
 const app = express();
 app.use(express.json());
 
-const esClient = new Client({ node: 'http://localhost:9200' });
+const esClient = new Client({ node: "http://localhost:9200" });
 let embedder = null;
 
 // Khởi tạo Model 1 lần duy nhất khi server start
 (async () => {
-    const { pipeline } = await import('@xenova/transformers');
-    embedder = await pipeline('feature-extraction', 'Xenova/bge-m3');
-    console.log("🧠 AI Model đã sẵn sàng!");
+  const { pipeline } = await import("@xenova/transformers");
+  embedder = await pipeline("feature-extraction", "Xenova/bge-m3");
+  console.log("🧠 AI Model đã sẵn sàng!");
 })();
 
-app.get('/search', async (req, res) => {
-    let { q } = req.query;
-    if (!q) return res.send([]);
+app.get("/search", async (req, res) => {
+  let { q } = req.query;
+  if (!q) return res.send([]);
 
-    try {
-        // --- BƯỚC 1: Xử lý Lọc Ngày (NLP Rule-based) ---
-        // Ví dụ input: "Expires in 2026"
-        let dateFilters = [];
-        const dateRegex = /(expire|expires|expired)s+(?:in|on|before|after)?s*(d{4})/i;
-        const match = q.match(dateRegex);
-        
-        if (match) {
-            const year = parseInt(match[2]);
-            const start = `${year}-01-01`;
-            const end = `${year + 1}-01-01`;
-            
-            // Tạo filter range cho Elasticsearch
-            dateFilters.push({ range: { expiration_date: { gte: start, lt: end } } });
-            
-            // Xóa phần ngày tháng khỏi query text để không làm nhiễu vector
-            q = q.replace(dateRegex, '').trim();
-        }
+  try {
+    // --- BƯỚC 1: Xử lý Lọc Ngày (NLP Rule-based) ---
+    // Ví dụ input: "Expires in 2026"
+    let dateFilters = [];
+    const dateRegex =
+      /(expire|expires|expired)s+(?:in|on|before|after)?s*(d{4})/i;
+    const match = q.match(dateRegex);
 
-        // --- BƯỚC 2: Tạo Embedding Vector ---
-        // Nếu query rỗng (chỉ tìm ngày), bỏ qua bước embedding
-        let queryVector = null;
-        if (q.length > 0) {
-            const cleanQuery = `Represent this sentence for searching relevant passages: ${q.normalize('NFC')}`;
-            const output = await embedder(cleanQuery, { pooling: 'cls', normalize: true });
-            queryVector = Array.from(output.data);
-        }
+    if (match) {
+      const year = parseInt(match[2]);
+      const start = `${year}-01-01`;
+      const end = `${year + 1}-01-01`;
 
-        // --- BƯỚC 3: Cấu hình Hybrid Search ---
-        const searchBody = {
-            index: 'warehouse_vectors',
-            min_score: 0.0,
-            query: {
-                bool: {
-                    must: [],
-                    should: [],
-                    filter: dateFilters // Áp dụng filter ngày
-                }
-            }
-        };
+      // Tạo filter range cho Elasticsearch
+      dateFilters.push({ range: { expiration_date: { gte: start, lt: end } } });
 
-        if (queryVector) {
-            // Chiến lược Hybrid: Kết hợp Vector (Meaning) và Text (Keyword)
-            searchBody.query.bool.should.push(
-                // Keyword Search: Tie-breaker (Boost thấp)
-                { multi_match: { query: q, fields: ['name', 'group_id'], boost: 0.2 } }
-            );
-            
-            // Semantic Search: Main driver (Boost cao)
-            searchBody.knn = {
-                field: 'description_vector',
-                query_vector: queryVector,
-                k: 10,
-                num_candidates: 100,
-                boost: 10.0,
-                filter: dateFilters.length > 0 ? { bool: { filter: dateFilters } } : undefined
-            };
-        } else {
-            // Nếu chỉ tìm theo ngày, dùng match_all
-            searchBody.query.bool.must.push({ match_all: {} });
-        }
-
-        // --- BƯỚC 4: Thực thi và Trả kết quả ---
-        const result = await esClient.search(searchBody);
-        
-        const hits = result.hits.hits.map(hit => ({
-            id: hit._id,
-            score: hit._score,
-            source: {
-                name: hit._source.name,
-                lot: hit._source.lot_number,
-                expiry: hit._source.expiration_date
-            }
-        }));
-
-        res.json(hits);
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).send({ error: error.message });
+      // Xóa phần ngày tháng khỏi query text để không làm nhiễu vector
+      q = q.replace(dateRegex, "").trim();
     }
+
+    // --- BƯỚC 2: Tạo Embedding Vector ---
+    // Nếu query rỗng (chỉ tìm ngày), bỏ qua bước embedding
+    let queryVector = null;
+    if (q.length > 0) {
+      const cleanQuery = `Represent this sentence for searching relevant passages: ${q.normalize("NFC")}`;
+      const output = await embedder(cleanQuery, {
+        pooling: "cls",
+        normalize: true,
+      });
+      queryVector = Array.from(output.data);
+    }
+
+    // --- BƯỚC 3: Cấu hình Hybrid Search ---
+    const searchBody = {
+      index: "warehouse_vectors",
+      min_score: 0.0,
+      query: {
+        bool: {
+          must: [],
+          should: [],
+          filter: dateFilters, // Áp dụng filter ngày
+        },
+      },
+    };
+
+    if (queryVector) {
+      // Chiến lược Hybrid: Kết hợp Vector (Meaning) và Text (Keyword)
+      searchBody.query.bool.should.push(
+        // Keyword Search: Tie-breaker (Boost thấp)
+        { multi_match: { query: q, fields: ["name", "group_id"], boost: 0.2 } },
+      );
+
+      // Semantic Search: Main driver (Boost cao)
+      searchBody.knn = {
+        field: "description_vector",
+        query_vector: queryVector,
+        k: 10,
+        num_candidates: 100,
+        boost: 10.0,
+        filter:
+          dateFilters.length > 0
+            ? { bool: { filter: dateFilters } }
+            : undefined,
+      };
+    } else {
+      // Nếu chỉ tìm theo ngày, dùng match_all
+      searchBody.query.bool.must.push({ match_all: {} });
+    }
+
+    // --- BƯỚC 4: Thực thi và Trả kết quả ---
+    const result = await esClient.search(searchBody);
+
+    const hits = result.hits.hits.map((hit) => ({
+      id: hit._id,
+      score: hit._score,
+      source: {
+        name: hit._source.name,
+        lot: hit._source.lot_number,
+        expiry: hit._source.expiration_date,
+      },
+    }));
+
+    res.json(hits);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: error.message });
+  }
 });
 
-app.listen(3001, () => console.log('Server running on port 3001'));
+app.listen(3001, () => console.log("Server running on port 3001"));
 ```
 
 ---
@@ -1052,19 +1105,23 @@ app.listen(3001, () => console.log('Server running on port 3001'));
 ### 6. Kết quả Kiểm thử (Test Cases)
 
 #### 6.1. Test Case 1: Tìm kiếm chính xác (English)
+
 - Input: `q=Coffee`
 - Result: Score 7.59 (Hybrid Strong Match) compared to Batteries: 6.4 and Ethanol Solvent: 6.78
 
 #### 6.2. Test Case 2: Tìm kiếm ngữ nghĩa đa ngôn ngữ (Vietnamese)
+
 - Input: `q=Cà phê`
 - Result: Score 7.35 (Hybrid Strong Match) compared to Batteries: 6.26 and Ethanol Solvent: 6.62
 
 #### 6.3. Test Case 3: Metadata Filtering
+
 - Input: `q=Expires in 2026`
 - Logic: NLP parses "2026" -> Creates Date Range Filter.
 - Result: Found "Ethanol Solvent" (Expires 2026-07). Excluded Battery (2027) and Coffee (2024).
 
 ### 7. Kết luận
+
 POC này chứng minh khả năng tích hợp tìm kiếm Semantic Search vào hệ thống hiện tại mà không cần thay đổi cấu trúc dữ liệu chính. Mã nguồn trên đã sẵn sàng để tích hợp vào `backend` service.
 
 **Ngày hoàn thành POC:** 4 tháng 2, 2026  
