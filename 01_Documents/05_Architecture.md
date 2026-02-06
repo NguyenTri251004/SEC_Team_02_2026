@@ -76,7 +76,7 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 │  │  DEPLOYMENT & ORCHESTRATION                                              │ │
 │  │  ────────────────────────────────────────────────────────────────────── │ │
 │  │  • Docker Containers (All services)                                      │ │
-│  │  • Kubernetes/Docker Compose (Orchestration)                             │ │
+│  │  • Docker Compose (Orchestration)                                        │ │
 │  │  • GitHub Actions (CI/CD Pipeline)                                       │ │
 │  │  • PostgreSQL Backups (Automated)                                        │ │
 │  └──────────────────────────────────────────────────────────────────────────┘ │
@@ -106,7 +106,646 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 
 ---
 
-### 2.2 Góc nhìn phát triển (Development View)
+### 2.2 Góc nhìn logic (Logical View)
+
+Logical View mô tả **các thành phần chính** của hệ thống, **mối quan hệ** giữa chúng, và **cách chúng tương tác** với nhau để thực hiện các chức năng nghiệp vụ.
+
+#### 2.2.1 Component Diagram - Sơ đồ thành phần tổng thể
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                        LOGICAL ARCHITECTURE                                 │
+│                     (Component & Relationship View)                         │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  ┌──────────────────────────────────────────────────────────────────────┐ │
+│  │  CLIENT TIER                                                          │ │
+│  │  ──────────────────────────────────────────────────────────────────  │ │
+│  │                                                                        │ │
+│  │  ┌────────────────────────────────────────────────────────────────┐  │ │
+│  │  │  Frontend Component (React SPA)                                 │  │ │
+│  │  │  ────────────────────────────────────────────────────────────  │  │ │
+│  │  │  Responsibilities:                                              │  │ │
+│  │  │  • User interface rendering                                     │  │ │
+│  │  │  • Client-side routing & state management                       │  │ │
+│  │  │  • Form validation & user input handling                        │  │ │
+│  │  │  • Real-time UI updates (WebSocket)                            │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  Sub-components:                                                 │  │ │
+│  │  │  ├─ Inventory Management UI                                     │  │ │
+│  │  │  ├─ QC Dashboard                                                │  │ │
+│  │  │  ├─ Production Tracking UI                                      │  │ │
+│  │  │  ├─ Reporting & Analytics UI                                    │  │ │
+│  │  │  └─ Authentication UI (Keycloak integration)                    │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  Technologies:                                                   │  │ │
+│  │  │  • React 18 + TypeScript                                        │  │ │
+│  │  │  • Ant Design (UI components)                                   │  │ │
+│  │  │  • React Query (server state)                                   │  │ │
+│  │  │  • Zustand (client state)                                       │  │ │
+│  │  │  • React Router v6                                              │  │ │
+│  │  └────────────────────────────────────────────────────────────────┘  │ │
+│  └──────────────────────────────────────────────────────────────────────┘ │
+│                              │                                             │
+│                              │ REST API (JSON)                             │
+│                              │ WebSocket (Real-time)                       │
+│                              │ OAuth2/OIDC (Auth)                          │
+│                              ▼                                             │
+│  ┌──────────────────────────────────────────────────────────────────────┐ │
+│  │  APPLICATION TIER                                                     │ │
+│  │  ──────────────────────────────────────────────────────────────────  │ │
+│  │                                                                        │ │
+│  │  ┌────────────────────────────────────────────────────────────────┐  │ │
+│  │  │  API Gateway Component (NGINX/Kong)                             │  │ │
+│  │  │  ────────────────────────────────────────────────────────────  │  │ │
+│  │  │  Responsibilities:                                              │  │ │
+│  │  │  • Request routing & load balancing                             │  │ │
+│  │  │  • SSL termination                                              │  │ │
+│  │  │  • JWT validation (initial check)                               │  │ │
+│  │  │  • Rate limiting & throttling                                   │  │ │
+│  │  │  • CORS policy enforcement                                      │  │ │
+│  │  └────────────────────────────────────────────────────────────────┘  │ │
+│  │                              ▼                                         │ │
+│  │  ┌────────────────────────────────────────────────────────────────┐  │ │
+│  │  │  Backend API Component (Node.js + Express)                      │  │ │
+│  │  │  ────────────────────────────────────────────────────────────  │  │ │
+│  │  │  Responsibilities:                                              │  │ │
+│  │  │  • Business logic orchestration                                 │  │ │
+│  │  │  • API endpoint implementation                                  │  │ │
+│  │  │  • Request/Response handling                                    │  │ │
+│  │  │  • WebSocket server (real-time events)                         │  │ │
+│  │  │  • Event publishing/subscribing                                 │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  Core Modules (Bounded Contexts):                               │  │ │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
+│  │  │  │ InventoryModule                                           │  │  │ │
+│  │  │  │ • MaterialService (CRUD materials)                        │  │  │ │
+│  │  │  │ • LotService (lot tracking, status management)            │  │  │ │
+│  │  │  │ • TransactionService (receive, issue, adjust)             │  │  │ │
+│  │  │  │ • StockReservationService (reserve/release stock)         │  │  │ │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
+│  │  │  │ QualityControlModule                                      │  │  │ │
+│  │  │  │ • QCTestService (create tests, record results)            │  │  │ │
+│  │  │  │ • ApprovalWorkflowService (approve/reject lots)           │  │  │ │
+│  │  │  │ • QuarantineService (quarantine enforcement)              │  │  │ │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
+│  │  │  │ ProductionModule                                          │  │  │ │
+│  │  │  │ • BatchService (batch creation, tracking)                 │  │  │ │
+│  │  │  │ • ComponentTrackingService (material → batch)            │  │  │ │
+│  │  │  │ • ProductionHistoryService (audit trail)                  │  │  │ │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
+│  │  │  │ ReportingModule                                           │  │  │ │
+│  │  │  │ • ReportService (generate reports)                        │  │  │ │
+│  │  │  │ • AnalyticsService (KPI calculations)                     │  │  │ │
+│  │  │  │ • AuditService (audit trail queries)                      │  │  │ │
+│  │  │  │ • TraceabilityService (lot → batch → product)           │  │  │ │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  Cross-Cutting Services:                                        │  │ │
+│  │  │  • AuthService (JWT verification with Keycloak)                │  │ │
+│  │  │  • ValidationService (request validation)                       │  │ │
+│  │  │  • LoggingService (structured logging)                          │  │ │
+│  │  │  • EventBusService (internal event pub/sub)                    │  │ │
+│  │  │  • CacheService (Redis integration)                             │  │ │
+│  │  └────────────────────────────────────────────────────────────────┘  │ │
+│  │                              ▼                                         │ │
+│  │  ┌────────────────────────────────────────────────────────────────┐  │ │
+│  │  │  AI/ML Services Component (FastAPI)                            │  │ │
+│  │  │  ────────────────────────────────────────────────────────────  │  │ │
+│  │  │  Responsibilities:                                              │  │ │
+│  │  │  • AI model inference & predictions                             │  │ │
+│  │  │  • ML pipeline orchestration                                    │  │ │
+│  │  │  • Semantic search processing                                   │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  Services:                                                       │  │ │
+│  │  │  • SemanticSearchService (embeddings + kNN search)             │  │ │
+│  │  │  • DemandForecastService (Prophet + LSTM)                      │  │ │
+│  │  │  • AnomalyDetectionService (Isolation Forest)                  │  │ │
+│  │  │  • ComputerVisionService (YOLOv8 QC)                           │  │ │
+│  │  │  • ChatbotService (Claude API integration)                     │  │ │
+│  │  └────────────────────────────────────────────────────────────────┘  │ │
+│  └──────────────────────────────────────────────────────────────────────┘ │
+│                              │                                             │
+│                              │ Database Queries (SQL)                      │
+│                              │ Cache Operations (Redis)                    │
+│                              │ Search Queries (Elasticsearch)              │
+│                              ▼                                             │
+│  ┌──────────────────────────────────────────────────────────────────────┐ │
+│  │  DATA TIER                                                            │ │
+│  │  ──────────────────────────────────────────────────────────────────  │ │
+│  │                                                                        │ │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────┐ │ │
+│  │  │ Auth Component │  │ Data Component │  │ Search Component       │ │ │
+│  │  │ (Keycloak)     │  │ (PostgreSQL)   │  │ (Elasticsearch)        │ │ │
+│  │  │                │  │                │  │                        │ │ │
+│  │  │ • User mgmt    │  │ • Inventory    │  │ • Full-text search     │ │ │
+│  │  │ • RBAC         │  │ • Transactions │  │ • Semantic search      │ │ │
+│  │  │ • SSO/OIDC     │  │ • QC data      │  │ • Vector embeddings    │ │ │
+│  │  │ • Token mgmt   │  │ • Production   │  │ • Log aggregation      │ │ │
+│  │  └────────────────┘  │ • Audit logs   │  └────────────────────────┘ │ │
+│  │                      └────────────────┘                              │ │
+│  │                                                                        │ │
+│  │  ┌────────────────────────────────────────────────────────────────┐  │ │
+│  │  │  Cache Component (Redis)                                        │  │ │
+│  │  │  • Stock levels cache                                           │  │ │
+│  │  │  • Session storage                                              │  │ │
+│  │  │  • Rate limiting counters                                       │  │ │
+│  │  │  • WebSocket session management                                 │  │ │
+│  │  └────────────────────────────────────────────────────────────────┘  │ │
+│  └──────────────────────────────────────────────────────────────────────┘ │
+│                                                                            │
+│  ┌──────────────────────────────────────────────────────────────────────┐ │
+│  │  EXTERNAL SERVICES                                                    │ │
+│  │  ──────────────────────────────────────────────────────────────────  │ │
+│  │  • Claude API (LLM for chatbot)                                      │ │
+│  │  • Email Service (notifications)                                     │ │
+│  │  • SMS Gateway (alerts - optional)                                   │ │
+│  │  • Backup Storage (S3-compatible)                                    │ │
+│  └──────────────────────────────────────────────────────────────────────┘ │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 2.2.2 Component Relationships & Data Flow
+
+**Primary Component Interactions:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  COMPONENT INTERACTION PATTERNS                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  1. Authentication Flow (OAuth2/OIDC)                               │
+│     ────────────────────────────────────────────────────────────   │
+│     Frontend → Keycloak: Request authorization                     │
+│     Keycloak → Frontend: Redirect with code                        │
+│     Frontend → Keycloak: Exchange code for tokens                  │
+│     Keycloak → Frontend: JWT (access + refresh)                    │
+│     Frontend → Backend API: Request with JWT                       │
+│     Backend API → Keycloak: Validate JWT (JWKS)                    │
+│     Backend API → Frontend: Protected resource                     │
+│                                                                     │
+│  2. Inventory Transaction Flow (Create Lot)                        │
+│     ────────────────────────────────────────────────────────────   │
+│     Frontend → Backend API: POST /api/inventory/lots               │
+│     Backend API → ValidationService: Validate request              │
+│     Backend API → InventoryModule.LotService: createLot()          │
+│     LotService → PostgreSQL: INSERT inventory_lots                 │
+│     LotService → EventBus: Emit 'lot.created' event                │
+│     EventBus → SearchService: Index lot in Elasticsearch           │
+│     EventBus → CacheService: Invalidate stock cache                │
+│     EventBus → WebSocketService: Broadcast update                  │
+│     WebSocketService → Frontend: Real-time notification            │
+│     Backend API → Frontend: Success response (201)                 │
+│                                                                     │
+│  3. QC Approval Workflow                                            │
+│     ────────────────────────────────────────────────────────────   │
+│     Frontend → Backend API: POST /api/qc/approve/{lotId}           │
+│     Backend API → QCModule.ApprovalWorkflowService: approveLot()   │
+│     ApprovalWorkflowService → PostgreSQL: UPDATE lot status        │
+│     ApprovalWorkflowService → EventBus: Emit 'lot.approved'        │
+│     EventBus → InventoryModule: Release from quarantine            │
+│     EventBus → AI/ML Service: Trigger anomaly detection            │
+│     EventBus → NotificationService: Send approval notification     │
+│     Backend API → Frontend: Success response                       │
+│                                                                     │
+│  4. Semantic Search Flow                                            │
+│     ────────────────────────────────────────────────────────────   │
+│     Frontend → Backend API: GET /api/search?q=coffee               │
+│     Backend API → AI/ML Service: POST /semantic-search             │
+│     AI/ML Service → EmbeddingModel: Generate vector                │
+│     AI/ML Service → Elasticsearch: kNN vector search               │
+│     Elasticsearch → AI/ML Service: Search results                  │
+│     AI/ML Service → Backend API: Ranked results                    │
+│     Backend API → PostgreSQL: Enrich with latest data              │
+│     Backend API → Frontend: Search results (JSON)                  │
+│                                                                     │
+│  5. Demand Forecasting Flow (Batch Process)                        │
+│     ────────────────────────────────────────────────────────────   │
+│     Cron Job → Backend API: POST /api/forecast/run                 │
+│     Backend API → AI/ML Service: POST /forecast/demand             │
+│     AI/ML Service → PostgreSQL: Fetch historical data              │
+│     AI/ML Service → Prophet Model: Generate baseline forecast      │
+│     AI/ML Service → LSTM Model: Generate advanced forecast         │
+│     AI/ML Service → PostgreSQL: Store predictions                  │
+│     AI/ML Service → Backend API: Forecast results                  │
+│     Backend API → EventBus: Emit 'forecast.completed'              │
+│     EventBus → NotificationService: Alert inventory managers       │
+│                                                                     │
+│  6. Real-time Stock Update Flow (WebSocket)                        │
+│     ────────────────────────────────────────────────────────────   │
+│     Frontend → Backend API: Establish WebSocket connection         │
+│     Backend API → WebSocketService: Register client                │
+│     [Stock change occurs via API]                                  │
+│     InventoryModule → EventBus: Emit 'stock.updated' event         │
+│     EventBus → WebSocketService: Receive event                     │
+│     WebSocketService → Frontend: Broadcast to all clients          │
+│     Frontend → React State: Update UI optimistically               │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 2.2.3 Key Interfaces & APIs
+
+**A. REST API Contracts (Backend ↔ Frontend)**
+
+```typescript
+// Inventory Module API
+interface InventoryAPI {
+  // Materials
+  GET    /api/materials                 // List materials
+  POST   /api/materials                 // Create material
+  GET    /api/materials/:id             // Get material details
+  PUT    /api/materials/:id             // Update material
+  DELETE /api/materials/:id             // Delete material
+
+  // Inventory Lots
+  GET    /api/inventory/lots            // List lots (with filters)
+  POST   /api/inventory/lots            // Create lot
+  GET    /api/inventory/lots/:id        // Get lot details
+  PUT    /api/inventory/lots/:id        // Update lot
+  PATCH  /api/inventory/lots/:id/status // Update status only
+
+  // Transactions
+  POST   /api/inventory/transactions    // Record transaction
+  GET    /api/inventory/transactions    // Transaction history
+  POST   /api/inventory/receive         // Receive goods
+  POST   /api/inventory/issue           // Issue goods
+  POST   /api/inventory/adjust          // Adjust stock
+}
+
+// QC Module API
+interface QualityControlAPI {
+  GET    /api/qc/tests                  // List QC tests
+  POST   /api/qc/tests                  // Create QC test
+  GET    /api/qc/tests/:id              // Get test details
+  POST   /api/qc/approve/:lotId         // Approve lot
+  POST   /api/qc/reject/:lotId          // Reject lot
+  GET    /api/qc/pending                // Get pending tests
+}
+
+// Production Module API
+interface ProductionAPI {
+  GET    /api/production/batches        // List batches
+  POST   /api/production/batches        // Create batch
+  GET    /api/production/batches/:id    // Get batch details
+  POST   /api/production/consume        // Consume materials
+  GET    /api/production/traceability/:batchId  // Traceability
+}
+
+// Reporting Module API
+interface ReportingAPI {
+  GET    /api/reports/inventory         // Inventory report
+  GET    /api/reports/transactions      // Transaction report
+  GET    /api/reports/audit-log         // Audit log
+  GET    /api/reports/kpi               // KPI dashboard data
+  POST   /api/reports/export            // Export to Excel/PDF
+}
+
+// Search API
+interface SearchAPI {
+  GET    /api/search                    // Semantic search
+  GET    /api/search/suggestions        // Auto-complete
+}
+```
+
+**B. Event Bus Interface (Internal Communication)**
+
+```typescript
+// Internal Event Schema
+interface EventBusInterface {
+  // Inventory Events
+  'inventory.lot.created':       { lotNumber, materialId, quantity }
+  'inventory.lot.updated':       { lotNumber, changes }
+  'inventory.stock.changed':     { sku, oldQty, newQty, reason }
+  'inventory.reservation.made':  { reservationId, sku, quantity }
+
+  // QC Events
+  'qc.test.created':             { testId, lotNumber }
+  'qc.lot.approved':             { lotNumber, approvedBy, timestamp }
+  'qc.lot.rejected':             { lotNumber, rejectedBy, reason }
+
+  // Production Events
+  'production.batch.created':    { batchId, productCode }
+  'production.material.consumed': { batchId, materialId, quantity }
+
+  // System Events
+  'system.cache.invalidate':     { cacheKey }
+  'system.notification.send':    { userId, message, type }
+}
+```
+
+**C. Database Repository Interface (Backend ↔ PostgreSQL)**
+
+```typescript
+// Repository Pattern
+interface IRepository<T> {
+  findAll(filters?: object): Promise<T[]>
+  findById(id: string): Promise<T | null>
+  create(data: Partial<T>): Promise<T>
+  update(id: string, data: Partial<T>): Promise<T>
+  delete(id: string): Promise<boolean>
+}
+
+// Specific Repositories
+interface IInventoryLotRepository extends IRepository<InventoryLot> {
+  findByMaterial(materialId: string): Promise<InventoryLot[]>
+  findExpiringSoon(days: number): Promise<InventoryLot[]>
+  findByStatus(status: LotStatus): Promise<InventoryLot[]>
+  updateQuantity(lotId: string, delta: number): Promise<void>
+}
+```
+
+**D. AI/ML Service Interface (Backend ↔ FastAPI)**
+
+```python
+# FastAPI Endpoints
+class AIServiceInterface:
+    # Semantic Search
+    POST /semantic-search
+    {
+      "query": "coffee beans",
+      "limit": 10,
+      "filters": {...}
+    }
+
+    # Demand Forecast
+    POST /forecast/demand
+    {
+      "sku": "SKU-001",
+      "horizon_days": 30,
+      "model": "prophet|lstm"
+    }
+
+    # Anomaly Detection
+    POST /anomaly/detect
+    {
+      "data": [...],
+      "threshold": 0.95
+    }
+
+    # Computer Vision QC
+    POST /vision/qc
+    {
+      "image_url": "...",
+      "model": "yolov8"
+    }
+
+    # LLM Chatbot
+    POST /chatbot/query
+    {
+      "message": "What is current stock of SKU-001?",
+      "context": {...}
+    }
+```
+
+---
+
+#### 2.2.4 Key Domain Models & Abstractions
+
+**Core Domain Entities:**
+
+```typescript
+// Inventory Domain
+interface Material {
+  id: uuid
+  sku: string                    // Unique identifier
+  name: string
+  description?: string
+  category: string
+  unit: string                   // kg, liters, pieces
+  minStockLevel: number
+  reorderPoint: number
+  isActive: boolean
+}
+
+interface InventoryLot {
+  id: uuid
+  lotNumber: string              // LOT-YYYYMMDD-XXX
+  materialId: uuid
+  quantity: number
+  unitCost: decimal(10,3)
+  receivedDate: datetime
+  expiryDate?: datetime
+  status: 'quarantine' | 'approved' | 'rejected' | 'in_use' | 'depleted'
+  warehouseLocation: string
+  supplierInfo?: object
+}
+
+interface InventoryTransaction {
+  id: uuid
+  lotId: uuid
+  type: 'receive' | 'issue' | 'adjust' | 'transfer'
+  quantity: number
+  reason: string
+  performedBy: uuid              // User ID
+  timestamp: datetime
+  referenceNumber?: string
+}
+
+// QC Domain
+interface QCTest {
+  id: uuid
+  lotNumber: string
+  testDate: datetime
+  testedBy: uuid
+  testType: string
+  results: jsonb                 // Flexible test data
+  passed: boolean
+  notes?: string
+}
+
+// Production Domain
+interface ProductionBatch {
+  id: uuid
+  batchNumber: string            // BATCH-YYYYMMDD-XXX
+  productCode: string
+  plannedQuantity: number
+  actualQuantity: number
+  startDate: datetime
+  completionDate?: datetime
+  status: 'planned' | 'in_progress' | 'completed' | 'cancelled'
+}
+
+interface BatchComponent {
+  id: uuid
+  batchId: uuid
+  lotNumber: string              // Material used
+  quantityUsed: number
+  timestamp: datetime
+}
+```
+
+---
+
+#### 2.2.5 Design Patterns Used
+
+**1. Layered Architecture**
+```
+Presentation → Application → Domain → Data Access → Database
+• Clear separation of concerns
+• Each layer depends only on layer below
+• Easier testing via layer isolation
+```
+
+**2. Repository Pattern**
+```typescript
+// Abstraction over data access
+class InventoryLotRepository implements IInventoryLotRepository {
+  constructor(private db: Database) {}
+
+  async findById(id: string): Promise<InventoryLot | null> {
+    return this.db.inventoryLots.findUnique({ where: { id } })
+  }
+
+  async updateQuantity(lotId: string, delta: number): Promise<void> {
+    return this.db.$executeRaw`
+      UPDATE inventory_lots
+      SET current_quantity = current_quantity + ${delta}
+      WHERE id = ${lotId}
+    `
+  }
+}
+```
+
+**3. Service Layer Pattern**
+```typescript
+// Business logic encapsulation
+class LotService {
+  constructor(
+    private lotRepository: IInventoryLotRepository,
+    private eventBus: IEventBus,
+    private cacheService: ICacheService
+  ) {}
+
+  async createLot(data: CreateLotDTO): Promise<InventoryLot> {
+    // Business logic
+    const lot = await this.lotRepository.create(data)
+    await this.eventBus.emit('inventory.lot.created', lot)
+    await this.cacheService.invalidate('stock-levels')
+    return lot
+  }
+}
+```
+
+**4. Event-Driven Architecture (EDA)**
+```typescript
+// Loose coupling via events
+eventBus.on('qc.lot.approved', async (event) => {
+  await inventoryService.releaseFromQuarantine(event.lotNumber)
+  await searchService.updateIndex(event.lotNumber)
+  await notificationService.notify(event)
+})
+```
+
+**5. CQRS Light (Command Query Responsibility Segregation)**
+```
+Write Model (Commands):        Read Model (Queries):
+• PostgreSQL (ACID)            • Elasticsearch (search)
+• Transactional updates        • Redis (cache)
+• Eventual consistency         • Materialized views
+```
+
+**6. Dependency Injection**
+```typescript
+// Inversion of Control
+class InventoryController {
+  constructor(
+    @Inject('LotService') private lotService: LotService,
+    @Inject('AuthService') private authService: AuthService
+  ) {}
+}
+```
+
+**7. Strategy Pattern (AI/ML Models)**
+```python
+class ForecastStrategy(ABC):
+    @abstractmethod
+    def predict(self, data): pass
+
+class ProphetForecast(ForecastStrategy):
+    def predict(self, data): ...
+
+class LSTMForecast(ForecastStrategy):
+    def predict(self, data): ...
+
+# Usage
+forecaster = ProphetForecast() if simple else LSTMForecast()
+result = forecaster.predict(data)
+```
+
+**8. Observer Pattern (WebSocket)**
+```typescript
+// Real-time updates
+class WebSocketService {
+  private clients: Set<WebSocket> = new Set()
+
+  subscribe(client: WebSocket) {
+    this.clients.add(client)
+  }
+
+  broadcast(event: any) {
+    this.clients.forEach(client => client.send(JSON.stringify(event)))
+  }
+}
+```
+
+---
+
+#### 2.2.6 Component Dependencies
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  DEPENDENCY GRAPH                                          │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  Frontend Component                                         │
+│      ↓ depends on                                          │
+│      ├─→ Backend API Component (REST/WebSocket)            │
+│      └─→ Keycloak Component (Auth)                         │
+│                                                            │
+│  Backend API Component                                      │
+│      ↓ depends on                                          │
+│      ├─→ PostgreSQL Component (OLTP data)                  │
+│      ├─→ Redis Component (Cache)                           │
+│      ├─→ Elasticsearch Component (Search)                  │
+│      ├─→ Keycloak Component (JWT validation)               │
+│      └─→ AI/ML Services Component (Optional)               │
+│                                                            │
+│  AI/ML Services Component                                   │
+│      ↓ depends on                                          │
+│      ├─→ PostgreSQL Component (Read historical data)       │
+│      ├─→ Elasticsearch Component (Vector storage)          │
+│      └─→ Claude API (External LLM)                         │
+│                                                            │
+│  Keycloak Component (Independent)                          │
+│      ↓ depends on                                          │
+│      └─→ PostgreSQL Component (User/realm storage)         │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Dependency Rules:**
+- ✅ Frontend → Backend (allowed)
+- ✅ Backend → Database/Cache (allowed)
+- ✅ Backend → AI/ML (allowed)
+- ❌ Database → Backend (not allowed)
+- ❌ AI/ML → Backend (not allowed, use events)
+- ❌ Frontend → Database (not allowed, always via Backend)
+
+---
+
+### 2.3 Góc nhìn phát triển (Development View)
 
 #### 2.2.1 Kiến trúc phân lớp (Layered Architecture)
 
@@ -383,11 +1022,11 @@ Database schema giữ nguyên như đã thiết kế:
 
 ### 2.5 Góc nhìn triển khai (Deployment/Physical View)
 
-#### 2.5.1 Container Architecture
+#### 2.5.1 Container Architecture - Modular Monolith
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  DOCKER COMPOSE STACK (Development/Staging)                  │
+│  DOCKER COMPOSE STACK (All Environments)                     │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌────────────────┐  ┌────────────────┐  ┌───────────────┐ │
@@ -415,214 +1054,125 @@ Database schema giữ nguyên như đã thiết kế:
 └──────────────────────────────────────────────────────────────┘
 ```
 
-#### 2.5.2 Kubernetes Deployment (Production - Optional)
+#### 2.5.2 Chi tiết Deployment theo thành phần
 
-```yaml
-Production Environment:
-├── Namespace: production
-│   ├── Frontend (3 replicas, auto-scale 3-10)
-│   ├── Backend (5 replicas, auto-scale 5-20)
-│   ├── AI/ML API (2 replicas with GPU)
-│   ├── PostgreSQL (1 primary + 2 replicas)
-│   ├── Redis Cluster (3 nodes)
-│   └── Elasticsearch (3 nodes)
-│
-├── Namespace: monitoring
-│   ├── Prometheus (1 replica)
-│   ├── Grafana (2 replicas)
-│   └── Jaeger (1 replica)
-│
-└── Namespace: security
-    └── Keycloak (2 replicas)
-```
+##### A. FRONTEND DEPLOYMENT - Vercel CDN
 
-**Auto-scaling Triggers:**
-- Backend API: CPU >70% → Scale up
-- Inventory service: Order rate >100/sec → Scale to 20 replicas
-- AI/ML API: Queue length >50 → Add GPU instance
-
----
-
-#### 2.5.3 Chi tiết Deployment theo thành phần
-
-##### A. FRONTEND DEPLOYMENT
-
-**Option 1: CDN/Edge Deployment (RECOMMENDED for Production)**
+**Phương án deployment: Vercel (Global CDN)**
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  FRONTEND CDN ARCHITECTURE                                 │
+│  FRONTEND - VERCEL CDN ARCHITECTURE                        │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
 │  1. Build Process:                                         │
-│     npm run build (Vite)                                   │
+│     cd frontend                                            │
+│     npm install                                            │
+│     npm run build    # Vite builds to dist/               │
 │     ↓                                                      │
-│     Static files: HTML, JS, CSS, Assets                   │
-│     ↓                                                      │
-│  2. Deploy to CDN:                                         │
-│     • Vercel (RECOMMENDED)                                 │
-│       - Auto SSL, Git integration                          │
-│       - Global CDN (100+ locations)                        │
-│       - Cost: FREE for small teams                         │
-│       - Deploy: vercel --prod                              │
+│     Output: Static files (HTML, JS, CSS, assets)          │
 │                                                            │
-│     • Cloudflare Pages                                     │
-│       - Free tier generous                                 │
-│       - DDoS protection included                           │
-│       - Deploy: wrangler pages deploy dist/                │
-│                                                            │
-│     • Netlify                                              │
-│       - Easy setup, auto deploy                            │
-│       - Cost: FREE for <100GB bandwidth                    │
+│  2. Deploy to Vercel:                                      │
+│     vercel --prod                                          │
+│     OR: Auto-deploy via Git push (GitHub integration)     │
 │                                                            │
 │  3. Configuration:                                         │
-│     • Environment Variables:                               │
-│       VITE_API_URL=https://api.yourdomain.com             │
-│       VITE_KEYCLOAK_URL=https://auth.yourdomain.com       │
-│       VITE_WS_URL=wss://api.yourdomain.com/ws             │
+│     vercel.json:                                           │
+│     {                                                      │
+│       "buildCommand": "npm run build",                     │
+│       "outputDirectory": "dist",                           │
+│       "framework": "vite"                                  │
+│     }                                                      │
+│                                                            │
+│     Environment Variables (via Vercel Dashboard):          │
+│     - VITE_API_URL=https://api.yourdomain.com             │
+│     - VITE_KEYCLOAK_URL=https://auth.yourdomain.com       │
+│     - VITE_WS_URL=wss://api.yourdomain.com/ws             │
 │                                                            │
 │  4. Custom Domain:                                         │
-│     app.yourdomain.com → CDN                              │
-│     (A/CNAME record in DNS)                               │
+│     app.yourdomain.com → Vercel                           │
+│     (Add CNAME record in DNS: app → cname.vercel-dns.com) │
+│                                                            │
+│  5. Features:                                              │
+│     ✓ Global CDN (100+ locations)                         │
+│     ✓ Auto SSL/TLS certificates                           │
+│     ✓ Automatic deployments from Git                      │
+│     ✓ Preview deployments for PRs                         │
+│     ✓ Edge caching & compression                          │
+│     ✓ DDoS protection included                            │
+│                                                            │
+│  6. Cost:                                                  │
+│     • Hobby Plan: FREE (personal/small projects)          │
+│     • Pro Plan: $20/month (commercial, custom domains)    │
+│     • Bandwidth: 100GB/mo included                        │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
 
-**Option 2: Self-Hosted with NGINX (Cost-effective)**
+**Deployment Commands:**
+```bash
+# One-time setup
+cd frontend
+npm install -g vercel
+vercel login
 
+# Deploy to production
+vercel --prod
+
+# Deploy to preview (staging)
+vercel
 ```
-┌────────────────────────────────────────────────────────────┐
-│  NGINX STATIC FILE SERVING                                 │
-├────────────────────────────────────────────────────────────┤
-│                                                            │
-│  Server: VPS (Same server as Backend)                     │
-│  ├── NGINX Config:                                         │
-│  │   server {                                             │
-│  │     listen 80;                                         │
-│  │     server_name app.yourdomain.com;                   │
-│  │                                                        │
-│  │     # Redirect to HTTPS                                │
-│  │     return 301 https://$server_name$request_uri;      │
-│  │   }                                                    │
-│  │                                                        │
-│  │   server {                                             │
-│  │     listen 443 ssl http2;                             │
-│  │     server_name app.yourdomain.com;                   │
-│  │                                                        │
-│  │     # SSL Configuration                                │
-│  │     ssl_certificate /etc/ssl/cert.pem;                │
-│  │     ssl_certificate_key /etc/ssl/key.pem;             │
-│  │                                                        │
-│  │     # Frontend static files                            │
-│  │     root /var/www/ims-frontend/dist;                  │
-│  │     index index.html;                                  │
-│  │                                                        │
-│  │     # SPA routing (React Router)                       │
-│  │     location / {                                       │
-│  │       try_files $uri $uri/ /index.html;               │
-│  │     }                                                  │
-│  │                                                        │
-│  │     # Cache static assets                              │
-│  │     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {│
-│  │       expires 1y;                                      │
-│  │       add_header Cache-Control "public, immutable";   │
-│  │     }                                                  │
-│  │                                                        │
-│  │     # API Proxy (Backend)                              │
-│  │     location /api/ {                                   │
-│  │       proxy_pass http://localhost:3000;               │
-│  │       proxy_http_version 1.1;                         │
-│  │       proxy_set_header Upgrade $http_upgrade;         │
-│  │       proxy_set_header Connection 'upgrade';          │
-│  │       proxy_set_header Host $host;                    │
-│  │     }                                                  │
-│  │   }                                                    │
-│  └────────────────────────────────────────────────────────│
-│                                                            │
-│  Deployment Script:                                        │
-│  #!/bin/bash                                               │
-│  cd /var/www/ims-frontend                                 │
-│  git pull origin master                                    │
-│  npm install                                               │
-│  npm run build                                             │
-│  sudo systemctl reload nginx                               │
-│                                                            │
-└────────────────────────────────────────────────────────────┘
-```
-
-**Option 3: Docker Container (Development/Staging)**
-
-```dockerfile
-# Dockerfile.frontend
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-**Frontend Deployment Comparison:**
-
-| Option | Cost | Performance | Complexity | Best For |
-|--------|------|-------------|------------|----------|
-| **Vercel** | FREE-$20/mo | Excellent (Global CDN) | Very Low | Production (RECOMMENDED) |
-| **Cloudflare Pages** | FREE | Excellent | Low | Production |
-| **NGINX Self-hosted** | $0 (VPS included) | Good | Medium | Budget-conscious |
-| **Docker Container** | $0 (VPS included) | Good | Medium | Consistent env |
 
 ---
 
-##### B. BACKEND DEPLOYMENT
+##### B. BACKEND DEPLOYMENT - Docker on VPS
 
-**Option 1: Docker Container on VPS (RECOMMENDED)**
+**Phương án deployment: Docker Containers on VPS (Hetzner/DigitalOcean)**
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  BACKEND DOCKER DEPLOYMENT                                 │
+│  BACKEND - DOCKER ON VPS ARCHITECTURE                      │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│  Infrastructure:                                           │
-│  • VPS Provider: Hetzner / DigitalOcean / Vultr           │
-│  • Specs: 16GB RAM, 4 vCPU, 200GB SSD                     │
-│  • Cost: $80-150/month                                     │
+│  VPS Specifications:                                       │
+│  • Provider: Hetzner CPX41 (recommended for cost)         │
+│  • Specs: 16GB RAM, 8 vCPU, 240GB NVMe SSD                │
+│  • Cost: ~$80/month                                        │
 │  • OS: Ubuntu 22.04 LTS                                    │
+│  • Location: Choose closest to users (EU/US/Asia)         │
 │                                                            │
 │  ┌──────────────────────────────────────────────────────┐ │
 │  │  VPS Server (IP: 123.456.789.0)                       │ │
-│  │  ────────────────────────────────────────────────────│ │
 │  │                                                        │ │
-│  │  NGINX Reverse Proxy (:80, :443)                      │ │
-│  │  • SSL Termination (Let's Encrypt)                    │ │
-│  │  • Load Balancing (if multiple backends)              │ │
-│  │  • Rate Limiting                                       │ │
-│  │         ↓                                              │ │
-│  │  Backend Containers (Docker Compose)                  │ │
-│  │  ├── backend-1 (:3000) ──────┐                        │ │
-│  │  ├── backend-2 (:3001)        │ NGINX upstream        │ │
-│  │  └── backend-3 (:3002) ──────┘                        │ │
-│  │         ↓                                              │ │
-│  │  Databases (Docker Containers)                        │ │
-│  │  ├── PostgreSQL (:5432)                               │ │
-│  │  ├── Redis (:6379)                                    │ │
-│  │  └── Elasticsearch (:9200)                            │ │
+│  │  ┌──────────────────────────────────────────────────┐│ │
+│  │  │ NGINX Reverse Proxy (:80, :443)                  ││ │
+│  │  │ • SSL/TLS termination (Let's Encrypt)            ││ │
+│  │  │ • Load balancing across backend instances        ││ │
+│  │  │ • Rate limiting (10K req/min per IP)             ││ │
+│  │  │ • CORS & security headers                        ││ │
+│  │  └──────────────────────────────────────────────────┘│ │
+│  │                       ↓                                │ │
+│  │  ┌──────────────────────────────────────────────────┐│ │
+│  │  │ Backend Containers (Docker Compose)              ││ │
+│  │  │ ├─ backend-1 (:3000) ─┐                          ││ │
+│  │  │ ├─ backend-2 (:3001)  │ Load balanced            ││ │
+│  │  │ └─ backend-3 (:3002) ─┘                          ││ │
+│  │  │                                                   ││ │
+│  │  │ ├─ ai-ml-service (:8000) FastAPI                 ││ │
+│  │  │ ├─ redis (:6379) Cache                           ││ │
+│  │  │ └─ elasticsearch (:9200) Search                  ││ │
+│  │  └──────────────────────────────────────────────────┘│ │
 │  │                                                        │ │
-│  │  Monitoring Stack                                      │ │
-│  │  ├── Prometheus (:9090)                               │ │
-│  │  ├── Grafana (:3001)                                  │ │
-│  │  └── Jaeger (:16686)                                  │ │
-│  │                                                        │ │
+│  │  ┌──────────────────────────────────────────────────┐│ │
+│  │  │ Monitoring Stack                                  ││ │
+│  │  │ ├─ prometheus (:9090) Metrics                    ││ │
+│  │  │ ├─ grafana (:3001) Dashboards                    ││ │
+│  │  │ └─ jaeger (:16686) Tracing                       ││ │
+│  │  └──────────────────────────────────────────────────┘│ │
 │  └──────────────────────────────────────────────────────┘ │
 │                                                            │
-│  Docker Compose Setup:                                     │
+│  Docker Compose Configuration:                             │
 │  ──────────────────────────────────────────────────────── │
-│  version: '3.8'                                            │
 │  services:                                                 │
 │    backend:                                                │
 │      build: ./backend                                      │
@@ -631,13 +1181,13 @@ CMD ["nginx", "-g", "daemon off;"]
 │        replicas: 3                                         │
 │        resources:                                          │
 │          limits:                                           │
-│            cpus: '1'                                       │
-│            memory: 2G                                      │
+│            cpus: '2'                                       │
+│            memory: 4G                                      │
 │      environment:                                          │
 │        - NODE_ENV=production                               │
-│        - DATABASE_URL=postgresql://user:pass@postgres/ims │
+│        - DATABASE_URL=${DATABASE_URL}                      │
 │        - REDIS_URL=redis://redis:6379                     │
-│        - KEYCLOAK_URL=https://auth.yourdomain.com         │
+│        - KEYCLOAK_URL=${KEYCLOAK_URL}                     │
 │      ports:                                                │
 │        - "3000-3002:3000"                                  │
 │      restart: always                                       │
@@ -646,334 +1196,280 @@ CMD ["nginx", "-g", "daemon off;"]
 │        interval: 30s                                       │
 │        timeout: 10s                                        │
 │        retries: 3                                          │
-│      logging:                                              │
-│        driver: "fluentd"                                   │
-│        options:                                            │
-│          fluentd-address: localhost:24224                  │
-│          tag: backend.{{.Name}}                            │
+│      depends_on:                                           │
+│        - redis                                             │
+│        - elasticsearch                                     │
 │                                                            │
-│  Deployment Process:                                       │
-│  1. SSH to VPS: ssh user@123.456.789.0                    │
-│  2. Pull latest code: cd /opt/ims && git pull             │
-│  3. Build image: docker-compose build backend             │
-│  4. Deploy: docker-compose up -d --scale backend=3        │
-│  5. Health check: curl https://api.yourdomain.com/health  │
+│    ai-ml-service:                                          │
+│      build: ./ai-ml-services                              │
+│      image: ims-ai-ml:latest                              │
+│      ports:                                                │
+│        - "8000:8000"                                       │
+│      environment:                                          │
+│        - PYTHONUNBUFFERED=1                                │
+│        - ES_URL=http://elasticsearch:9200                 │
+│      restart: always                                       │
 │                                                            │
-│  CI/CD (GitHub Actions):                                   │
-│  name: Deploy Backend                                      │
-│  on:                                                       │
-│    push:                                                   │
-│      branches: [master]                                    │
-│  jobs:                                                     │
-│    deploy:                                                 │
-│      runs-on: ubuntu-latest                                │
-│      steps:                                                │
-│        - uses: actions/checkout@v3                         │
-│        - name: Deploy to VPS                               │
-│          uses: appleboy/ssh-action@master                  │
-│          with:                                             │
-│            host: ${{ secrets.VPS_HOST }}                   │
-│            username: ${{ secrets.VPS_USER }}               │
-│            key: ${{ secrets.SSH_PRIVATE_KEY }}             │
-│            script: |                                       │
-│              cd /opt/ims                                   │
-│              git pull                                      │
-│              docker-compose up -d --build backend          │
+│    redis:                                                  │
+│      image: redis:7-alpine                                │
+│      ports:                                                │
+│        - "6379:6379"                                       │
+│      volumes:                                              │
+│        - redis-data:/data                                  │
+│      command: redis-server --appendonly yes               │
+│                                                            │
+│    elasticsearch:                                          │
+│      image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0│
+│      environment:                                          │
+│        - discovery.type=single-node                       │
+│        - "ES_JAVA_OPTS=-Xms2g -Xmx2g"                     │
+│      ports:                                                │
+│        - "9200:9200"                                       │
+│      volumes:                                              │
+│        - es-data:/usr/share/elasticsearch/data            │
+│                                                            │
+│  volumes:                                                  │
+│    redis-data:                                             │
+│    es-data:                                                │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
 
-**Option 2: Kubernetes (Production - High Scale)**
+**NGINX Configuration:**
+```nginx
+# /etc/nginx/sites-available/ims-api
+upstream backend {
+    least_conn;
+    server localhost:3000 max_fails=3 fail_timeout=30s;
+    server localhost:3001 max_fails=3 fail_timeout=30s;
+    server localhost:3002 max_fails=3 fail_timeout=30s;
+}
 
+server {
+    listen 80;
+    server_name api.yourdomain.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name api.yourdomain.com;
+
+    # SSL Configuration (Let's Encrypt)
+    ssl_certificate /etc/letsencrypt/live/api.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.yourdomain.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # Security Headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Rate Limiting
+    limit_req_zone $binary_remote_addr zone=api:10m rate=100r/s;
+    limit_req zone=api burst=200 nodelay;
+
+    # API Proxy
+    location /api/ {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_cache_bypass $http_upgrade;
+
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # WebSocket Support
+    location /ws/ {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 86400;
+    }
+
+    # Health Check
+    location /health {
+        proxy_pass http://backend/health;
+        access_log off;
+    }
+}
+```
+
+**Deployment Script:**
+```bash
+#!/bin/bash
+# /opt/ims/deploy.sh
+
+set -e  # Exit on error
+
+echo "🚀 Deploying IMS Backend..."
+
+# Navigate to project directory
+cd /opt/ims
+
+# Pull latest code
+echo "📥 Pulling latest code from Git..."
+git pull origin master
+
+# Build Docker images
+echo "🏗️  Building Docker images..."
+docker-compose build --no-cache
+
+# Stop old containers
+echo "🛑 Stopping old containers..."
+docker-compose down
+
+# Start new containers
+echo "✅ Starting new containers..."
+docker-compose up -d --scale backend=3
+
+# Wait for health checks
+echo "⏳ Waiting for services to be healthy..."
+sleep 30
+
+# Check health
+echo "🏥 Checking service health..."
+curl -f http://localhost:3000/health || exit 1
+
+# Reload NGINX
+echo "🔄 Reloading NGINX..."
+sudo systemctl reload nginx
+
+echo "✅ Deployment completed successfully!"
+```
+
+**CI/CD Pipeline (GitHub Actions):**
 ```yaml
-# k8s/backend-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ims-backend
-  namespace: production
-spec:
-  replicas: 5
-  selector:
-    matchLabels:
-      app: ims-backend
-  template:
-    metadata:
-      labels:
-        app: ims-backend
-    spec:
-      containers:
-      - name: backend
-        image: registry.yourdomain.com/ims-backend:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: db-credentials
-              key: url
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "1000m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 3000
-          initialDelaySeconds: 10
-          periodSeconds: 5
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ims-backend-service
-spec:
-  selector:
-    app: ims-backend
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 3000
-  type: LoadBalancer
----
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: ims-backend-hpa
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: ims-backend
-  minReplicas: 5
-  maxReplicas: 20
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
+# .github/workflows/deploy-backend.yml
+name: Deploy Backend to VPS
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'backend/**'
+      - 'ai-ml-services/**'
+      - 'docker-compose.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/ims
+            bash deploy.sh
 ```
 
-**Option 3: Cloud Managed Services**
-
-| Provider | Service | Cost (est.) | Use Case |
-|----------|---------|-------------|----------|
-| **AWS** | Elastic Beanstalk | $100-300/mo | Easy scaling, managed |
-| **Google Cloud** | Cloud Run | $50-200/mo | Serverless, auto-scale |
-| **Azure** | App Service | $80-250/mo | Enterprise integration |
-| **Heroku** | Standard Dynos | $150-400/mo | Rapid deployment |
-
-**Backend Deployment Comparison:**
-
-| Option | Cost | Scalability | Control | Complexity | Best For |
-|--------|------|-------------|---------|------------|----------|
-| **Docker on VPS** | $80-150/mo | Medium | Full | Medium | Small-medium teams (RECOMMENDED) |
-| **Kubernetes** | $300-1000/mo | High | Full | High | Large scale (>50K users) |
-| **Cloud Managed** | $100-400/mo | High | Limited | Low | Fast deployment, less DevOps |
-
 ---
 
-##### C. DATABASE DEPLOYMENT
+##### C. DATABASE DEPLOYMENT - Hybrid Approach
 
-**Option 1: Self-Hosted on VPS (RECOMMENDED for Control)**
+**Phương án deployment: PostgreSQL Managed + Redis/ES Self-hosted**
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  DATABASE SELF-HOSTED ARCHITECTURE                         │
+│  DATABASE ARCHITECTURE (Hybrid)                            │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│  VPS Configuration:                                         │
-│  • Dedicated DB Server OR Same VPS as Backend             │
-│  • Specs (Dedicated): 32GB RAM, 8 vCPU, 500GB NVMe SSD    │
-│  • Cost: $150-300/month                                    │
+│  1. PostgreSQL (DigitalOcean Managed Database)            │
+│     ─────────────────────────────────────────────────────  │
+│     • Plan: Basic ($120/mo)                                │
+│     • Specs: 4GB RAM, 2 vCPU, 115GB storage               │
+│     • Features:                                            │
+│       - Automated daily backups (7 days retention)        │
+│       - Standby node for HA                                │
+│       - Point-in-time recovery                             │
+│       - SSL connections required                           │
+│       - Connection pooling built-in                        │
+│     • Connection:                                          │
+│       postgresql://user:pass@db-postgresql-sgp1-12345.db.ondigitalocean.com:25060/ims?sslmode=require│
 │                                                            │
-│  ┌──────────────────────────────────────────────────────┐ │
-│  │  DATABASE SERVER                                      │ │
-│  │  ────────────────────────────────────────────────────│ │
-│  │                                                        │ │
-│  │  1. PostgreSQL 15 (Primary)                           │ │
-│  │     ├── Port: 5432                                    │ │
-│  │     ├── Data: /var/lib/postgresql/15/main            │ │
-│  │     ├── Config: /etc/postgresql/15/main/postgresql.conf│ │
-│  │     ├── Max Connections: 200                          │ │
-│  │     ├── Shared Buffers: 8GB                           │ │
-│  │     ├── Effective Cache: 24GB                         │ │
-│  │     └── Work Mem: 64MB                                │ │
-│  │                                                        │ │
-│  │  2. PostgreSQL Replication (Optional)                 │ │
-│  │     Primary (Read/Write)                              │ │
-│  │         ↓                                              │ │
-│  │     Streaming Replication                             │ │
-│  │         ↓                                              │ │
-│  │     Standby 1 (Read-only)                             │ │
-│  │     Standby 2 (Read-only)                             │ │
-│  │                                                        │ │
-│  │     Replication Config:                                │ │
-│  │     # postgresql.conf (Primary)                       │ │
-│  │     wal_level = replica                                │ │
-│  │     max_wal_senders = 3                               │ │
-│  │     wal_keep_size = 1GB                               │ │
-│  │     hot_standby = on                                  │ │
-│  │                                                        │ │
-│  │  3. Redis 7.x                                         │ │
-│  │     ├── Port: 6379                                    │ │
-│  │     ├── Memory: 4GB allocated                         │ │
-│  │     ├── Persistence: RDB + AOF                        │ │
-│  │     ├── Eviction: allkeys-lru                         │ │
-│  │     └── Config:                                        │ │
-│  │         maxmemory 4gb                                  │ │
-│  │         maxmemory-policy allkeys-lru                   │ │
-│  │         save 900 1                                     │ │
-│  │         appendonly yes                                 │ │
-│  │                                                        │ │
-│  │  4. Elasticsearch 8.12                                │ │
-│  │     ├── Port: 9200 (HTTP), 9300 (Transport)          │ │
-│  │     ├── Heap: 4GB (50% of allocated RAM)             │ │
-│  │     ├── Nodes: 3 (cluster for HA)                     │ │
-│  │     └── Config:                                        │ │
-│  │         cluster.name: ims-search                       │ │
-│  │         node.name: es-node-1                           │ │
-│  │         discovery.seed_hosts: ["es-node-2", "es-node-3"]│
-│  │         xpack.security.enabled: true                   │ │
-│  │                                                        │ │
-│  │  5. Backup Strategy                                    │ │
-│  │     PostgreSQL:                                        │ │
-│  │     ├── Daily: pg_dump (full backup)                  │ │
-│  │     ├── Hourly: WAL archiving                         │ │
-│  │     ├── Storage: S3-compatible (Backblaze B2)         │ │
-│  │     └── Retention: 7 days daily, 4 weeks weekly,      │ │
-│  │                    12 months monthly                   │ │
-│  │                                                        │ │
-│  │     Backup Script (Cron):                              │ │
-│  │     #!/bin/bash                                        │ │
-│  │     # /opt/scripts/backup-postgres.sh                 │ │
-│  │     DATE=$(date +%Y%m%d_%H%M%S)                       │ │
-│  │     BACKUP_DIR="/backups/postgres"                    │ │
-│  │     pg_dump -U postgres ims > $BACKUP_DIR/ims_$DATE.sql│
-│  │     gzip $BACKUP_DIR/ims_$DATE.sql                    │ │
-│  │     # Upload to S3                                     │ │
-│  │     aws s3 cp $BACKUP_DIR/ims_$DATE.sql.gz \          │ │
-│  │       s3://ims-backups/postgres/                      │ │
-│  │     # Cleanup old local backups (>7 days)             │ │
-│  │     find $BACKUP_DIR -name "*.sql.gz" -mtime +7 -delete│
-│  │                                                        │ │
-│  │     Redis:                                             │ │
-│  │     ├── RDB snapshots (automatic)                     │ │
-│  │     ├── AOF logs (continuous)                         │ │
-│  │     └── Daily copy to S3                              │ │
-│  │                                                        │ │
-│  │  6. Monitoring                                         │ │
-│  │     ├── postgres_exporter (Prometheus)                │ │
-│  │     ├── redis_exporter                                │ │
-│  │     ├── elasticsearch_exporter                        │ │
-│  │     └── Grafana dashboards                            │ │
-│  │                                                        │ │
-│  └──────────────────────────────────────────────────────┘ │
+│  2. Redis (Self-hosted on VPS)                            │
+│     ─────────────────────────────────────────────────────  │
+│     • Deployment: Docker container on same VPS as backend │
+│     • Memory: 4GB allocated                                │
+│     • Persistence: RDB + AOF enabled                       │
+│     • Use Cases:                                           │
+│       - Stock levels cache (TTL: 5 min)                   │
+│       - Session storage                                    │
+│       - Rate limiting counters                             │
+│       - WebSocket connection tracking                      │
+│     • Configuration:                                       │
+│       maxmemory 4gb                                        │
+│       maxmemory-policy allkeys-lru                         │
+│       save 900 1     # RDB snapshot every 15min           │
+│       appendonly yes # AOF for durability                 │
 │                                                            │
-│  Security:                                                 │
-│  • Firewall: Only allow Backend IPs                       │
-│  • SSL/TLS: Required for all connections                  │
-│  • Authentication: Strong passwords + key-based           │
-│  • Encryption at rest: LUKS (Linux)                       │
+│  3. Elasticsearch (Self-hosted on VPS)                    │
+│     ─────────────────────────────────────────────────────  │
+│     • Deployment: Docker container on same VPS            │
+│     • Heap: 4GB (50% of allocated 8GB)                    │
+│     • Storage: 50GB dedicated                              │
+│     • Use Cases:                                           │
+│       - Semantic search (vector embeddings)               │
+│       - Full-text search (materials, lots)                │
+│       - Log aggregation (via Fluentd)                     │
+│     • Configuration:                                       │
+│       cluster.name: ims-search                             │
+│       discovery.type: single-node                          │
+│       xpack.security.enabled: false (internal network)    │
+│                                                            │
+│  4. Backup Strategy                                        │
+│     ─────────────────────────────────────────────────────  │
+│     PostgreSQL:                                            │
+│     • Automated by DigitalOcean (daily backups)           │
+│     • Manual exports: pg_dump weekly to S3                │
+│                                                            │
+│     Redis:                                                 │
+│     • RDB snapshots (automatic)                           │
+│     • AOF logs (continuous)                               │
+│     • Daily backup RDB to S3 via cron                     │
+│                                                            │
+│     Elasticsearch:                                         │
+│     • Snapshot repository to S3 (weekly)                  │
+│     • Can rebuild index from PostgreSQL if needed         │
+│                                                            │
+│  5. Monitoring                                             │
+│     ─────────────────────────────────────────────────────  │
+│     • Prometheus exporters:                                │
+│       - postgres_exporter (connects to DO managed DB)     │
+│       - redis_exporter                                     │
+│       - elasticsearch_exporter                             │
+│     • Grafana dashboards for all databases                │
+│     • Alerts:                                              │
+│       - PostgreSQL connections >80%                        │
+│       - Redis memory >90%                                  │
+│       - Elasticsearch disk >85%                            │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
 
-**Option 2: Managed Database Services**
+**Why Hybrid Approach?**
 
-```
-┌────────────────────────────────────────────────────────────┐
-│  MANAGED DATABASE OPTIONS                                  │
-├────────────────────────────────────────────────────────────┤
-│                                                            │
-│  1. AWS RDS (PostgreSQL)                                   │
-│     ├── Instance: db.r6g.xlarge (4 vCPU, 32GB)           │
-│     ├── Storage: 500GB GP3 SSD                            │
-│     ├── Multi-AZ: Yes (HA)                                │
-│     ├── Automated backups: 7-35 days retention            │
-│     ├── Read replicas: 2 instances                        │
-│     └── Cost: ~$400-600/month                             │
-│                                                            │
-│  2. Google Cloud SQL (PostgreSQL)                         │
-│     ├── Instance: db-custom-4-32768                       │
-│     ├── Storage: 500GB SSD                                │
-│     ├── HA: Regional (automatic failover)                 │
-│     ├── Backups: Automated daily                          │
-│     └── Cost: ~$350-550/month                             │
-│                                                            │
-│  3. Azure Database for PostgreSQL                         │
-│     ├── Tier: General Purpose                             │
-│     ├── vCores: 4                                         │
-│     ├── Storage: 512GB                                    │
-│     ├── HA: Zone-redundant                                │
-│     └── Cost: ~$400-650/month                             │
-│                                                            │
-│  4. DigitalOcean Managed Databases                        │
-│     ├── Size: 4GB RAM, 2 vCPU, 115GB storage             │
-│     ├── Standby nodes: 1                                  │
-│     ├── Daily backups                                     │
-│     └── Cost: ~$120/month (RECOMMENDED for budget)       │
-│                                                            │
-│  5. Supabase (PostgreSQL)                                 │
-│     ├── Pro Plan: Dedicated compute                       │
-│     ├── Storage: 100GB included                           │
-│     ├── Daily backups                                     │
-│     ├── Bonus: REST API auto-generated                    │
-│     └── Cost: $25/month + usage                           │
-│                                                            │
-│  6. Redis Cloud (Managed Redis)                           │
-│     ├── Fixed: 5GB dataset                                │
-│     ├── HA: Replication enabled                           │
-│     └── Cost: ~$40-100/month                              │
-│                                                            │
-│  7. Elastic Cloud (Managed Elasticsearch)                 │
-│     ├── Deployment: 8GB RAM, 2 zones                      │
-│     ├── Storage: 240GB                                    │
-│     ├── Snapshot backups                                  │
-│     └── Cost: ~$150-300/month                             │
-│                                                            │
-└────────────────────────────────────────────────────────────┘
-```
-
-**Option 3: Hybrid Approach (OPTIMAL)**
-
-```
-PostgreSQL:  Managed (AWS RDS / DigitalOcean)
-             └─→ Critical data, needs HA, automated backups
-
-Redis:       Self-hosted on VPS
-             └─→ Cache layer, acceptable data loss
-
-Elasticsearch: Self-hosted OR Elastic Cloud
-             └─→ Search indexing, can rebuild from Postgres
-```
-
-**Database Deployment Comparison:**
-
-| Option | Cost | Reliability | Control | Maintenance | Best For |
-|--------|------|-------------|---------|-------------|----------|
-| **Self-hosted** | $150-300/mo | Medium | Full | High | Full control, budget-conscious |
-| **AWS RDS** | $400-600/mo | Very High | Limited | Low | Enterprise, compliance required |
-| **DigitalOcean Managed** | $120/mo | High | Medium | Low | Startups (RECOMMENDED) |
-| **Hybrid** | $200-400/mo | High | Flexible | Medium | Optimal balance |
+| Database | Deployment | Reason |
+|----------|-----------|--------|
+| **PostgreSQL** | Managed (DO) | • Critical data needs HA & backups<br>• Automatic failover<br>• Professional support<br>• Worth $120/mo for peace of mind |
+| **Redis** | Self-hosted | • Cache layer, acceptable data loss<br>• Easy to restore<br>• Save $40-100/mo |
+| **Elasticsearch** | Self-hosted | • Search index, can rebuild from PG<br>• Non-critical data<br>• Save $150-300/mo |
 
 ---
-
-#### 2.5.4 Tổng hợp Chi phí & Khuyến nghị Deployment
+#### 2.5.3 Tổng hợp Chi phí & Khuyến nghị Deployment
 
 **RECOMMENDED ARCHITECTURE (Cost-Optimized):**
 
@@ -1043,28 +1539,18 @@ Single VPS Deployment (All-in-One):
 TOTAL: ~$110/month
 ```
 
-**ALTERNATIVE: Enterprise Scale (>10K users):**
-
-```
-Kubernetes + Managed Services:
-• Frontend: Vercel ($20/mo)
-• Backend: GKE/EKS ($500-1000/mo)
-  └── Auto-scaling 5-50 pods
-• PostgreSQL: AWS RDS Multi-AZ ($600/mo)
-• Redis: Redis Enterprise Cloud ($200/mo)
-• Elasticsearch: Elastic Cloud ($300/mo)
-• Monitoring: Datadog ($500/mo)
-
-TOTAL: ~$2,120-2,620/month
-```
-
-**Cost Comparison Table:**
+**Cost Comparison:**
 
 | Deployment Model | Monthly Cost | Max Users | Reliability | Complexity |
 |------------------|--------------|-----------|-------------|------------|
 | **Budget (All-in-One VPS)** | $110 | ~500 | Medium | Low |
 | **Recommended (Hybrid)** | $220 | ~5,000 | High | Medium |
-| **Enterprise (K8s + Managed)** | $2,120 | >50,000 | Very High | High |
+
+**Note:** Kiến trúc monolith này có thể scale đến 10,000+ users bằng cách:
+- Tăng VPS resources (vertical scaling)
+- Thêm Read replicas cho PostgreSQL
+- Sử dụng CDN cho static assets
+- Optimize database queries và caching
 
 ---
 
@@ -1098,7 +1584,7 @@ TOTAL: ~$2,120-2,620/month
 │  Layer 4: Data Protection                                 │
 │  • TLS 1.3 (all traffic encrypted)                       │
 │  • Database encryption at rest (AES-256)                  │
-│  • Secrets management (Kubernetes secrets / .env)        │
+│  • Secrets management (.env files + Docker secrets)      │
 │  • PII masking in logs                                    │
 │                                                            │
 │  Layer 5: Audit & Compliance                              │
@@ -1255,12 +1741,12 @@ TOTAL: ~$2,120-2,620/month
 │  │  • Version Control:     Git + GitHub                                     │   │
 │  │  • CI/CD:               GitHub Actions                                   │   │
 │  │  • Container:           Docker + Docker Compose                          │   │
-│  │  • Orchestration:       Kubernetes (production, optional)                │   │
+│  │  • Orchestration:       Docker Compose (all environments)                │   │
 │  │  • API Testing:         Postman / Thunder Client                         │   │
 │  │  • Code Quality:        ESLint + Prettier                                │   │
 │  │  • Testing:             Jest + React Testing Library                     │   │
 │  │  • Load Testing:        k6                                               │   │
-│  │  • Secret Management:   .env files (dev) / Kubernetes secrets (prod)    │   │
+│  │  • Secret Management:   .env files + Docker secrets                     │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 │                                                                                 │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
@@ -1422,12 +1908,7 @@ inventory-management-system/
 │
 ├── infrastructure/                    # Infrastructure as Code
 │   ├── docker/
-│   │   └── docker-compose.yml         # Development stack
-│   ├── kubernetes/                    # Production deployment (optional)
-│   │   ├── deployments/
-│   │   ├── services/
-│   │   ├── configmaps/
-│   │   └── secrets/
+│   │   └── docker-compose.yml         # All environments
 │   └── scripts/
 │       ├── setup-dev.sh
 │       └── backup-db.sh
@@ -1465,8 +1946,7 @@ inventory-management-system/
    - Environment-specific configs (dev, staging, prod)
 
 4. **Infrastructure as Code:**
-   - Docker Compose cho development
-   - Kubernetes manifests cho production (optional)
+   - Docker Compose cho tất cả môi trường (dev, staging, production)
 
 5. **Monitoring & Observability:**
    - Dedicated `monitoring/` directory
@@ -1615,8 +2095,7 @@ React components re-render (optimistic UI)
 2. **Team:** Do we have data scientist + ML engineer? Or need hire?
 3. **Compliance:** Any GDPR/HIPAA requirements affecting data retention?
 4. **Scale:** Expected growth (users, SKUs, transactions) by end 2026?
-5. **Deployment:** Prefer Docker Compose (simple) or Kubernetes (enterprise)?
-6. **AI Priority:** Which AI feature most valuable? (Forecast vs Anomaly vs Vision)
+5. **AI Priority:** Which AI feature most valuable? (Forecast vs Anomaly vs Vision)
 
 ### Recommended Next Steps
 
