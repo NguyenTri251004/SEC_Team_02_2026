@@ -1,9 +1,9 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
     image: postgres:16-alpine
-    container_name: temporary-postgres
+    container_name: ims-postgres
     restart: always
     environment:
       POSTGRES_USER: myuser
@@ -14,9 +14,9 @@ services:
     volumes:
       # This mounts your local SQL file into the container's initialization directory.
       # Postgres will run any .sql file found here ONLY on the first startup.
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      
-      # (Optional) Persist data across restarts. 
+      - ./db-init.sql:/docker-entrypoint-initdb.d/db_init.sql
+
+      # (Optional) Persist data across restarts.
       # If you remove this, the data vanishes when the container stops.
       - postgres_data:/var/lib/postgresql/data
 

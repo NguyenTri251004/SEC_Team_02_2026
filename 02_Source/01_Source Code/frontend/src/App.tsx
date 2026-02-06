@@ -1,44 +1,43 @@
-import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from "react";
+import reactLogo from "./assets/react.svg";
+import viteLogo from "/vite.svg";
+import "./App.css";
 
 interface DataItem {
   id: number;
   name: string;
-  email: string;
   created_at: string;
 }
 
 function App() {
-  const [count, setCount] = useState(0)
-  const [data, setData] = useState<DataItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [count, setCount] = useState(0);
+  const [data, setData] = useState<DataItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch data from backend API
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true)
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-        const response = await fetch(`${apiUrl}/api/data`)
-        const result = await response.json()
+        setLoading(true);
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+        const response = await fetch(`${apiUrl}/api/users`);
+        const result = await response.json();
 
         if (result.success) {
-          setData(result.data)
+          setData(result.data);
         } else {
-          setError('Failed to fetch data')
+          setError("Failed to fetch data");
         }
       } catch (err) {
-        setError('Error connecting to backend: ' + (err as Error).message)
+        setError("Error connecting to backend: " + (err as Error).message);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
   return (
     <>
@@ -56,23 +55,20 @@ function App() {
       <div className="card">
         <h2>Data from Backend:</h2>
         {loading && <p>Loading...</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p style={{ color: "red" }}>{error}</p>}
         {!loading && !error && data.length > 0 && (
           <div>
             {data.map((item) => (
-              <div key={item.id} style={{
-                padding: '10px',
-                margin: '10px 0',
-                border: '1px solid #646cff',
-                borderRadius: '8px'
-              }}>
+              <div
+                key={item.id}
+                style={{
+                  padding: "10px",
+                  margin: "10px 0",
+                  border: "1px solid #646cff",
+                  borderRadius: "8px",
+                }}
+              >
                 <h3>{item.name}</h3>
-                <p style={{ fontSize: '0.9em', color: '#aaa' }}>
-                  📧 {item.email}
-                </p>
-                <p style={{ fontSize: '0.8em', color: '#888' }}>
-                  Created: {new Date(item.created_at).toLocaleString()}
-                </p>
               </div>
             ))}
           </div>
@@ -91,7 +87,7 @@ function App() {
         Click on the Vite and React logos to learn more
       </p>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

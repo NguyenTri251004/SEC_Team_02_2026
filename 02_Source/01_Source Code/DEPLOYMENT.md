@@ -1,127 +1,119 @@
-# 🚀 Deploy lên DigitalOcean Droplet + Supabase
+# 🚀 Deploy Frontend to Vercel + Backend to Fly.io + Database to Supabase
 
-Hướng dẫn chi tiết deploy **Frontend** + **Backend** lên **DigitalOcean Droplet** và **Database** lên **Supabase**.
+Complete deployment guide for **Frontend** on **Vercel**, **Backend** on **Fly.io**, and **Database** on **Supabase** - **100% FREE**!
+
+> ⚠️ **IMPORTANT:** This guide uses ONLY FREE services. NO payment method required. Avoid paid add-ons like Fly.io's Managed Postgres.
 
 ---
 
 ## 📊 Architecture Overview
 
 ```
-┌─────────────────────────────────────────────┐
-│         Your Custom Domain                   │
-│    (yourdomain.com / IP address)             │
-└──────────────────────┬──────────────────────┘
-                       │
-         ┌─────────────┴─────────────┐
-         │                           │
-    ┌────▼──────────┐         ┌──────▼──────────┐
-    │  DigitalOcean │         │    Supabase     │
-    │    Droplet    │         │   PostgreSQL    │
-    │  (Ubuntu 22)  │         │    (Cloud DB)   │
-    │               │         │                 │
-    │ ┌─────────┐   │         │ ┌─────────────┐ │
-    │ │Frontend │   │         │ │   Database  │ │
-    │ │ (React) │   │────────────│ (Postgres)  │ │
-    │ │ :5173   │   │         │ │ :5432       │ │
-    │ └────┬────┘   │         │ └─────────────┘ │
-    │      │        │         │                 │
-    │ ┌────▼─────┐  │         └─────────────────┘
-    │ │ Backend  │  │
-    │ │(Express) │  │
-    │ │ :3000    │  │
-    │ └──────────┘  │
-    │               │
-    └───────────────┘
-      $6-12/month
+┌──────────────────────────────────────────────────────┐
+│         yourdomain.com (Custom Domain)               │
+└──────────────┬──────────────────────────────┬────────┘
+               │                              │
+        ┌──────▼──────────┐           ┌───────▼────────┐
+        │     Vercel      │           │     Fly.io     │
+        │  (Frontend CDN) │           │   (Backend)    │
+        │                │           │                │
+        │ ┌────────────┐  │           │ ┌────────────┐ │
+        │ │   React    │  │           │ │  Express   │ │
+        │ │   (SSR)    │  │           │ │  (Node.js) │ │
+        │ │ Auto-scale │  │           │ │   :3000    │ │
+        │ └────────────┘  │           │ └─────┬──────┘ │
+        │                │           │       │        │
+        └─────────────────┘           └───────┼────────┘
+                            │
+                                              │
+                                    ┌─────────▼──────────┐
+                                    │    Supabase        │
+                                    │   PostgreSQL       │
+                                    │   (Cloud DB - Free)│
+                                    │                    │
+                                    │ ┌────────────────┐ │
+                                    │ │    Database    │ │
+                                    │ │   (500MB free) │ │
+                                    │ └────────────────┘ │
+                                    └────────────────────┘
+
 ```
-
----
-
-## 📋 Yêu cầu
-
-✅ DigitalOcean account (https://www.digitalocean.com)  
-✅ Supabase account (https://app.supabase.com)  
-✅ GitHub account (với private repo)  
-✅ Domain name (tùy chọn, có thể dùng IP)  
-✅ SSH key setup  
-✅ Firewall access
 
 ---
 
 ## ⚡ Quick Deploy Checklist
 
-| Bước      | Task                        | Est. Time   |
-| --------- | --------------------------- | ----------- |
-| 1         | Setup Supabase Database     | 5 min       |
-| 2         | Create DigitalOcean Droplet | 2 min       |
-| 3         | Upload & Run Deploy Script  | 10 min      |
-| 4         | Configure .env.prod         | 5 min       |
-| 5         | Setup Domain & SSL          | 15 min      |
-| 6         | Test & Monitor              | 5 min       |
-| **TOTAL** |                             | **~45 min** |
+| Step      | Task                       | Est. Time   |
+| --------- | -------------------------- | ----------- |
+| 1         | Setup Supabase Database    | 5 min       |
+| 2         | Deploy Backend to Fly.io   | 10 min      |
+| 3         | Deploy Frontend to Vercel  | 5 min       |
+| 4         | Configure Environment Vars | 5 min       |
+| 5         | Setup Custom Domain (Opt.) | 10 min      |
+| 6         | Test & Verify              | 5 min       |
+| **TOTAL** |                            | **~40 min** |
 
 ---
 
 ## 📚 Table of Contents
 
 - [Supabase Database Setup](#1-supabase-database-setup)
-- [DigitalOcean Droplet Setup](#2-digitalocean-droplet-setup)
-- [Deployment Script](#3-deployment-script)
+- [Fly.io Backend Deployment](#2-flyio-backend-deployment)
+- [Vercel Frontend Deployment](#3-vercel-frontend-deployment)
 - [Environment Configuration](#4-environment-configuration)
-- [Domain & SSL](#5-domain--ssl-setup)
+- [Custom Domain & SSL](#5-custom-domain--ssl-setup)
 - [Monitoring](#6-monitoring--logs)
-- [Maintenance](#7-maintenance)
-- [Troubleshooting](#8-troubleshooting)
-- [Backup & Recovery](#9-backup--recovery)
+- [Troubleshooting](#7-troubleshooting)
+- [Backup & Recovery](#8-backup--recovery)
 
 ---
 
 # 1️⃣ Supabase Database Setup
 
-## Bước 1: Tạo Supabase Project
+## Step 1: Create Supabase Project
 
-1. Vào https://app.supabase.com
+1. Go to https://app.supabase.com
 2. Click **"New Project"**
-3. Cấu hình:
+3. Configure:
    ```
    Organization: (create or select)
    Project name: ims-production
    Password: [strong password - save it!]
-   Region: Singapore (gần Việt Nam nhất)
+   Region: Singapore
    ```
-4. Click **"Create new project"** (chờ 3-5 phút)
+4. Click **"Create new project"** (wait 3-5 minutes)
 
-## Bước 2: Lấy Connection String
+## Step 2: Get Connection String
 
-1. Đợi project ready
-2. Vào **Settings** → **Database**
+1. Wait for project to be ready
+2. Go to **Settings** → **Database**
 3. Tab **"Connection string"** → Copy **URI** format:
    ```
    postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres
    ```
-4. **Lưu thông tin này** (sẽ cần cho .env.prod)
+4. **Save this information** (needed for .env)
 
 **Variables:**
 
-- `[PASSWORD]`: Database password bạn vừa tạo
-- `[HOST]`: Unique ID của project (ví dụ: `db.cposdksrjwblusvegmsl`)
+- `[PASSWORD]`: Database password you just created
+- `[HOST]`: Unique project ID (example: `db.cposdksrjwblusvegmsl`)
 
-## Bước 3: Import Database Schema
+## Step 3: Import Database Schema
 
-### Cách A: Sử dụng Supabase SQL Editor (Dễ)
+### Method A: Using Supabase SQL Editor (Easiest)
 
-1. Vào **SQL Editor** trong Supabase Dashboard
+1. Go to **SQL Editor** in Supabase Dashboard
 2. Click **"New Query"**
-3. Copy nội dung từ file `db_schema/db-init.sql`
-4. Paste vào editor
+3. Copy content from `db_schema/db-init.sql` file
+4. Paste into editor
 5. Click **"Run"**
-6. ✅ Chờ schema được tạo (1-2 giây)
+6. ✅ Wait for schema creation (1-2 seconds)
 
-### Cách B: Sử dụng psql (Command Line)
+### Method B: Using psql (Command Line)
 
 ```bash
-# Lấy connection string từ Supabase
-# Thay [CONNECTION_STRING] với URI từ bước 2
+# Get connection string from Supabase
+# Replace [CONNECTION_STRING] with URI from step 2
 
 psql "[CONNECTION_STRING]" -f db_schema/db-init.sql
 
@@ -129,9 +121,9 @@ psql "[CONNECTION_STRING]" -f db_schema/db-init.sql
 psql "[CONNECTION_STRING]" -c "\dt"
 ```
 
-## Bước 4: Verify Database
+## Step 4: Verify Database
 
-Kiểm tra schema được tạo:
+Check that schema was created:
 
 ```bash
 # Connect to Supabase
@@ -157,343 +149,304 @@ SELECT * FROM users;
 \q
 ```
 
-## Bước 5: Firewall & Network (Important!)
+## Step 5: Firewall & Network (Important!)
 
-Supabase cho phép tất cả connections từ bên ngoài.  
-Nếu cần restrict, thêm IP whitelist:
+Supabase allows all connections by default.  
+If you need to restrict, add IP whitelist:
 
 1. **Settings** → **Network**
-2. Add IP ranges nếu cần
-3. Keep default (allow all) để dễ
+2. Add IP ranges if needed
+3. Keep default (allow all) for simplicity
 
 ---
 
-# 2️⃣ DigitalOcean Droplet Setup
+# 2️⃣ Fly.io Backend Deployment
 
-## Bước 1: Tạo Droplet
+## Step 1: Prepare Backend Repository
 
-1. DigitalOcean Dashboard → **Droplets** → **Create Droplet**
+Ensure backend folder has required files:
 
-2. **Choose Region**
+1. `package.json` ✅
+2. `tsconfig.json` ✅
+3. `src/server.ts` ✅
+4. `.env.example` ✅
 
-   ```
-   Region: Singapore (gần nhất)
-   ```
-
-3. **Choose Image**
-
-   ```
-   OS: Ubuntu
-   Version: 22.04 LTS (Recommended)
-   ```
-
-4. **Choose Size**
-
-   ```
-   💰 $6/month (1GB RAM) - Good for Dev/Small Production
-   💰 $12/month (2GB RAM) - Recommended for Production
-   ```
-
-5. **Authentication**
-
-   ```
-   SSH Key (Recommended)
-   - If you don't have one, click "New SSH Key"
-   - Follow prompts to generate
-   ```
-
-6. **Hostname**
-
-   ```
-   ims-server-prod
-   ```
-
-7. **Backups** (Optional)
-
-   ```
-   Enable: Yes (3 backups, $1.20/month)
-   ```
-
-8. Click **"Create Droplet"** (chờ 1-2 phút)
-
-## Bước 2: SSH vào Droplet
+## Step 2: Install Fly CLI
 
 ```bash
-# Lấy IP từ DigitalOcean Dashboard
+# Windows (PowerShell)
+choco install flyctl
 
-ssh root@[DROPLET_IP]
+# macOS
+brew install flyctl
 
-# First time: accept fingerprint
-# Type: yes
+# Linux
+curl -L https://fly.io/install.sh | sh
 ```
 
-**Verify bạn đã connect:**
+Verify:
 
 ```bash
-hostname
-# Output: ubuntu-server (hoặc hostname bạn chọn)
+flyctl version
+```
 
-pwd
-# Output: /root
+## Step 3: Login to Fly.io
+
+```bash
+flyctl auth login
+
+# Opens browser for authentication
+# Create account if you don't have one
+```
+
+## Step 4: Setup Fly.io Project
+
+From backend folder:
+
+```bash
+cd 02_Source\01_Source\ Code\backend
+
+# Create Fly.io app WITHOUT Managed Postgres
+flyctl launch --no-db
+```
+
+This creates `fly.toml` file
+
+## Step 5: Configure Environment Variables
+
+```bash
+# From backend folder
+flyctl secrets set DATABASE_URL="postgresql://postgres:[YOUR_PASSWORD]@[YOUR_HOST].supabase.co:5432/postgres"
+flyctl secrets set NODE_ENV="production"
+flyctl secrets set PORT="3000"
+```
+
+Replace `[YOUR_PASSWORD]` and `[YOUR_HOST]` from Supabase credentials
+
+## Step 6: Deploy Backend
+
+```bash
+# Deploy to Fly.io
+flyctl deploy
+
+# Wait for build & deployment (2-3 minutes)
+```
+
+After completion, you'll see URL:
+
+```
+App URL: https://ims-backend.fly.dev
+```
+
+## Step 7: Verify Backend
+
+```bash
+# Test endpoint
+curl https://ims-backend.fly.dev/api/users
+
+# Should return:
+# {"success":true,"data":[...]}
+```
+
+Check logs:
+
+```bash
+flyctl logs
 ```
 
 ---
 
-# 3️⃣ Deployment Script
+# 3️⃣ Vercel Frontend Deployment
 
-## Bước 1: Upload Deploy Script
+## Step 1: Prepare Frontend Repository
 
-**Cách 1: Manual (Dễ nhất)**
+Ensure frontend folder has required files:
 
-```bash
-# SSh vào droplet (from bước 2)
-nano deploy.sh
+1. `package.json` ✅
+2. `vite.config.ts` ✅
+3. `src/` folder ✅
+4. `.env.example`✅
 
-# Copy toàn bộ nội dung từ deploy.sh file
-# Paste (Ctrl+Shift+V)
-# Save (Ctrl+X → y → Enter)
-```
+## Step 2: Create .env.local For Vercel
 
-**Cách 2: SCP từ Local Machine**
-
-```powershell
-# Windows PowerShell
-scp "C:\Users\HP\clones\SEC_Team_02_2026\02_Source\01_Source Code\deploy.sh" root@[DROPLET_IP]:/root/
-```
-
-## Bước 2: Chạy Deploy Script
+Create `.env.local` in frontend folder:
 
 ```bash
-# SSH vào droplet first
-ssh root@[DROPLET_IP]
+cd 02_Source\01_Source\ Code\frontend
 
-# Chạy script
-chmod +x deploy.sh
-./deploy.sh
+# Create env file from Command Prompt (cmd)
+echo VITE_API_URL=https://ims-backend.fly.dev > .env.local 
+
 ```
 
-Script sẽ:
+Or manually edit with your backend URL:
 
-- ✅ Update system packages
-- ✅ Install Docker & Docker Compose
-- ✅ Install Git & Certbot
-- ✅ Setup GitHub authentication
-- ✅ Clone repository
-- ✅ Create .env.prod template
+```env
+VITE_API_URL=https://ims-backend.fly.dev
+```
+
+## Step 3: Push Code to GitHub
+
+Make sure your code is on GitHub:
+
+```bash
+# Add all changes
+git add .
+
+# Commit
+git commit -m "Prepare for deployment"
+
+# Push to GitHub
+git push origin master
+```
+
+## Step 4: Login to Vercel
+
+1. Go to https://vercel.com
+2. Click **"Sign Up"**
+3. Choose **"Continue with GitHub"**
+4. Authorize Vercel to access your repositories
+
+## Step 5: Import Project to Vercel
+
+1. On Vercel Dashboard, click **"Add New"** → **"Project"**
+2. Select your **SEC_Team_02_2026** repository
+3. Configure:
+   ```
+   Project Name: ims-frontend
+   Framework Preset: Vite
+   Root Directory: 02_Source/01_Source Code/frontend
+   ```
+
+## Step 6: Set Environment Variables
+
+In Vercel project settings:
+
+1. Go to **Settings** → **Environment Variables**
+2. Add:
+   ```
+   VITE_API_URL = https://ims-backend.fly.dev
+   ```
+3. Click **"Save"**
+
+## Step 7: Deploy Frontend
+
+1. Click **"Deploy"**
+2. Wait for build & deployment (1-2 minutes)
+3. You'll see URL: `https://ims-frontend-[random].vercel.app`
+
+## Step 8: Verify Frontend
+
+Open the URL in browser and check:
+
+- Frontend loads successfully ✅
+- Can make API calls to backend ✅
+- Data displays from database ✅
+
+## Step 9: (Optional) Connect Custom Domain
+
+1. Go to **Settings** → **Domains**
+2. Add your domain
+3. Update DNS records according to Vercel's instructions
+4. SSL certificate auto-configured
 
 ---
 
 # 4️⃣ Environment Configuration
 
-## Bước 1: Edit .env.prod
+## Configure Backend Environment
+
+Create `.env` file in backend folder:
 
 ```bash
-# SSH vào droplet
-ssh root@[DROPLET_IP]
+cd 02_Source\01_Source\ Code\backend
 
-# Navigate to project
-cd /root/SEC_Team_02_2026/02_Source/01_Source\ Code
-
-# Edit environment file
-nano .env.prod
+# Create env file
+echo DATABASE_URL=postgresql://postgres:[YOUR_PASSWORD]@[YOUR_HOST].supabase.co:5432/postgres > .env
+echo NODE_ENV=production >> .env
+echo PORT=3000 >> .env
 ```
 
-## Bước 2: Update Environment Variables
+Or edit manually. Update with Supabase credentials:
 
 ```env
-# ==========================================
-# Database (Supabase)
-# ==========================================
 DATABASE_URL=postgresql://postgres:[YOUR_PASSWORD]@[YOUR_HOST].supabase.co:5432/postgres
-
-# ==========================================
-# Backend Configuration
-# ==========================================
 NODE_ENV=production
 PORT=3000
-
-# ==========================================
-# Frontend Configuration
-# ==========================================
-# Format: https://yourdomain.com (with domain)
-# Or: http://[DROPLET_IP] (without domain)
-FRONTEND_URL=https://yourdomain.com
-BACKEND_URL=https://api.yourdomain.com
-
-# ==========================================
-# If using IP address instead of domain:
-# ==========================================
-# FRONTEND_URL=http://[DROPLET_IP]
-# BACKEND_URL=http://[DROPLET_IP]:3000
 ```
 
-## Bước 3: Verify Environment
+## Configure Frontend Environment
+
+Create `.env.local` file in frontend folder:
+
+```env
+VITE_API_URL=https://ims-backend.fly.dev
+```
+
+## Verify Environments
 
 ```bash
-# Kiểm tra file
-cat .env.prod
+# Check backend .env
+cat 02_Source\01_Source\ Code\backend\.env
 
-# Output should show:
-# DATABASE_URL=postgresql://postgres:...
-# NODE_ENV=production
-# PORT=3000
-# FRONTEND_URL=...
-# BACKEND_URL=...
+# Check frontend .env
+cat 02_Source\01_Source\ Code\frontend\.env.local
 ```
 
 ---
 
-# 5️⃣ Build & Start Services
+# 5️⃣ Custom Domain & SSL Setup
 
-## Bước 1: Build Docker Images
+## Step 1: Configure Domain DNS (Optional)
 
-```bash
-# From /root/SEC_Team_02_2026/02_Source/01_Source\ Code
-docker-compose -f docker-compose.prod.yml build
-
-# This will:
-# - Build backend image
-# - Build frontend image
-# - Download Nginx image
-```
-
-**Monitor build:**
-
-```bash
-# In another terminal, monitor disk usage
-df -h
-```
-
-## Bước 2: Start Services
-
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-
-# Output:
-# Creating ims-backend ... done
-# Creating ims-frontend ... done
-# Creating ims-nginx ... done
-```
-
-## Bước 3: Verify Services Starting
-
-```bash
-# Check status
-docker-compose -f docker-compose.prod.yml ps
-
-# Expected output:
-# NAME           STATUS
-# ims-backend    Up 30 seconds (healthy)
-# ims-frontend   Up 25 seconds
-# ims-nginx      Up 20 seconds
-
-# View logs
-docker-compose -f docker-compose.prod.yml logs -f
-
-# Wait for "Connected to PostgreSQL" message in backend logs
-```
-
----
-
-# 6️⃣ Domain & SSL Setup
-
-## Bước 1: Configure Domain DNS (Optional)
-
-**If using custom domain:**
+If using custom domain:
 
 1. Go to your domain registrar (GoDaddy, Namecheap, etc.)
-2. Update **A Records**:
+2. Update **CNAME Records**:
    ```
-   @ → [DROPLET_IP]
-   www → [DROPLET_IP]
-   api → [DROPLET_IP]  (optional, for API subdomain)
+   yourdomain.com → cname.vercel-dns.com (for Vercel)
+   ims-backend.yourdomain.com → fly.io endpoint
    ```
-3. ⏳ Wait for DNS propagation (5-30 minutes)
+3. Wait for DNS propagation (5-30 minutes)
 4. Test: `nslookup yourdomain.com`
 
-**If using IP address only:**
+## Step 2: Add Domain to Vercel
 
-Skip to testing section below.
+1. In Vercel Dashboard, go to **Settings** → **Domains**
+2. Add your domain
+3. Add DNS records as Vercel instructs
+4. SSL certificate auto-configured
 
-## Bước 2: Setup SSL Certificate (Recommended)
+## Step 3: Add Domain to Fly.io
 
-```bash
-# Stop services temporarily
-docker-compose -f docker-compose.prod.yml stop
-
-# Install certificate
-sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com -d api.yourdomain.com
-
-# Select email for renewal notices
-# Agree to terms
-# Share email: no
-
-# Output shows certificate location:
-# /etc/letsencrypt/live/yourdomain.com/fullchain.pem
-```
-
-## Bước 3: Enable HTTPS in Nginx
-
-```bash
-# Edit nginx config
-nano nginx.prod.conf
-
-# Find section: # server { listen 443 ssl http2;
-# Remove ALL # from that section
-
-# Update domain name (search for 'yourdomain.com'):
-# Line: server_name yourdomain.com www.yourdomain.com;
-# Update to your actual domain
-```
-
-## Bước 4: Restart Services
-
-```bash
-# Restart with SSL enabled
-docker-compose -f docker-compose.prod.yml up -d
-
-# Verify HTTPS
-curl https://yourdomain.com
-
-# Should return HTML (no SSL errors)
-```
-
-## Bước 5: Auto-Renewal Setup
-
-```bash
-# Test renewal (dry-run, doesn't actually renew)
-sudo certbot renew --dry-run
-
-# Setup auto-renewal with cron
-sudo crontab -e
-
-# Add line:
-0 3 * * * certbot renew --quiet --post-hook "cd /root/SEC_Team_02_2026/02_Source/01_Source\ Code && docker-compose -f docker-compose.prod.yml restart"
-
-# Save (Ctrl+X → y → Enter)
-```
+1. In Fly.io Dashboard, go to your backend app
+2. Click **Settings** → **Hostnames**
+3. Add custom domain
+4. Update DNS records
+5. SSL auto-configured
 
 ---
 
-# 7️⃣ Testing & Verification
+# 6️⃣ Testing & Verification
 
 ## Test Frontend
 
 ```bash
-# Option 1: Using IP
-curl http://[DROPLET_IP]
-
-# Option 2: Using Domain + HTTPS
-curl https://yourdomain.com
-
-# Should return HTML content
+# Open in browser
+https://ims-frontend-[random].vercel.app
 ```
+
+Verify:
+
+- React app loads ✅
+- Can see UI components ✅
+- No console errors ✅
 
 ## Test Backend API
 
 ```bash
 # Get users
-curl http://[DROPLET_IP]:3000/api/users
+curl https://ims-backend.fly.dev/api/users
 
 # Should return:
 # {"success":true,"data":[{"id":1,"name":"hello world"}]}
@@ -501,116 +454,75 @@ curl http://[DROPLET_IP]:3000/api/users
 
 ## Test Database Connection
 
-```bash
-# From droplet
-docker-compose -f docker-compose.prod.yml logs backend
+From your local machine:
 
-# Should see:
-# ✓ Connected to Supabase PostgreSQL database
+```bash
+psql "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres" -c "SELECT * FROM users;"
+
+# Should return user data
 ```
 
-## Browser Testing
+## End-to-End Testing
 
-| URL                     | Expected                  |
-| ----------------------- | ------------------------- |
-| http://[IP]             | React app loads           |
-| http://[IP]/api/users   | JSON with users data      |
-| http://[IP]:3000/health | `{"status":"ok"}`         |
-| https://yourdomain.com  | React app + HTTPS lock 🔒 |
+| Test     | URL                                   | Expected        |
+| -------- | ------------------------------------- | --------------- |
+| Frontend | https://ims-frontend.vercel.app       | React app loads |
+| Backend  | https://ims-backend.fly.dev/api/users | JSON data       |
+| Database | Supabase Console                      | Tables visible  |
 
----
-
-# 8️⃣ Monitoring & Logs
-
-## View Real-time Logs
+## Verify Integrations
 
 ```bash
-# All services
-docker-compose -f docker-compose.prod.yml logs -f
+# On frontend, check Network tab in DevTools
+# API calls should go to: https://ims-backend.fly.dev
 
-# Specific service
-docker-compose -f docker-compose.prod.yml logs -f backend
-docker-compose -f docker-compose.prod.yml logs -f frontend
-
-# Last 50 lines + follow
-docker-compose -f docker-compose.prod.yml logs --tail 50 -f backend
-```
-
-## Check Service Status
-
-```bash
-# Overall status
-docker-compose -f docker-compose.prod.yml ps
-
-# Detailed container info
-docker ps -a
-
-# Container resource usage
-docker stats
-
-# Check specific service
-docker-compose -f docker-compose.prod.yml exec backend /bin/sh -c "curl http://localhost:3000/health"
-```
-
-## Database Connection Check
-
-```bash
-# Test Supabase connection
-psql "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres" -c "SELECT COUNT(*) FROM users;"
-
-# Should return: 1 (from sample data)
+# Data should flow: Frontend → Backend → Supabase → Frontend
 ```
 
 ---
 
-# 9️⃣ Maintenance & Updates
+# 7️⃣ Monitoring & Logs
 
-## Regular Maintenance
-
-```bash
-# Check disk usage
-df -h
-
-# Check memory usage
-free -h
-
-# View system logs
-journalctl -xe
-
-# Clean up Docker
-docker system prune -a --volumes
-```
-
-## Update Code
+## View Backend Logs (Fly.io)
 
 ```bash
-# Pull latest from GitHub
-git pull origin master
+# Real-time logs
+flyctl logs
 
-# Rebuild and restart
-docker-compose -f docker-compose.prod.yml up -d --build
+# Last 100 lines
+flyctl logs -n 100
 
-# Verify
-docker-compose -f docker-compose.prod.yml ps
+# Specific app
+flyctl logs --app ims-backend
 ```
 
-## Restart Services
+## View Frontend Logs (Vercel)
 
-```bash
-# Restart all
-docker-compose -f docker-compose.prod.yml restart
+1. Go to Vercel Dashboard
+2. Select your project
+3. Click **"Deployments"** tab
+4. Choose deployment → View **"Logs"**
 
-# Restart specific service
-docker-compose -f docker-compose.prod.yml restart backend
+## Monitor Performance
 
-# Stop all
-docker-compose -f docker-compose.prod.yml down
+### Fly.io Monitoring
 
-# Start all
-docker-compose -f docker-compose.prod.yml up -d
-```
+1. Dashboard → Select app
+2. View:
+   - CPU usage
+   - Memory usage
+   - Request metrics
+   - Response times
 
-## View Supabase Metrics
+### Vercel Analytics
+
+1. Dashboard → Settings → Analytics
+2. View:
+   - Core Web Vitals
+   - Response times
+   - Error rates
+
+### Supabase Metrics
 
 1. Go to https://app.supabase.com
 2. Select project
@@ -618,734 +530,639 @@ docker-compose -f docker-compose.prod.yml up -d
    - Database size
    - API calls
    - Auth events
-   - Real-time subscriptions
 
 ---
 
-# 🔟 Backup & Recovery
+# 8️⃣ Updates & Maintenance
 
-## Database Backups (Supabase)
+## Deploy Code Updates
+
+### Backend Updates (Fly.io)
+
+```bash
+cd 02_Source\01_Source\ Code\backend
+
+# Commit changes
+git add .
+git commit -m "Update backend"
+git push origin master
+
+# Deploy to Fly.io
+flyctl deploy
+```
+
+### Frontend Updates (Vercel)
+
+```bash
+cd 02_Source\01_Source\ Code\frontend
+
+# Commit changes
+git add .
+git commit -m "Update frontend"
+git push origin master
+
+# Vercel auto-deploys on push! ✅
+```
+
+## Regular Maintenance
+
+### Fly.io Backend
+
+```bash
+# Check app status
+flyctl status
+
+# View resource usage
+flyctl metrics
+
+# Scale resources if needed
+flyctl scale vm shared-cpu-1x
+```
+
+### Supabase Database
+
+1. Monitor storage usage in dashboard
+2. Check for slow queries in logs
+3. Create indexes if needed for performance
+
+### Vercel Frontend
+
+- Automatically handles updates
+- Check **Analytics** for performance
+- Review deployments in dashboard
+
+## Backup Strategy
+
+### Supabase Auto-Backups
+
+- Daily backups: keep 7 days
+- Weekly backups: keep 4 weeks
+- Monthly backups: keep 3 months
+
+### Manual Database Backup
+
+```bash
+# Backup to local file
+pg_dump "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres" > backup_$(date +%Y%m%d).sql
+
+# Restore from backup
+psql "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres" < backup_20260206.sql
+```
+
+---
+
+# 9️⃣ Backup & Recovery
+
+## Supabase Database Backups
 
 ### Automatic Backups
 
 Supabase provides:
 
-- Daily backups (retained 7 days)
-- Weekly backups (retained 4 weeks)
-- Monthly backups (retained 3 months)
+- Daily backups (7 days retention)
+- Weekly backups (4 weeks retention)
+- Monthly backups (3 months retention)
 
-### Manual Backup
+### Manual Backup & Restore
 
 ```bash
-# Backup database to local file
+# Create backup
 pg_dump "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres" > ims_backup_$(date +%Y%m%d).sql
 
 # Restore from backup
 psql "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres" < ims_backup_20260206.sql
 ```
 
-## Droplet Snapshots
+## Code Backup
+
+- GitHub acts as your code repository
+- All commits are preserved
+- Can revert to any previous commit:
 
 ```bash
-# From DigitalOcean Dashboard:
-# 1. Select Droplet
-# 2. Click "Snapshots"
-# 3. Click "Take Snapshot"
-# 4. Name: ims-prod-backup-[DATE]
+# View commit history
+git log --oneline
 
-# Restore from snapshot:
-# 1. Click "More" → "Restore from Snapshot"
-# 2. Select snapshot
-# 3. Choose target Droplet
+# Revert to specific commit
+git revert [COMMIT_HASH]
 ```
+
+## Disaster Recovery Plan
+
+| Issue           | Recovery                                |
+| --------------- | --------------------------------------- |
+| Backend down    | Fly.io auto-restarts, check logs        |
+| Database down   | Restore from Supabase backup            |
+| Frontend broken | Revert to previous Vercel deployment    |
+| Total loss      | Restore from database backup + redeploy |
 
 ---
 
-# 1️⃣1️⃣ Troubleshooting
+# 🔟 Troubleshooting
 
-### Port 80/443 In Use
+## Backend Issues
+
+### Payment Method Required Error
+
+**Issue:** "You'll need to add a payment method in order to proceed"
+
+**Cause:** You ran `flyctl launch` without `--no-db`, so Fly.io auto-created a Managed Postgres database ($38/month)
+
+**Solution:**
+
+1. Delete the `fly.toml` file:
 
 ```bash
-# Find process
-lsof -i :80
-lsof -i :443
+cd 02_Source\01_Source\ Code\backend
+Remove-Item fly.toml -Force
+```
 
-# Kill process
-kill -9 [PID]
+2. Relaunch WITHOUT database:
 
-# Or restart docker
-docker-compose -f docker-compose.prod.yml restart
+```bash
+flyctl launch --no-db
+```
+
+3. Skip payment by pressing `N` when asked
+
+4. Continue with Step 5 normally
+
+**✅ Result:** Free deployment using Supabase instead of Managed Postgres
+
+---
+
+### Fly.io App Not Starting
+
+```bash
+# Check logs
+flyctl logs
+
+# Check app status
+flyctl status
+
+# Restart app
+flyctl restart
+
+# Check environment variables
+flyctl secrets list
 ```
 
 ### Database Connection Error
 
 ```bash
-# Check DATABASE_URL
-cat .env.prod | grep DATABASE_URL
+# Verify DATABASE_URL
+flyctl secrets list | grep DATABASE_URL
 
+# Test connection from backend logs
+flyctl logs | grep -i "database\|connection"
+
+# Check Supabase status
+# Go to https://app.supabase.com
+```
+
+### Port Issues
+
+```bash
+# Fly.io doesn't expose ports directly
+# Request goes through: yourdomain.com → Fly.io internal port 3000
+# Check nginx/reverse proxy config
+```
+
+## Frontend Issues
+
+### Vercel Deployment Failed
+
+1. Check **Deployments** tab in Vercel Dashboard
+2. Click failed deployment → View **Build Logs**
+3. Common issues:
+   - Missing environment variables
+   - Build script errors
+   - Port conflicts
+
+### API Calls Failing
+
+```bash
+# Check VITE_API_URL in .env.local
+cat frontend/.env.local
+
+# Verify backend is accessible
+curl https://ims-backend.fly.dev/api/users
+
+# Check browser Console for CORS errors
+# May need to add Vercel domain to backend CORS
+```
+
+### Build Errors
+
+```bash
+# Rebuild locally
+cd frontend
+npm run build
+
+# Check for TypeScript errors
+npm run type-check
+
+# Clear cache
+rm -rf .next node_modules
+npm install
+```
+
+## Database Issues
+
+### Can't Connect to Supabase
+
+```bash
 # Test connection
-psql "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres" -c "\dt"
+psql "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres" -c "SELECT 1;"
 
-# Check backend logs
-docker-compose -f docker-compose.prod.yml logs backend
+# Check connection string format
+# Should be: postgresql://postgres:PASSWORD@HOST.supabase.co:5432/postgres
+
+# Verify Supabase project is running
+# Go to https://app.supabase.com
 ```
 
-### Frontend Not Loading
+### Database Full (500MB limit)
 
-```bash
-# Check frontend logs
-docker-compose -f docker-compose.prod.yml logs frontend
+1. Check storage in Supabase Dashboard
+2. Delete old/unused data
+3. Optimize table indexes
+4. Upgrade plan if needed
 
-# Verify Nginx config
-docker-compose -f docker-compose.prod.yml exec frontend nginx -t
+## Network Issues
 
-# Rebuild frontend
-docker-compose -f docker-compose.prod.yml build frontend
-docker-compose -f docker-compose.prod.yml up -d frontend
-```
-
-### Disk Space Issues
-
-```bash
-# Check usage
-df -h
-
-# Remove old images
-docker image prune -a
-
-# Remove volumes
-docker volume prune
-
-# Check docker usage
-du -sh /var/lib/docker/
-```
-
-### SSL Certificate Issues
-
-```bash
-# List certificates
-certbot certificates
-
-# Renew manually
-sudo certbot renew --force-renewal
-
-# Check certificate expiry
-openssl x509 -in /etc/letsencrypt/live/yourdomain.com/fullchain.pem -noout -dates
-```
-
----
-
-# 1️⃣2️⃣ Performance Optimization
-
-## Database Query Optimization
-
-```bash
-# Check slow queries
-psql "[DATABASE_URL]" -c "SELECT * FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;"
-
-# Create indexes on frequently used columns
-psql "[DATABASE_URL]" -c "CREATE INDEX idx_materials_type ON materials(material_type);"
-```
-
-## Backend Optimization
-
-```yaml
-# In docker-compose.prod.yml, add resource limits:
-services:
-  backend:
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 512M
-        reservations:
-          cpus: "0.5"
-          memory: 256M
-```
-
-## Frontend Caching
-
-Already configured in `nginx.prod.conf`:
-
-- Static files cached 1 year
-- JS/CSS cached 1 year
-- Images cached 30 days
-- Gzip compression enabled
-
----
-
-# 1️⃣3️⃣ Security Best Practices
-
-```bash
-# 1. Keep system updated
-apt update && apt upgrade -y
-
-# 2. Check firewall
-ufw status
-
-# 3. Monitor logs
-tail -f /var/log/auth.log
-
-# 4. Check failed SSH attempts
-grep "Failed password" /var/log/auth.log | wc -l
-
-# 5. Disable root SSH login (optional)
-# Edit /etc/ssh/sshd_config
-# Set: PermitRootLogin no
-# Restart: systemctl restart sshd
-
-# 6. Check open ports
-netstat -tuln
-
-# 7. Validate SSL
-openssl s_client -connect yourdomain.com:443
-```
-
----
-
-# ✅ Deployment Checklist
-
-- [ ] Supabase project created
-- [ ] Database schema imported
-- [ ] Droplet created & accessible
-- [ ] Deploy script uploaded & executed
-- [ ] .env.prod configured correctly
-- [ ] Docker images built successfully
-- [ ] All services running (docker ps)
-- [ ] Frontend accessible via browser
-- [ ] API endpoints responding
-- [ ] Database connected (logs show success)
-- [ ] Domain DNS configured (if using domain)
-- [ ] SSL certificate installed
-- [ ] HTTPS working with lock icon
-- [ ] Auto-renewal configured
-- [ ] Monitoring & alerts set up
-- [ ] Backup strategy in place
-
----
-
-# 📚 Additional Resources
-
-| Resource            | Link                            |
-| ------------------- | ------------------------------- |
-| DigitalOcean Docs   | https://docs.digitalocean.com   |
-| Supabase Docs       | https://supabase.com/docs       |
-| Docker Compose Docs | https://docs.docker.com/compose |
-| PostgreSQL Docs     | https://www.postgresql.org/docs |
-| Nginx Docs          | https://nginx.org/en/docs       |
-| Let's Encrypt       | https://letsencrypt.org         |
-
----
-
-## 📞 Support & Help
-
-**Can't connect to database?**
-
-- Check DATABASE_URL format
-- Verify Supabase project is running
-- Check firewall rules
-
-**Services not starting?**
-
-- View logs: `docker-compose logs -f`
-- Check disk space: `df -h`
-- Rebuild: `docker-compose build --no-cache`
-
-**Domain not resolving?**
-
-- Wait for DNS propagation (up to 30 min)
-- Test: `nslookup yourdomain.com`
-- Check A record in registrar
-
-**SSL certificate not working?**
-
-- Verify domain is accessible
-- Check certificate location
-- Restart nginx: `docker-compose restart`
-
----
-
-**Deployed successfully? 🎉**
-
-Next steps:
-
-1. Monitor application performance
-2. Set up automated backups
-3. Configure monitoring alerts
-4. Plan scaling strategy
-5. Document your setup
-
-**Happy Deploying!** 🚀
-
----
-
-## ⚡ Cách 1: Quick Deploy (Khuyên dùng)
-
-### Bước 1: Tạo Droplet
-
-1. **DigitalOcean Dashboard** → **Droplets** → **Create Droplet**
-2. Cấu hình:
-   ```
-   Image: Ubuntu 22.04 LTS
-   Size: Basic $6/month (1GB RAM)
-   Region: Singapore (gần Việt Nam)
-   Authentication: SSH Key (khuyên dùng)
-   Hostname: ims-server
-   ```
-3. Click **Create Droplet** (chờ 1-2 phút)
-
-### Bước 2: SSH vào Droplet
-
-```bash
-ssh root@[DROPLET_IP]
-```
-
-Thay `[DROPLET_IP]` với IP của Droplet (hiển thị trên Dashboard)
-
-### Bước 3: Copy Deployment Script
-
-⚠️ **Repository là PRIVATE**, không thể download trực tiếp từ GitHub.
-
-**Cách 1: Manual Upload (Dễ nhất)**
-
-1. Tạo file `deploy.sh` trên Droplet:
-
-   ```bash
-   nano deploy.sh
-   ```
-
-2. Copy nội dung từ file [`deploy.sh`](deploy.sh) của project
-
-3. Paste vào terminal (Ctrl+Shift+V)
-
-4. Lưu file (Ctrl+X → Y → Enter)
-
-5. Chạy script:
-   ```bash
-   chmod +x deploy.sh
-   ./deploy.sh
-   ```
-
-**Cách 2: SCP Upload**
-
-Từ máy local, upload script:
-
-```bash
-scp deploy.sh root@[DROPLET_IP]:/root/
-```
-
-SSH vào Droplet:
-
-```bash
-ssh root@[DROPLET_IP]
-chmod +x deploy.sh
-./deploy.sh
-```
-
-### Bước 4: Chạy Script & Chọn Authentication
-
-Script sẽ hỏi chọn phương thức xác thực GitHub:
-
-```
-Choose authentication method (1 or 2):
-Option 1: Personal Access Token (PAT) - Easier
-Option 2: SSH Key - More secure
-```
-
-**Lựa chọn 1️⃣: Personal Access Token (Khuyên dùng - Dễ hơn)**
-
-1. Vào: https://github.com/settings/tokens
-2. Click **"Generate new token"** → **"Generate new token (classic)"**
-3. Cấu hình:
-   - **Token name**: `DigitalOcean Droplet`
-   - **Expiration**: 90 days (hoặc custom)
-   - **Scopes**: Tích vào `repo` (full control)
-4. Click **"Generate token"**
-5. Copy token (⚠️ Chỉ hiển thị một lần)
-6. Quay lại terminal, dán token khi được hỏi
-7. Nhập GitHub username
-
-**Lựa chọn 2️⃣: SSH Key (Bảo mật hơn)**
-
-Script sẽ tự động:
-
-1. Tạo SSH key của droplet
-2. Hiển thị public key
-3. Bạn thêm vào GitHub:
-   - Vào: https://github.com/settings/keys
-   - Click **"New SSH key"**
-   - Paste public key
-   - Click **"Add SSH key"**
-4. Quay lại terminal, nhấn Enter để tiếp tục
-
-### Bước 5: Cấu hình Environment
-
-```bash
-nano .env.prod
-```
-
-Cập nhật với Supabase credentials:
-
-```env
-DATABASE_URL=postgresql://postgres:[YOUR_PASSWORD]@[YOUR_HOST].supabase.co:5432/postgres
-FRONTEND_URL=https://yourdomain.com
-BACKEND_URL=https://api.yourdomain.com
-```
-
-**Lấy Supabase Connection String:**
-
-1. Vào: https://app.supabase.com
-2. Chọn project
-3. **Settings** → **Database** → **Connection String** → **URI**
-4. Copy & dán vào `DATABASE_URL`
-5. Lưu file (Ctrl+X → Y → Enter)
-
-### Bước 5: Khởi động Services
-
-```bash
-docker-compose -f docker-compose.prod.yml up -d --build
-```
-
-### Bước 6: Kiểm tra Status
-
-```bash
-docker-compose -f docker-compose.prod.yml ps
-```
-
-Output nên hiển thị:
-
-```
-ims-backend    running
-ims-frontend   running
-ims-nginx      running
-```
-
-### Bước 7: Truy cập Ứng dụng
-
-```
-http://[DROPLET_IP]
-```
-
-Hoặc nếu có domain:
-
-```
-http://yourdomain.com
-```
-
----
-
-## 🔐 Setup SSL Certificate (Optional nhưng Khuyên dùng)
-
-### Bước 1: Cấu hình Domain DNS
-
-Trong registrar của bạn (GoDaddy, Namecheap, etc.), thêm A Record:
-
-```
-@ → [DROPLET_IP]
-www → [DROPLET_IP]
-api → [DROPLET_IP]  (nếu dùng subdomain cho API)
-```
-
-Chờ DNS propagate (5-30 phút)
-
-### Bước 2: Cài Let's Encrypt SSL
-
-```bash
-# Dừng nginx tạm thời
-docker-compose -f docker-compose.prod.yml stop
-
-# Cài certificate
-certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
-
-# Xác nhận email
-```
-
-### Bước 3: Cấu hình HTTPS
-
-Edit `nginx.prod.conf`:
-
-```bash
-nano nginx.prod.conf
-```
-
-Bỏ comment phần HTTPS (tìm `# server {` với `listen 443`)
-
-Update domain name:
-
-```nginx
-server_name yourdomain.com www.yourdomain.com;
-ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-```
-
-### Bước 4: Khởi động lại
-
-```bash
-docker-compose -f docker-compose.prod.yml up -d --build
-```
-
-### Bước 5: Setup Auto-Renewal
-
-```bash
-# Test renewal
-certbot renew --dry-run
-
-# Setup cron job (tự động renew 30 ngày trước expiry)
-certbot renew --quiet --no-eff-email
-
-# Thêm vào crontab
-crontab -e
-
-# Add line:
-0 3 * * * certbot renew --quiet --post-hook "docker-compose -f /root/SEC_Team_02_2026/02_Source/01_Source\ Code/docker-compose.prod.yml restart"
-```
-
----
-
-## 📊 Monitoring & Quản lý
-
-### Xem Logs
-
-```bash
-# Tất cả services
-docker-compose -f docker-compose.prod.yml logs -f
-
-# Chỉ backend
-docker-compose -f docker-compose.prod.yml logs -f backend
-
-# Chỉ frontend
-docker-compose -f docker-compose.prod.yml logs -f frontend
-
-# Chỉ 50 dòng cuối
-docker-compose -f docker-compose.prod.yml logs --tail 50
-```
-
-### Khởi động lại Services
-
-```bash
-# Tất cả
-docker-compose -f docker-compose.prod.yml restart
-
-# Chỉ backend
-docker-compose -f docker-compose.prod.yml restart backend
-
-# Chỉ frontend
-docker-compose -f docker-compose.prod.yml restart frontend
-```
-
-### Dừng Services
-
-```bash
-docker-compose -f docker-compose.prod.yml down
-```
-
-### Update Code
-
-```bash
-cd /root/SEC_Team_02_2026/02_Source/01_Source\ Code
-
-# Pull latest
-git pull origin master
-
-# Rebuild and restart
-docker-compose -f docker-compose.prod.yml up -d --build
-```
-
-### Kiểm tra Disk Usage
-
-```bash
-du -sh docker_*
-df -h
-```
-
-### Xóa Old Images
-
-```bash
-# Remove unused images
-docker image prune -a
-
-# Remove unused volumes
-docker volume prune
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Port 80/443 đã được sử dụng
-
-```bash
-# Tìm process sử dụng port
-lsof -i :80
-lsof -i :443
-
-# Kill process
-kill -9 [PID]
-```
-
-### Database Connection Error
-
-```bash
-# Kiểm tra DATABASE_URL
-cat .env.prod | grep DATABASE_URL
-
-# Ping Supabase host
-ping db.cposdksrjwblusvegmsl.supabase.co
-
-# Xem backend logs
-docker-compose -f docker-compose.prod.yml logs backend
-```
-
-### Container không khởi động
-
-```bash
-# Xem chi tiết lỗi
-docker-compose -f docker-compose.prod.yml logs -f
-
-# Rebuild
-docker-compose -f docker-compose.prod.yml up -d --build --force-recreate
-```
-
-### DNS không resolve
+### DNS Not Resolving
 
 ```bash
 # Test DNS
 nslookup yourdomain.com
 
-# Chờ propagation
-dig yourdomain.com
+# Flush DNS cache
+ipconfig /flushdns  # Windows
+sudo dscacheutil -flushcache  # macOS
+sudo systemctl restart nscd  # Linux
+
+# Wait for DNS propagation (up to 30 minutes)
 ```
 
----
+### CORS Errors
 
-## 📈 Performance Tips
+If frontend can't call backend:
 
-### 1. Giảm RAM Usage
+1. Add Vercel domain to backend CORS (if applicable)
+2. Check backend is accessible
+3. Check Content-Type headers
 
-Trong `docker-compose.prod.yml`, thêm resource limits:
+## Performance Issues
 
-```yaml
-services:
-  backend:
-    # ...
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 256M
-```
+### Slow Loading
 
-### 2. Enable Gzip Compression
+1. Check Vercel **Analytics** dashboard
+2. Optimize assets:
+   - Compress images
+   - Minify CSS/JS
+   - Use CDN
 
-Đã được enable trong `nginx.prod.conf`
+3. Check database queries:
+   - Add indexes
+   - Avoid N+1 queries
+   - Monitor slow queries
 
-### 3. Caching
+### High Costs
 
-Thêm vào `nginx.prod.conf`:
-
-```nginx
-# Cache static files 1 year
-location ~* \.(js|css)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-}
-```
-
-### 4. Database Connection Pool
-
-Supabase mặc định cho phép 100 connections khá tốt
+| Issue              | Solution                      |
+| ------------------ | ----------------------------- |
+| Database too large | Delete old data, upgrade plan |
+| Too many requests  | Add caching, optimize queries |
+| Backend overload   | Scale Fly.io resources        |
 
 ---
 
-## 💰 Cost Optimization
+# 1️⃣1️⃣ Performance Optimization
 
-| Lựa chọn    | Chi phí/tháng | Ram   | Notes                           |
-| ----------- | ------------- | ----- | ------------------------------- |
-| Droplet $5  | $5            | 512MB | Quá nhỏ, không khuyên dùng      |
-| Droplet $6  | $6            | 1GB   | 👍 Đủ cho dev/small production  |
-| Droplet $12 | $12           | 2GB   | 👍 Tốt cho small-medium traffic |
-| Droplet $24 | $24           | 4GB   | 👍 Medium traffic               |
-| Managed App | $12+          | Auto  | Tự động scaling                 |
-
----
-
-## 🔄 Tự động Deploy từ GitHub (Optional)
-
-### Cài đặt GitHub Actions
-
-Tạo file `.github/workflows/deploy.yml`:
-
-```yaml
-name: Deploy to DigitalOcean
-
-on:
-  push:
-    branches: [master]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.DO_HOST }}
-          username: root
-          key: ${{ secrets.DO_SSH_KEY }}
-          script: |
-            cd /root/SEC_Team_02_2026/02_Source/01_Source\ Code
-            git pull origin master
-            docker-compose -f docker-compose.prod.yml up -d --build
-```
-
-Thêm GitHub Secrets:
-
-- `DO_HOST`: Droplet IP
-- `DO_SSH_KEY`: SSH private key
-
----
-
-## ✅ Checklist
-
-- [ ] Droplet tạo thành công
-- [ ] SSH vào Droplet được
-- [ ] Deploy script chạy OK
-- [ ] .env.prod được cấu hình
-- [ ] Docker containers running
-- [ ] Ứng dụng accessible tại http://[DROPLET_IP]
-- [ ] Domain DNS pointing tới Droplet
-- [ ] SSL certificate installed
-- [ ] HTTPS working
-- [ ] Database kết nối OK
-- [ ] Frontend hiển thị data từ backend
-- [ ] Logs không có error
-
----
-
-## 📞 Support
-
-**Kiểm tra lại:**
-
-1. DATABASE_URL có đúng không?
-2. Firewall port 80, 443 có open không?
-3. DNS đã propagate chưa?
-4. Docker daemon đang chạy?
-
-**Xem logs:**
+## Database Query Optimization
 
 ```bash
-docker-compose -f docker-compose.prod.yml logs -f
+# Connect to Supabase
+psql "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres"
 ```
 
-**Restart all:**
+## Backend Optimization
+
+1. **Connection Pooling**
+   - Fly.io handles this automatically
+   - Supabase supports up to 100 connections
+
+2. **Request Caching**
+   - Add caching headers in backend
+   - Use Redis if needed (paid tier)
+
+3. **Database Indexes**
+   - Create on frequently queried columns
+   - Monitor slow queries
+
+## Frontend Optimization
+
+1. **Image Optimization**
+   - Use Vercel's Image Optimization
+   - Compress before upload
+
+2. **Code Splitting**
+   - Vite does this automatically
+   - Monitor bundle size
+
+3. **Caching**
+   - Vercel CDN caches automatically
+   - Set Cache-Control headers
+
+## Monitoring Performance
 
 ```bash
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d --build
+# Check Fly.io metrics
+flyctl metrics
+
+# Check Vercel analytics
+# Dashboard → Analytics tab
+
+# Monitor database size
+# Supabase → Storage → Database Size
 ```
 
 ---
 
-**Happy Deploying! 🎉**
+# 1️⃣2️⃣ Security Best Practices
+
+## Fly.io Backend Security
+
+```bash
+# Keep secrets secure
+flyctl secrets list  # Only shows key names, not values
+
+# Set secrets (not in code!)
+flyctl secrets set SECRET_KEY=value
+
+# Use environment variables for sensitive data
+# Never commit .env files to GitHub
+```
+
+**Security Checklist:**
+
+- ✅ Never commit .env to GitHub
+- ✅ Use flyctl secrets for all sensitive data
+- ✅ Keep dependencies updated: `npm audit`
+- ✅ Use HTTPS only
+- ✅ Validate all inputs
+- ✅ Use parameterized SQL (no injection)
+
+## Vercel Frontend Security
+
+```bash
+# Check dependencies for vulnerabilities
+npm audit
+
+# Update to latest safe versions
+npm audit fix
+
+# Before deploying
+npm run build  # Test locally first
+```
+
+**Security Checklist:**
+
+- ✅ Never expose API keys in frontend
+- ✅ Use environment variables
+- ✅ Validate all user inputs
+- ✅ Use HTTPS (automatic on Vercel)
+- ✅ Keep dependencies updated
+
+## Supabase Database Security
+
+1. **Network Access**
+   - Supabase allows connections from anywhere
+   - Use strong database password
+   - Consider IP restrictions if needed
+
+2. **Authentication**
+   - Change default password
+   - Use strong password (20+ chars)
+   - Store securely
+
+3. **Data Protection**
+   - Regular backups (automatic)
+   - Encrypted connections (SSL)
+   - Monitor access logs
+
+## GitHub Repository Security
+
+```bash
+# Set repository to private
+# GitHub → Settings → Visibility
+
+# Use personal access tokens
+# Never share credentials
+# Rotate tokens regularly
+
+# Enable branch protection
+# Require code review before merge
+```
+
+## Secrets Management
+
+**What should be secrets:**
+
+- Database credentials ✅
+- API keys ✅
+- Passwords ✅
+- Private tokens ✅
+
+**What NOT to expose:**
+
+- ❌ Secrets in .env files
+- ❌ Secrets in code
+- ❌ Secrets in logs
+- ❌ Secrets in git history
+
+**How to manage:**
+
+1. Use Fly.io secrets: `flyctl secrets set KEY=value`
+2. Use Vercel env vars: Vercel Dashboard
+3. Use Supabase for database
+4. Use .env.local (local only, never committed)
+
+---
+
+# ✅ Deployment Checklist
+
+## Pre-Deployment
+
+- [ ] Code committed to GitHub
+- [ ] All environment variables configured
+- [ ] Database migrations tested locally
+- [ ] Build works locally (`npm run build`)
+- [ ] All tests passing
+
+## Supabase Setup
+
+- [ ] Project created
+- [ ] Database schema imported
+- [ ] Connection string obtained
+- [ ] Firewall configured
+- [ ] Backups enabled
+
+## Fly.io Backend Deployment
+
+- [ ] Fly CLI installed and logged in
+- [ ] Backend app created (`flyctl launch`)
+- [ ] Environment variables set (`flyctl secrets set`)
+- [ ] Build succeeds locally
+- [ ] Backend deployed (`flyctl deploy`)
+- [ ] API endpoints responding
+- [ ] Logs show no errors
+- [ ] Database connection working
+
+## Vercel Frontend Deployment
+
+- [ ] Frontend code in GitHub
+- [ ] `.env.local` created with API URL
+- [ ] Build works locally (`npm run build`)
+- [ ] Project imported to Vercel
+- [ ] Environment variables configured
+- [ ] Auto-deploy enabled
+- [ ] Frontend accessible in browser
+- [ ] API calls working
+
+## Integration Testing
+
+- [ ] Frontend loads without errors
+- [ ] Can make API calls to backend
+- [ ] Database data displays in UI
+- [ ] User interactions work
+- [ ] Forms submit correctly
+- [ ] No console errors
+
+## Security
+
+- [ ] No secrets in code
+- [ ] `.env` files in `.gitignore`
+- [ ] Using environment variables
+- [ ] HTTPS enabled
+- [ ] Dependencies updated (`npm audit`)
+
+## Monitoring Setup
+
+- [ ] Fly.io metrics enabled
+- [ ] Vercel analytics connected
+- [ ] Database monitoring active
+- [ ] Error tracking enabled
+- [ ] Backups configured
+
+## Documentation
+
+- [ ] Deployment guide updated
+- [ ] Environment variables documented
+- [ ] Troubleshooting guide created
+- [ ] Team informed of deployment
+
+---
+
+# 📚 Additional Resources
+
+| Resource        | Link                            |
+| --------------- | ------------------------------- |
+| Fly.io Docs     | https://fly.io/docs/            |
+| Vercel Docs     | https://vercel.com/docs         |
+| Supabase Docs   | https://supabase.com/docs       |
+| Node.js Express | https://expressjs.com/          |
+| React Docs      | https://react.dev               |
+| PostgreSQL Docs | https://www.postgresql.org/docs |
+
+---
+
+# 📞 Support & Help
+
+## Common Issues & Solutions
+
+**Can't deploy to Fly.io?**
+
+- Check if `flyctl` is installed: `flyctl version`
+- Login to Fly.io: `flyctl auth login`
+- Check logs: `flyctl logs`
+
+**Frontend not loading?**
+
+- Clear browser cache
+- Check Vercel deployment logs
+- Verify environment variables in Vercel dashboard
+- Check browser console for errors
+
+**Backend not connecting to database?**
+
+- Verify `DATABASE_URL` in `flyctl secrets list`
+- Test connection manually with `psql`
+- Check Supabase project is running
+- Review backend logs: `flyctl logs`
+
+**API calls failing from frontend?**
+
+- Verify `VITE_API_URL` in .env.local
+- Check backend is accessible: `curl https://ims-backend.fly.dev`
+- Check for CORS errors in browser console
+- Verify API endpoint exists
+
+**Database connection limit reached?**
+
+- Check open connections: `SELECT count(*) FROM pg_stat_activity;`
+- Close unused connections
+- Restart backend: `flyctl restart`
+
+---
+
+# 🎯 Next Steps After Deployment
+
+1. **Monitor Performance**
+   - Check logs daily
+   - Monitor database size
+   - Track API response times
+
+2. **Regular Updates**
+   - Update dependencies: `npm audit fix`
+   - Deploy code changes: `git push`
+   - Vercel auto-deploys on push
+
+3. **Backup Management**
+   - Test backup restore process
+   - Document recovery procedures
+   - Monitor backup storage
+
+4. **Team Collaboration**
+   - Add team members to GitHub
+   - Configure branch protection
+   - Setup code review process
+   - Document deployment procedures
+
+5. **Scaling**
+   - Monitor usage metrics
+   - Upgrade Supabase plan if needed
+   - Scale Fly.io resources if needed
+   - Optimize database queries
+
+---
+
+# 🚀 Success!
+
+Your application is now deployed and accessible!
+
+**Access Points:**
+
+- Frontend: `https://ims-frontend-[random].vercel.app`
+- Backend API: `https://ims-backend.fly.dev`
+- Database: Supabase console at `https://app.supabase.com`
+
+**Team members can:**
+
+- Push code updates (auto-deploy)
+- Monitor logs and metrics
+- Manage database backups
+- Scale resources as needed
+
+**Enjoy your deployed application!** 🎉
