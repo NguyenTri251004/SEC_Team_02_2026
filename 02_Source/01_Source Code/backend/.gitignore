@@ -55,3 +55,4 @@ coverage/
 
 # Optional eslint cache
 .eslintcache
+.env
