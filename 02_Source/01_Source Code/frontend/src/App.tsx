@@ -5,8 +5,9 @@ import './App.css'
 
 interface DataItem {
   id: number;
-  message: string;
-  createdAt: string;
+  name: string;
+  email: string;
+  created_at: string;
 }
 
 function App() {
@@ -64,9 +65,12 @@ function App() {
                 border: '1px solid #646cff',
                 borderRadius: '8px'
               }}>
-                <h3>{item.message}</h3>
+                <h3>{item.name}</h3>
+                <p style={{ fontSize: '0.9em', color: '#aaa' }}>
+                  📧 {item.email}
+                </p>
                 <p style={{ fontSize: '0.8em', color: '#888' }}>
-                  Created: {new Date(item.createdAt).toLocaleString()}
+                  Created: {new Date(item.created_at).toLocaleString()}
                 </p>
               </div>
             ))}
