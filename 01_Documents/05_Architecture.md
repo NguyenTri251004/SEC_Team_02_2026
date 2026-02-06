@@ -136,10 +136,14 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 │  │  │  • Real-time UI updates (WebSocket)                            │  │ │
 │  │  │                                                                  │  │ │
 │  │  │  Sub-components:                                                 │  │ │
-│  │  │  ├─ Inventory Management UI                                     │  │ │
-│  │  │  ├─ QC Dashboard                                                │  │ │
-│  │  │  ├─ Production Tracking UI                                      │  │ │
-│  │  │  ├─ Reporting & Analytics UI                                    │  │ │
+│  │  │  ├─ Material Management UI (CRUD, categories, search)           │  │ │
+│  │  │  ├─ Inventory Lot UI (lot tracking, expiry alerts)             │  │ │
+│  │  │  ├─ Transaction UI (receive, issue, adjust, transfer)          │  │ │
+│  │  │  ├─ Labeling UI (generate QR/barcode, print labels)            │  │ │
+│  │  │  ├─ Stock Dashboard (real-time levels, reservations)           │  │ │
+│  │  │  ├─ QC Dashboard (quality control, approval workflow)          │  │ │
+│  │  │  ├─ Production Tracking UI (batches, components)               │  │ │
+│  │  │  ├─ Reporting & Analytics UI (KPIs, audit logs)                │  │ │
 │  │  │  └─ Authentication UI (Keycloak integration)                    │  │ │
 │  │  │                                                                  │  │ │
 │  │  │  Technologies:                                                   │  │ │
