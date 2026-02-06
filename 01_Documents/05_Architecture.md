@@ -37,7 +37,11 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 │  │  APPLICATION LAYER (Modular Monolith)                                    │ │
 │  │  ────────────────────────────────────────────────────────────────────── │ │
 │  │  CORE MODULES:                                                           │ │
-│  │  ├─ Inventory Module (Stock Management, Lots, Transactions)             │ │
+│  │  ├─ Material Module (Material CRUD, Categories)                         │ │
+│  │  ├─ Inventory Lot Module (Lot Tracking, Expiry, Location)               │ │
+│  │  ├─ Transaction Module (Receive, Issue, Adjust, Transfer)               │ │
+│  │  ├─ Labeling Module (QR/Barcode Generation, Printing)                   │ │
+│  │  ├─ Stock Management Module (Real-time Levels, Reservations, Reorder)   │ │
 │  │  ├─ QC Module (Quality Control, Approval/Reject)                        │ │
 │  │  ├─ Production Module (Batches, Components)                             │ │
 │  │  ├─ Reporting Module (Analytics, Audit Logs)                            │ │
@@ -178,11 +182,38 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 │  │  │                                                                  │  │ │
 │  │  │  Core Modules (Bounded Contexts):                               │  │ │
 │  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
-│  │  │  │ InventoryModule                                           │  │  │ │
-│  │  │  │ • MaterialService (CRUD materials)                        │  │  │ │
-│  │  │  │ • LotService (lot tracking, status management)            │  │  │ │
-│  │  │  │ • TransactionService (receive, issue, adjust)             │  │  │ │
-│  │  │  │ • StockReservationService (reserve/release stock)         │  │  │ │
+│  │  │  │ MaterialModule                                            │  │  │ │
+│  │  │  │ • MaterialService (CRUD, search, categorize)             │  │  │ │
+│  │  │  │ • MaterialValidationService (business rules)             │  │  │ │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
+│  │  │  │ InventoryLotModule                                        │  │  │ │
+│  │  │  │ • LotService (create, track, update status)              │  │  │ │
+│  │  │  │ • LotExpiryService (expiry tracking, alerts)             │  │  │ │
+│  │  │  │ • LotLocationService (warehouse location)                │  │  │ │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
+│  │  │  │ TransactionModule                                         │  │  │ │
+│  │  │  │ • ReceiveService (goods receipt)                         │  │  │ │
+│  │  │  │ • IssueService (goods issue)                             │  │  │ │
+│  │  │  │ • AdjustmentService (stock adjustments)                  │  │  │ │
+│  │  │  │ • TransferService (inter-warehouse transfers)            │  │  │ │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
+│  │  │  │ LabelingModule                                            │  │  │ │
+│  │  │  │ • LabelGenerationService (QR/Barcode)                    │  │  │ │
+│  │  │  │ • PrintService (label printing)                          │  │  │ │
+│  │  │  │ • TemplateService (label templates)                      │  │  │ │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
+│  │  │                                                                  │  │ │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
+│  │  │  │ StockManagementModule                                     │  │  │ │
+│  │  │  │ • StockLevelService (real-time stock tracking)           │  │  │ │
+│  │  │  │ • ReservationService (reserve/release stock)             │  │  │ │
+│  │  │  │ • ReorderService (auto-reorder alerts)                   │  │  │ │
 │  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
 │  │  │                                                                  │  │ │
 │  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
@@ -360,28 +391,54 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 **A. REST API Contracts (Backend ↔ Frontend)**
 
 ```typescript
-// Inventory Module API
-interface InventoryAPI {
-  // Materials
+// Material Module API
+interface MaterialAPI {
   GET    /api/materials                 // List materials
   POST   /api/materials                 // Create material
   GET    /api/materials/:id             // Get material details
   PUT    /api/materials/:id             // Update material
   DELETE /api/materials/:id             // Delete material
+  GET    /api/materials/categories      // List categories
+  GET    /api/materials/search          // Search materials
+}
 
-  // Inventory Lots
-  GET    /api/inventory/lots            // List lots (with filters)
-  POST   /api/inventory/lots            // Create lot
-  GET    /api/inventory/lots/:id        // Get lot details
-  PUT    /api/inventory/lots/:id        // Update lot
-  PATCH  /api/inventory/lots/:id/status // Update status only
+// Inventory Lot Module API
+interface InventoryLotAPI {
+  GET    /api/lots                      // List lots (with filters)
+  POST   /api/lots                      // Create lot
+  GET    /api/lots/:id                  // Get lot details
+  PUT    /api/lots/:id                  // Update lot
+  PATCH  /api/lots/:id/status           // Update status only
+  GET    /api/lots/expiring             // Get expiring lots
+  GET    /api/lots/by-material/:materialId  // Lots by material
+}
 
-  // Transactions
-  POST   /api/inventory/transactions    // Record transaction
-  GET    /api/inventory/transactions    // Transaction history
-  POST   /api/inventory/receive         // Receive goods
-  POST   /api/inventory/issue           // Issue goods
-  POST   /api/inventory/adjust          // Adjust stock
+// Transaction Module API
+interface TransactionAPI {
+  POST   /api/transactions              // Record transaction
+  GET    /api/transactions              // Transaction history
+  POST   /api/transactions/receive      // Receive goods
+  POST   /api/transactions/issue        // Issue goods
+  POST   /api/transactions/adjust       // Adjust stock
+  POST   /api/transactions/transfer     // Transfer between warehouses
+}
+
+// Labeling Module API
+interface LabelingAPI {
+  POST   /api/labels/generate           // Generate label (QR/Barcode)
+  GET    /api/labels/templates          // List templates
+  POST   /api/labels/print              // Print label
+  GET    /api/labels/:id                // Get label data
+}
+
+// Stock Management Module API
+interface StockManagementAPI {
+  GET    /api/stock/levels              // Current stock levels
+  GET    /api/stock/by-material/:id     // Stock by material
+  POST   /api/stock/reserve             // Reserve stock
+  POST   /api/stock/release             // Release reservation
+  GET    /api/stock/low-stock           // Low stock alerts
+  GET    /api/stock/reorder-suggestions // Auto-reorder suggestions
 }
 
 // QC Module API
@@ -780,10 +837,39 @@ class WebSocketService {
 │  CORE DOMAIN MODULES (Bounded Contexts):                           │
 │                                                                     │
 │  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Inventory Module                                             │  │
-│  │ • Stock levels, reservations, transfers                      │  │
-│  │ • Lot tracking (expiry, status)                             │  │
-│  │ • Transactions (receive, issue, adjust)                     │  │
+│  │ Material Module                                              │  │
+│  │ • Material CRUD operations                                   │  │
+│  │ • Category management                                        │  │
+│  │ • Material search & filtering                               │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐  │
+│  │ Inventory Lot Module                                         │  │
+│  │ • Lot creation & tracking                                    │  │
+│  │ • Expiry date monitoring                                     │  │
+│  │ • Warehouse location management                              │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐  │
+│  │ Transaction Module                                           │  │
+│  │ • Goods receipt processing                                   │  │
+│  │ • Goods issue tracking                                       │  │
+│  │ • Stock adjustments                                          │  │
+│  │ • Inter-warehouse transfers                                  │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐  │
+│  │ Labeling Module                                              │  │
+│  │ • QR/Barcode generation                                      │  │
+│  │ • Label template management                                  │  │
+│  │ • Print queue handling                                       │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐  │
+│  │ Stock Management Module                                      │  │
+│  │ • Real-time stock level tracking                            │  │
+│  │ • Stock reservation system                                   │  │
+│  │ • Auto-reorder point alerts                                  │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                     │
 │  ┌─────────────────────────────────────────────────────────────┐  │
