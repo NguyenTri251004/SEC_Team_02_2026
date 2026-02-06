@@ -1,16 +1,27 @@
 import express, { Request, Response } from 'express';
 import { Pool } from 'pg';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// PostgreSQL connection pool
+// PostgreSQL connection pool (Supabase)
 const pool = new Pool({
+<<<<<<< HEAD
   user: 'myuser',
   host: 'localhost',
   database: 'mydatabase',
   password: 'mypassword',
   port: 5432,
+=======
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+>>>>>>> ab61ca01d82ff5903e030bde170a7138f61ca63a
 });
 
 // Test database connection
@@ -45,7 +56,7 @@ app.get('/health', (req: Request, res: Response) => {
 // API: Get data from PostgreSQL database
 app.get('/api/data', async (req: Request, res: Response) => {
   try {
-    const result = await pool.query('SELECT * FROM messages ORDER BY created_at DESC');
+    const result = await pool.query('SELECT * FROM users');
     res.json({
       success: true,
       data: result.rows
