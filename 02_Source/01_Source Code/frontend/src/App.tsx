@@ -21,7 +21,8 @@ function App() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const response = await fetch('http://localhost:3000/api/data')
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+        const response = await fetch(`${apiUrl}/api/data`)
         const result = await response.json()
 
         if (result.success) {
