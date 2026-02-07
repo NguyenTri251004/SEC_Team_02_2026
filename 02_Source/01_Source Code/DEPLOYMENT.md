@@ -1,8 +1,6 @@
-# 🚀 Deploy Frontend to Vercel + Backend to Fly.io + Database to Supabase
+# Deployment Guide
 
-Complete deployment guide for **Frontend** on **Vercel**, **Backend** on **Fly.io**, and **Database** on **Supabase** - **100% FREE**!
-
-> ⚠️ **IMPORTANT:** This guide uses ONLY FREE services. NO payment method required. Avoid paid add-ons like Fly.io's Managed Postgres.
+Complete deployment guide for **Frontend** on **Vercel**, **Backend** on **Fly.io**, and **Database** on **Supabase**
 
 ---
 
@@ -16,58 +14,50 @@ Complete deployment guide for **Frontend** on **Vercel**, **Backend** on **Fly.i
         ┌──────▼──────────┐           ┌───────▼────────┐
         │     Vercel      │           │     Fly.io     │
         │  (Frontend CDN) │           │   (Backend)    │
-        │                │           │                │
+        │                 │           │                │
         │ ┌────────────┐  │           │ ┌────────────┐ │
         │ │   React    │  │           │ │  Express   │ │
         │ │   (SSR)    │  │           │ │  (Node.js) │ │
         │ │ Auto-scale │  │           │ │   :3000    │ │
         │ └────────────┘  │           │ └─────┬──────┘ │
-        │                │           │       │        │
+        │                 │           │       │        │
         └─────────────────┘           └───────┼────────┘
-                            │
+                                              │
                                               │
                                     ┌─────────▼──────────┐
                                     │    Supabase        │
                                     │   PostgreSQL       │
-                                    │   (Cloud DB - Free)│
+                                    │   (Cloud DB)       │
                                     │                    │
                                     │ ┌────────────────┐ │
                                     │ │    Database    │ │
-                                    │ │   (500MB free) │ │
+                                    │ │                │ │
                                     │ └────────────────┘ │
                                     └────────────────────┘
 
 ```
 
----
-
-## ⚡ Quick Deploy Checklist
-
-| Step      | Task                       | Est. Time   |
-| --------- | -------------------------- | ----------- |
-| 1         | Setup Supabase Database    | 5 min       |
-| 2         | Deploy Backend to Fly.io   | 10 min      |
-| 3         | Deploy Frontend to Vercel  | 5 min       |
-| 4         | Configure Environment Vars | 5 min       |
-| 5         | Setup Custom Domain (Opt.) | 10 min      |
-| 6         | Test & Verify              | 5 min       |
-| **TOTAL** |                            | **~40 min** |
-
----
-
 ## 📚 Table of Contents
 
-- [Supabase Database Setup](#1-supabase-database-setup)
-- [Fly.io Backend Deployment](#2-flyio-backend-deployment)
-- [Vercel Frontend Deployment](#3-vercel-frontend-deployment)
-- [Environment Configuration](#4-environment-configuration)
-- [Custom Domain & SSL](#5-custom-domain--ssl-setup)
-- [Monitoring](#6-monitoring--logs)
-- [Troubleshooting](#7-troubleshooting)
-- [Backup & Recovery](#8-backup--recovery)
+- [Supabase Database Setup](#supabase-database-setup)
+- [Fly.io Backend Deployment](#flyio-backend-deployment)
+- [Vercel Frontend Deployment](#vercel-frontend-deployment)
+- [Environment Configuration](#environment-configuration)
+- [Custom Domain & SSL Setup](#custom-domain-ssl-setup)
+- [Testing & Verification](#testing-verification)
+- [Monitoring & Logs](#monitoring-logs)
+- [Updates & Maintenance](#updates-maintenance)
+- [Backup & Recovery](#backup-recovery)
+- [Troubleshooting](#troubleshooting)
+- [Performance Optimization](#performance-optimization)
+- [Security Best Practices](#security-best-practices)
+- [Deployment Checklist](#deployment-checklist)
+- [Additional Resources](#additional-resources)
+- [Support & Help](#support-help)
 
 ---
 
+<a id="supabase-database-setup"></a>
 # 1️⃣ Supabase Database Setup
 
 ## Step 1: Create Supabase Project
@@ -160,7 +150,7 @@ If you need to restrict, add IP whitelist:
 
 ---
 
-# 2️⃣ Fly.io Backend Deployment
+# 2️⃣ Fly\.io Backend Deployment
 
 ## Step 1: Prepare Backend Repository
 
@@ -256,6 +246,7 @@ flyctl logs
 
 ---
 
+<a id="vercel-frontend-deployment"></a>
 # 3️⃣ Vercel Frontend Deployment
 
 ## Step 1: Prepare Frontend Repository
@@ -275,7 +266,7 @@ Create `.env.local` in frontend folder:
 cd 02_Source\01_Source\ Code\frontend
 
 # Create env file from Command Prompt (cmd)
-echo VITE_API_URL=https://ims-backend.fly.dev > .env.local 
+echo VITE_API_URL=https://ims-backend.fly.dev > .env.local
 
 ```
 
@@ -352,6 +343,7 @@ Open the URL in browser and check:
 
 ---
 
+<a id="environment-configuration"></a>
 # 4️⃣ Environment Configuration
 
 ## Configure Backend Environment
@@ -395,6 +387,7 @@ cat 02_Source\01_Source\ Code\frontend\.env.local
 
 ---
 
+<a id="custom-domain-ssl-setup"></a>
 # 5️⃣ Custom Domain & SSL Setup
 
 ## Step 1: Configure Domain DNS (Optional)
@@ -427,6 +420,7 @@ If using custom domain:
 
 ---
 
+<a id="testing-verification"></a>
 # 6️⃣ Testing & Verification
 
 ## Test Frontend
@@ -481,6 +475,7 @@ psql "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres" -c "SEL
 
 ---
 
+<a id="monitoring-logs"></a>
 # 7️⃣ Monitoring & Logs
 
 ## View Backend Logs (Fly.io)
@@ -533,6 +528,7 @@ flyctl logs --app ims-backend
 
 ---
 
+<a id="updates-maintenance"></a>
 # 8️⃣ Updates & Maintenance
 
 ## Deploy Code Updates
@@ -611,6 +607,7 @@ psql "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres" < backu
 
 ---
 
+<a id="backup-recovery"></a>
 # 9️⃣ Backup & Recovery
 
 ## Supabase Database Backups
@@ -658,6 +655,7 @@ git revert [COMMIT_HASH]
 
 ---
 
+<a id="troubleshooting"></a>
 # 🔟 Troubleshooting
 
 ## Backend Issues
@@ -838,6 +836,7 @@ If frontend can't call backend:
 
 ---
 
+<a id="performance-optimization"></a>
 # 1️⃣1️⃣ Performance Optimization
 
 ## Database Query Optimization
@@ -890,6 +889,7 @@ flyctl metrics
 
 ---
 
+<a id="security-best-practices"></a>
 # 1️⃣2️⃣ Security Best Practices
 
 ## Fly.io Backend Security
@@ -991,6 +991,7 @@ npm run build  # Test locally first
 
 ---
 
+<a id="deployment-checklist"></a>
 # ✅ Deployment Checklist
 
 ## Pre-Deployment
@@ -1009,7 +1010,7 @@ npm run build  # Test locally first
 - [ ] Firewall configured
 - [ ] Backups enabled
 
-## Fly.io Backend Deployment
+## Fly\.io Backend Deployment
 
 - [ ] Fly CLI installed and logged in
 - [ ] Backend app created (`flyctl launch`)
@@ -1065,6 +1066,7 @@ npm run build  # Test locally first
 
 ---
 
+<a id="additional-resources"></a>
 # 📚 Additional Resources
 
 | Resource        | Link                            |
@@ -1078,6 +1080,7 @@ npm run build  # Test locally first
 
 ---
 
+<a id="support-help"></a>
 # 📞 Support & Help
 
 ## Common Issues & Solutions
@@ -1116,53 +1119,3 @@ npm run build  # Test locally first
 - Restart backend: `flyctl restart`
 
 ---
-
-# 🎯 Next Steps After Deployment
-
-1. **Monitor Performance**
-   - Check logs daily
-   - Monitor database size
-   - Track API response times
-
-2. **Regular Updates**
-   - Update dependencies: `npm audit fix`
-   - Deploy code changes: `git push`
-   - Vercel auto-deploys on push
-
-3. **Backup Management**
-   - Test backup restore process
-   - Document recovery procedures
-   - Monitor backup storage
-
-4. **Team Collaboration**
-   - Add team members to GitHub
-   - Configure branch protection
-   - Setup code review process
-   - Document deployment procedures
-
-5. **Scaling**
-   - Monitor usage metrics
-   - Upgrade Supabase plan if needed
-   - Scale Fly.io resources if needed
-   - Optimize database queries
-
----
-
-# 🚀 Success!
-
-Your application is now deployed and accessible!
-
-**Access Points:**
-
-- Frontend: `https://ims-frontend-[random].vercel.app`
-- Backend API: `https://ims-backend.fly.dev`
-- Database: Supabase console at `https://app.supabase.com`
-
-**Team members can:**
-
-- Push code updates (auto-deploy)
-- Monitor logs and metrics
-- Manage database backups
-- Scale resources as needed
-
-**Enjoy your deployed application!** 🎉
