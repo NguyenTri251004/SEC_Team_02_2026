@@ -1,19 +1,19 @@
-# 05_Architecture - Modern IMS (2026)
+# 05_Architecture - Modern IMS
 
 ## 1. Tổng quan kiến trúc
 
 Hệ thống **Inventory Management System** được thiết kế theo mô hình **Hybrid Modular Architecture** kết hợp:
-- **Modular Monolith Core** với khả năng extract services khi cần
-- **Event-driven patterns** cho real-time capabilities
-- **Cloud-native deployment** với containerization
-- **AI/ML capabilities** cho intelligent operations
-- **Comprehensive observability** cho production reliability
+
+- **Lõi modular monolith**, có khả năng tách các dịch vụ khi cần
+- **Triển khai trên nền tảng đám mây (cloud-native deployment)** với containerization
+- **Năng lực AI/ML (AI/ML capabilities)** hỗ trợ các chức năng thông minh
+- **Khả năng quan sát (observability)** với logs và metrics tập trung phục vụ giám sát và vận hành
 
 ### 1.1 Kiến trúc tổng thể (Solution Sketch)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────┐
-│                        IMS ARCHITECTURE 2026                                    │
+│                        IMS ARCHITECTURE                                   │
 ├────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────────────┐ │
@@ -69,11 +69,8 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 │  │  └─ Keycloak 24+ (SSO, RBAC, OAuth2/OIDC)                               │ │
 │  │                                                                           │ │
 │  │  OBSERVABILITY STACK:                                                     │ │
-│  │  ├─ Prometheus + Grafana (Metrics & Dashboards)                         │ │
-│  │  ├─ Fluentd → Elasticsearch (Logs)                                      │ │
-│  │  ├─ OpenTelemetry + Jaeger (Traces)                                     │ │
-│  │  ├─ Metabase (Business Analytics)                                       │ │
-│  │  └─ AlertManager (Slack/PagerDuty)                                      │ │
+│  │  ├─ Grafana Cloud (Metrics, Logs & Dashboards - Managed)                │ │
+│  │  └─ Fly.io Metrics (Built-in monitoring)                                │ │
 │  └──────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────────────┐ │
@@ -94,19 +91,19 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 
 ### 2.1 Góc nhìn nghiệp vụ (Business View)
 
-- **User Roles:**
-  - `Admin` - Quản trị hệ thống, cấu hình, user management
+- **Vai trò người dùng (User Roles):**
+  - `Admin` - Quản trị hệ thống, cấu hình, quản lý người dùng
   - `InventoryManager` - Quản lý kho, nhập/xuất hàng, truy xuất
-  - `QualityControl` - Kiểm tra chất lượng, approve/reject lots
+  - `QualityControl` - Kiểm tra chất lượng, duyệt/từ chối lô
   - `Production` - Tạo lô sản xuất, quản lý batches
-  - `Viewer` - Xem báo cáo, dashboard (read-only)
+  - `Viewer` - Xem báo cáo, bảng điều khiển (dashboard) chỉ đọc
 
-- **Core Workflows:**
-  - **Receiving:** Nhập kho → Tạo InventoryLot → QC Testing → Approve/Reject
-  - **Production:** Tạo ProductionBatch → Consume materials → Track components
-  - **Labeling:** Generate labels (QR/Barcode) → Print
-  - **Real-time Monitoring:** WebSocket updates → Live dashboards
-  - **AI-Assisted Operations:** Demand forecasting → Auto-reorder suggestions → Anomaly alerts
+- **Quy trình chính:**
+  - **Nhập kho (receiving):** Nhập kho → Tạo InventoryLot → Kiểm tra QC → Duyệt/từ chối
+  - **Sản xuất (production):** Tạo ProductionBatch → Tiêu thụ vật tư → Theo dõi thành phần
+  - **Dán nhãn (labeling):** Tạo nhãn (QR/Barcode) → In
+  - **Giám sát thời gian thực (real-time monitoring):** Cập nhật WebSocket → Bảng điều khiển trực tiếp
+  - **Vận hành với sự hỗ trợ của AI (AI-assisted operations):** Dự báo nhu cầu → Gợi ý đặt hàng lại → Cảnh báo bất thường
 
 ---
 
@@ -486,23 +483,23 @@ interface SearchAPI {
 // Internal Event Schema
 interface EventBusInterface {
   // Inventory Events
-  'inventory.lot.created':       { lotNumber, materialId, quantity }
-  'inventory.lot.updated':       { lotNumber, changes }
-  'inventory.stock.changed':     { sku, oldQty, newQty, reason }
-  'inventory.reservation.made':  { reservationId, sku, quantity }
+  "inventory.lot.created": { lotNumber; materialId; quantity };
+  "inventory.lot.updated": { lotNumber; changes };
+  "inventory.stock.changed": { sku; oldQty; newQty; reason };
+  "inventory.reservation.made": { reservationId; sku; quantity };
 
   // QC Events
-  'qc.test.created':             { testId, lotNumber }
-  'qc.lot.approved':             { lotNumber, approvedBy, timestamp }
-  'qc.lot.rejected':             { lotNumber, rejectedBy, reason }
+  "qc.test.created": { testId; lotNumber };
+  "qc.lot.approved": { lotNumber; approvedBy; timestamp };
+  "qc.lot.rejected": { lotNumber; rejectedBy; reason };
 
   // Production Events
-  'production.batch.created':    { batchId, productCode }
-  'production.material.consumed': { batchId, materialId, quantity }
+  "production.batch.created": { batchId; productCode };
+  "production.material.consumed": { batchId; materialId; quantity };
 
   // System Events
-  'system.cache.invalidate':     { cacheKey }
-  'system.notification.send':    { userId, message, type }
+  "system.cache.invalidate": { cacheKey };
+  "system.notification.send": { userId; message; type };
 }
 ```
 
@@ -511,19 +508,19 @@ interface EventBusInterface {
 ```typescript
 // Repository Pattern
 interface IRepository<T> {
-  findAll(filters?: object): Promise<T[]>
-  findById(id: string): Promise<T | null>
-  create(data: Partial<T>): Promise<T>
-  update(id: string, data: Partial<T>): Promise<T>
-  delete(id: string): Promise<boolean>
+  findAll(filters?: object): Promise<T[]>;
+  findById(id: string): Promise<T | null>;
+  create(data: Partial<T>): Promise<T>;
+  update(id: string, data: Partial<T>): Promise<T>;
+  delete(id: string): Promise<boolean>;
 }
 
 // Specific Repositories
 interface IInventoryLotRepository extends IRepository<InventoryLot> {
-  findByMaterial(materialId: string): Promise<InventoryLot[]>
-  findExpiringSoon(days: number): Promise<InventoryLot[]>
-  findByStatus(status: LotStatus): Promise<InventoryLot[]>
-  updateQuantity(lotId: string, delta: number): Promise<void>
+  findByMaterial(materialId: string): Promise<InventoryLot[]>;
+  findExpiringSoon(days: number): Promise<InventoryLot[]>;
+  findByStatus(status: LotStatus): Promise<InventoryLot[]>;
+  updateQuantity(lotId: string, delta: number): Promise<void>;
 }
 ```
 
@@ -652,6 +649,7 @@ interface BatchComponent {
 #### 2.2.5 Design Patterns Used
 
 **1. Layered Architecture**
+
 ```
 Presentation → Application → Domain → Data Access → Database
 • Clear separation of concerns
@@ -660,13 +658,14 @@ Presentation → Application → Domain → Data Access → Database
 ```
 
 **2. Repository Pattern**
+
 ```typescript
 // Abstraction over data access
 class InventoryLotRepository implements IInventoryLotRepository {
   constructor(private db: Database) {}
 
   async findById(id: string): Promise<InventoryLot | null> {
-    return this.db.inventoryLots.findUnique({ where: { id } })
+    return this.db.inventoryLots.findUnique({ where: { id } });
   }
 
   async updateQuantity(lotId: string, delta: number): Promise<void> {
@@ -674,42 +673,45 @@ class InventoryLotRepository implements IInventoryLotRepository {
       UPDATE inventory_lots
       SET current_quantity = current_quantity + ${delta}
       WHERE id = ${lotId}
-    `
+    `;
   }
 }
 ```
 
 **3. Service Layer Pattern**
+
 ```typescript
 // Business logic encapsulation
 class LotService {
   constructor(
     private lotRepository: IInventoryLotRepository,
     private eventBus: IEventBus,
-    private cacheService: ICacheService
+    private cacheService: ICacheService,
   ) {}
 
   async createLot(data: CreateLotDTO): Promise<InventoryLot> {
     // Business logic
-    const lot = await this.lotRepository.create(data)
-    await this.eventBus.emit('inventory.lot.created', lot)
-    await this.cacheService.invalidate('stock-levels')
-    return lot
+    const lot = await this.lotRepository.create(data);
+    await this.eventBus.emit("inventory.lot.created", lot);
+    await this.cacheService.invalidate("stock-levels");
+    return lot;
   }
 }
 ```
 
 **4. Event-Driven Architecture (EDA)**
+
 ```typescript
 // Loose coupling via events
-eventBus.on('qc.lot.approved', async (event) => {
-  await inventoryService.releaseFromQuarantine(event.lotNumber)
-  await searchService.updateIndex(event.lotNumber)
-  await notificationService.notify(event)
-})
+eventBus.on("qc.lot.approved", async (event) => {
+  await inventoryService.releaseFromQuarantine(event.lotNumber);
+  await searchService.updateIndex(event.lotNumber);
+  await notificationService.notify(event);
+});
 ```
 
 **5. CQRS Light (Command Query Responsibility Segregation)**
+
 ```
 Write Model (Commands):        Read Model (Queries):
 • PostgreSQL (ACID)            • Elasticsearch (search)
@@ -718,17 +720,19 @@ Write Model (Commands):        Read Model (Queries):
 ```
 
 **6. Dependency Injection**
+
 ```typescript
 // Inversion of Control
 class InventoryController {
   constructor(
-    @Inject('LotService') private lotService: LotService,
-    @Inject('AuthService') private authService: AuthService
+    @Inject("LotService") private lotService: LotService,
+    @Inject("AuthService") private authService: AuthService,
   ) {}
 }
 ```
 
 **7. Strategy Pattern (AI/ML Models)**
+
 ```python
 class ForecastStrategy(ABC):
     @abstractmethod
@@ -746,17 +750,18 @@ result = forecaster.predict(data)
 ```
 
 **8. Observer Pattern (WebSocket)**
+
 ```typescript
 // Real-time updates
 class WebSocketService {
-  private clients: Set<WebSocket> = new Set()
+  private clients: Set<WebSocket> = new Set();
 
   subscribe(client: WebSocket) {
-    this.clients.add(client)
+    this.clients.add(client);
   }
 
   broadcast(event: any) {
-    this.clients.forEach(client => client.send(JSON.stringify(event)))
+    this.clients.forEach((client) => client.send(JSON.stringify(event)));
   }
 }
 ```
@@ -797,6 +802,7 @@ class WebSocketService {
 ```
 
 **Dependency Rules:**
+
 - ✅ Frontend → Backend (allowed)
 - ✅ Backend → Database/Cache (allowed)
 - ✅ Backend → AI/ML (allowed)
@@ -938,16 +944,18 @@ class WebSocketService {
 #### 2.2.2 Modular Monolith Pattern (Recommended)
 
 **Lý do chọn Modular Monolith:**
+
 - Team nhỏ (<20 engineers) - phù hợp single deployable unit
 - Giảm operational complexity (vs full microservices)
-- 42% organizations đang consolidate microservices về modular monolith (2026 trend)
+- 42% organizations đang consolidate microservices về modular monolith
 - Dễ testing, debugging hơn microservices
 - **Khả năng extract services sau:** Khi cần scale, extract "hot paths" thành độc lập
 
 **Internal Module Communication:**
+
 ```javascript
 // Internal event bus (in-process)
-eventEmitter.emit('inventory.lot.created', { lotNumber, materialId });
+eventEmitter.emit("inventory.lot.created", { lotNumber, materialId });
 
 // Module boundaries via interfaces
 inventoryModule.reserveStock({ sku, quantity });
@@ -955,6 +963,7 @@ qcModule.approveL(lotNumber);
 ```
 
 **Selective Service Extraction (Future):**
+
 ```
 Monolith Core (95% traffic):
 ├─ Inventory, QC, Production, Reporting
@@ -992,6 +1001,7 @@ Client Request → API Gateway (Load Balancer)
 ```
 
 **Concurrency Strategy:**
+
 - **Node.js Cluster Mode:** 1 worker per CPU core (4-8 workers)
 - **PostgreSQL Pool:** Max 20 connections per instance
 - **Redis Pool:** Max 50 connections (lightweight)
@@ -1016,20 +1026,21 @@ Database Change (Inventory Update)
 ```
 
 **Performance Target:**
+
 - API response: <200ms (p99)
 - WebSocket latency: <100ms
 - Database query: <50ms (p95)
 
 **3. Task Distribution Patterns:**
 
-| Operation | Pattern | Rationale |
-|-----------|---------|-----------|
-| **Stock Lookup** | Direct DB query + Redis cache | <100ms read, 80/20 rule (hot SKUs) |
-| **Lot Creation** | Sync write + Async event | Ensure data consistency, notify async |
-| **QC Approval** | Optimistic locking | Prevent concurrent approval conflicts |
-| **Demand Forecast** | Batch processing (daily) | Non-realtime, GPU training |
-| **Anomaly Detection** | Stream processing (Kafka) | Continuous monitoring |
-| **Search** | Elasticsearch hybrid (kNN + keyword) | Sub-second semantic search |
+| Operation             | Pattern                              | Rationale                             |
+| --------------------- | ------------------------------------ | ------------------------------------- |
+| **Stock Lookup**      | Direct DB query + Redis cache        | <100ms read, 80/20 rule (hot SKUs)    |
+| **Lot Creation**      | Sync write + Async event             | Ensure data consistency, notify async |
+| **QC Approval**       | Optimistic locking                   | Prevent concurrent approval conflicts |
+| **Demand Forecast**   | Batch processing (daily)             | Non-realtime, GPU training            |
+| **Anomaly Detection** | Stream processing (Kafka)            | Continuous monitoring                 |
+| **Search**            | Elasticsearch hybrid (kNN + keyword) | Sub-second semantic search            |
 
 **4. Event-Driven Architecture (CQRS Light)**
 
@@ -1051,6 +1062,7 @@ Read Model (Queries - Eventual Consistency):
 ```
 
 **Benefits:**
+
 - Read queries 10-100x faster (denormalized, precomputed)
 - Write operations independent of read load
 - Supports real-time dashboards
@@ -1060,6 +1072,7 @@ Read Model (Queries - Eventual Consistency):
 ### 2.4 Góc nhìn dữ liệu (Data View)
 
 Database schema giữ nguyên như đã thiết kế:
+
 - [Database Schema Visualization](https://nhbien.github.io/inventory-mangement-system-database-schema/)
 
 **Polyglot Persistence Strategy:**
@@ -1096,6 +1109,7 @@ Database schema giữ nguyên như đã thiết kế:
 ```
 
 **Cache Invalidation Pattern:**
+
 ```
 1. Write to PostgreSQL (definitive source)
 2. Publish event to Kafka/RabbitMQ
@@ -1104,6 +1118,7 @@ Database schema giữ nguyên như đã thiết kế:
 ```
 
 **Data Consistency Model:**
+
 - **Strong Consistency:** PostgreSQL (transactions, inventory)
 - **Eventual Consistency:** Redis (cache), Elasticsearch (search)
 - **Acceptable lag:** <5 seconds for most operations
@@ -1126,21 +1141,15 @@ Database schema giữ nguyên như đã thiết kế:
 │          │                   │                    │          │
 │          └───────────────────┴────────────────────┘          │
 │                              │                               │
-│  ┌────────────────┐  ┌────────────────┐  ┌───────────────┐ │
-│  │ PostgreSQL     │  │ Redis          │  │ Elasticsearch │ │
-│  │ (:5432)        │  │ (:6379)        │  │ (:9200)       │ │
-│  └────────────────┘  └────────────────┘  └───────────────┘ │
+│  ┌────────────────┐  ┌────────────────┐  ┌───────────────┐   │
+│  │ PostgreSQL     │  │ Redis          │  │ Elasticsearch │   │
+│  │ (:5432)        │  │ (:6379)        │  │ (:9200)       │   │
+│  └────────────────┘  └────────────────┘  └───────────────┘   │
 │                                                              │
-│  ┌────────────────┐  ┌────────────────┐  ┌───────────────┐ │
-│  │ Keycloak       │  │ Prometheus     │  │ Grafana       │ │
-│  │ (:8080)        │  │ (:9090)        │  │ (:3001)       │ │
-│  └────────────────┘  └────────────────┘  └───────────────┘ │
-│                                                              │
-│  ┌────────────────┐  ┌────────────────┐  ┌───────────────┐ │
-│  │ Jaeger         │  │ Metabase       │  │ Fluentd       │ │
-│  │ (:16686)       │  │ (:3002)        │  │ (:24224)      │ │
-│  └────────────────┘  └────────────────┘  └───────────────┘ │
-│                                                              │
+│  ┌────────────────┐                                          │
+│  │ Keycloak       │                                          │
+│  │ (:8080)        │                                          │
+│  └────────────────┘                                          │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -1200,6 +1209,7 @@ Database schema giữ nguyên như đã thiết kế:
 ```
 
 **Deployment Commands:**
+
 ```bash
 # One-time setup
 cd frontend
@@ -1254,10 +1264,8 @@ vercel
 │  │  └──────────────────────────────────────────────────┘│ │
 │  │                                                        │ │
 │  │  ┌──────────────────────────────────────────────────┐│ │
-│  │  │ Monitoring Stack                                  ││ │
-│  │  │ ├─ prometheus (:9090) Metrics                    ││ │
-│  │  │ ├─ grafana (:3001) Dashboards                    ││ │
-│  │  │ └─ jaeger (:16686) Tracing                       ││ │
+│  │  │ Metrics (Grafana Cloud Integration)              ││ │
+│  │  │ └─ /metrics endpoint (:3000/metrics)             ││ │
 │  │  └──────────────────────────────────────────────────┘│ │
 │  └──────────────────────────────────────────────────────┘ │
 │                                                            │
@@ -1326,6 +1334,7 @@ vercel
 ```
 
 **NGINX Configuration:**
+
 ```nginx
 # /etc/nginx/sites-available/ims-api
 upstream backend {
@@ -1396,6 +1405,7 @@ server {
 ```
 
 **Deployment Script:**
+
 ```bash
 #!/bin/bash
 # /opt/ims/deploy.sh
@@ -1439,6 +1449,7 @@ echo "✅ Deployment completed successfully!"
 ```
 
 **CI/CD Pipeline (GitHub Actions):**
+
 ```yaml
 # .github/workflows/deploy-backend.yml
 name: Deploy Backend to VPS
@@ -1447,9 +1458,9 @@ on:
   push:
     branches: [master]
     paths:
-      - 'backend/**'
-      - 'ai-ml-services/**'
-      - 'docker-compose.yml'
+      - "backend/**"
+      - "ai-ml-services/**"
+      - "docker-compose.yml"
 
 jobs:
   deploy:
@@ -1514,7 +1525,7 @@ jobs:
 │     • Use Cases:                                           │
 │       - Semantic search (vector embeddings)               │
 │       - Full-text search (materials, lots)                │
-│       - Log aggregation (via Fluentd)                     │
+│       - Log aggregation (Grafana Loki)                    │
 │     • Configuration:                                       │
 │       cluster.name: ims-search                             │
 │       discovery.type: single-node                          │
@@ -1537,12 +1548,10 @@ jobs:
 │                                                            │
 │  5. Monitoring                                             │
 │     ─────────────────────────────────────────────────────  │
-│     • Prometheus exporters:                                │
-│       - postgres_exporter (connects to DO managed DB)     │
-│       - redis_exporter                                     │
-│       - elasticsearch_exporter                             │
-│     • Grafana dashboards for all databases                │
-│     • Alerts:                                              │
+│     • Metrics: /metrics endpoint (Prometheus format)       │
+│     • Logs: Fly.io logs → Grafana Loki                     │
+│     • Dashboards: Grafana Cloud (managed)                  │
+│     • Alerts: Grafana Cloud Alerting                       │
 │       - PostgreSQL connections >80%                        │
 │       - Redis memory >90%                                  │
 │       - Elasticsearch disk >85%                            │
@@ -1552,13 +1561,14 @@ jobs:
 
 **Why Hybrid Approach?**
 
-| Database | Deployment | Reason |
-|----------|-----------|--------|
-| **PostgreSQL** | Managed (DO) | • Critical data needs HA & backups<br>• Automatic failover<br>• Professional support<br>• Worth $120/mo for peace of mind |
-| **Redis** | Self-hosted | • Cache layer, acceptable data loss<br>• Easy to restore<br>• Save $40-100/mo |
-| **Elasticsearch** | Self-hosted | • Search index, can rebuild from PG<br>• Non-critical data<br>• Save $150-300/mo |
+| Database          | Deployment   | Reason                                                                                                                    |
+| ----------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| **PostgreSQL**    | Managed (DO) | • Critical data needs HA & backups<br>• Automatic failover<br>• Professional support<br>• Worth $120/mo for peace of mind |
+| **Redis**         | Self-hosted  | • Cache layer, acceptable data loss<br>• Easy to restore<br>• Save $40-100/mo                                             |
+| **Elasticsearch** | Self-hosted  | • Search index, can rebuild from PG<br>• Non-critical data<br>• Save $150-300/mo                                          |
 
 ---
+
 #### 2.5.3 Tổng hợp Chi phí & Khuyến nghị Deployment
 
 **RECOMMENDED ARCHITECTURE (Cost-Optimized):**
@@ -1624,19 +1634,20 @@ Single VPS Deployment (All-in-One):
 
 • Backups: Backblaze B2 ($10/mo)
 • SSL: Let's Encrypt (FREE)
-• Monitoring: Self-hosted Prometheus/Grafana
+• Monitoring: Grafana Cloud Free tier
 
 TOTAL: ~$110/month
 ```
 
 **Cost Comparison:**
 
-| Deployment Model | Monthly Cost | Max Users | Reliability | Complexity |
-|------------------|--------------|-----------|-------------|------------|
-| **Budget (All-in-One VPS)** | $110 | ~500 | Medium | Low |
-| **Recommended (Hybrid)** | $220 | ~5,000 | High | Medium |
+| Deployment Model            | Monthly Cost | Max Users | Reliability | Complexity |
+| --------------------------- | ------------ | --------- | ----------- | ---------- |
+| **Budget (All-in-One VPS)** | $110         | ~500      | Medium      | Low        |
+| **Recommended (Hybrid)**    | $220         | ~5,000    | High        | Medium     |
 
 **Note:** Kiến trúc monolith này có thể scale đến 10,000+ users bằng cách:
+
 - Tăng VPS resources (vertical scaling)
 - Thêm Read replicas cho PostgreSQL
 - Sử dụng CDN cho static assets
@@ -1686,6 +1697,7 @@ TOTAL: ~$110/month
 ```
 
 **Security Best Practices Implemented:**
+
 - ✅ No passwords in code (environment variables)
 - ✅ JWT signature verification (JWKS from Keycloak)
 - ✅ SQL injection prevention (parameterized queries)
@@ -1695,13 +1707,13 @@ TOTAL: ~$110/month
 
 ---
 
-## 3. Công nghệ và công cụ (Tech Stack) - UPDATED 2026
+## 3. Công nghệ và công cụ (Tech Stack)
 
 ### 3.1 Technology Stack (Comprehensive)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           COMPLETE TECHNOLOGY STACK 2026                         │
+│                           COMPLETE TECHNOLOGY STACK                             │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
@@ -1730,7 +1742,7 @@ TOTAL: ~$110/month
 │  │  • API Docs:        Swagger / OpenAPI 3.0                               │   │
 │  │  • Logging:         Winston (structured JSON logs)                       │   │
 │  │  • WebSocket:       ws / Socket.io                                      │   │
-│  │  • Metrics:         prom-client (Prometheus)                            │   │
+│  │  • Metrics:         prom-client (Prometheus format for Grafana Cloud)   │   │
 │  │  • Tracing:         OpenTelemetry SDK                                   │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 │                              │                                                  │
@@ -1795,34 +1807,24 @@ TOTAL: ~$110/month
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
 │  │  OBSERVABILITY & MONITORING                                              │   │
 │  │  ────────────────────────────────────────────────────────────────────── │   │
-│  │  METRICS:                                                                 │   │
-│  │  • Collection:      Prometheus (time-series DB)                          │   │
-│  │  • Exporters:       prom-client (Node.js), postgres_exporter,           │   │
-│  │                     elasticsearch-exporter                               │   │
-│  │  • Visualization:   Grafana (dashboards + alerts)                       │   │
-│  │  • Retention:       15 days in Prometheus                               │   │
+│  │  METRICS (Grafana Cloud):                                    │   │
+│  │  • Endpoint:        /metrics (Prometheus format via prom-client)         │   │
+│  │  • Collection:      Grafana Cloud Agent (auto-scrape from Fly.io)        │   │
+│  │  • Visualization:   Grafana Cloud dashboards                             │   │
+│  │  • Retention:       14 days metrics (free tier)                          │   │
+│  │  • URL:             https://yourorg.grafana.net                          │   │
 │  │                                                                           │   │
-│  │  LOGS:                                                                    │   │
-│  │  • Collection:      Fluentd (Docker logging driver)                     │   │
-│  │  • Storage:         Elasticsearch (leverage existing)                    │   │
-│  │  • Visualization:   Kibana / Grafana Loki                               │   │
-│  │  • Retention:       7 days hot, 30 days warm, 1 year archive           │   │
+│  │  LOGS (Grafana Loki):                                        │   │
+│  │  • Collection:      Fly.io logs → Grafana Loki integration               │   │
+│  │  • Storage:         Grafana Cloud (managed)                              │   │
+│  │  • Visualization:   Grafana Explore (logs browser)                       │   │
+│  │  • Retention:       7 days logs (free tier)                              │   │
 │  │                                                                           │   │
-│  │  TRACES:                                                                  │   │
-│  │  • Standard:        OpenTelemetry (vendor-neutral)                      │   │
-│  │  • Backend:         Jaeger (distributed tracing)                        │   │
-│  │  • Auto-instrumentation: Express, pg, Elasticsearch clients            │   │
-│  │  • Retention:       72 hours in Jaeger, longer in Elasticsearch        │   │
-│  │                                                                           │   │
-│  │  BUSINESS ANALYTICS:                                                      │   │
-│  │  • Tool:            Metabase (no-code BI)                               │   │
-│  │  • Data Source:     PostgreSQL direct query                             │   │
-│  │  • Use Case:        Manager dashboards, inventory reports               │   │
-│  │                                                                           │   │
-│  │  ALERTING:                                                                │   │
-│  │  • Manager:         Prometheus AlertManager                              │   │
-│  │  • Channels:        Slack (#alerts), PagerDuty, Email                   │   │
-│  │  • SLOs:            99.5% availability, p99 latency <200ms              │   │
+│  │  ALERTING (Grafana Alerts):                                              │   │
+│  │  • Manager:         Grafana Cloud Alerting (built-in)                    │   │
+│  │  • Channels:        Slack, Email, PagerDuty (webhook integrations)       │   │
+│  │  • SLOs:            99.5% availability, p99 latency <200ms               │   │
+│  │                                                                           │   │              │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 │                                                                                 │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
@@ -1925,7 +1927,7 @@ inventory-management-system/
 │   │   │   ├── auth.ts                # JWT verify + RBAC
 │   │   │   ├── validation.ts          # Joi/Zod schemas
 │   │   │   ├── errorHandler.ts
-│   │   │   └── metrics.ts             # Prometheus metrics
+│   │   │   └── metrics.ts             # /metrics endpoint for Grafana Cloud
 │   │   ├── services/                  # Business logic
 │   │   │   ├── inventory.service.ts
 │   │   │   ├── qc.service.ts
@@ -1984,17 +1986,12 @@ inventory-management-system/
 │   ├── realm-export.json              # Realm config (import on startup)
 │   └── themes/                        # Custom login themes (optional)
 │
-├── monitoring/                        # Observability Stack Configs
-│   ├── prometheus/
-│   │   ├── prometheus.yml             # Prometheus config
-│   │   └── alert-rules.yml            # Alert rules
-│   ├── grafana/
-│   │   ├── dashboards/                # JSON dashboard definitions
-│   │   └── datasources/               # Data source configs
-│   ├── fluentd/
-│   │   └── fluent.conf                # Log collection config
-│   └── jaeger/
-│       └── jaeger-config.yml
+├── monitoring/                        # Observability Configs (Grafana Cloud)
+│   ├── grafana-cloud/
+│   │   ├── dashboards/                # JSON dashboard definitions (import to cloud)
+│   │   ├── grafana-agent.yaml        # Grafana Cloud Agent config (optional)
+│   │   └── alert-rules.yaml          # Alert rules (upload to cloud)
+│   └── README.md                     # Setup instructions for Grafana Cloud
 │
 ├── infrastructure/                    # Infrastructure as Code
 │   ├── docker/
@@ -2048,26 +2045,26 @@ inventory-management-system/
 
 #### Option A: Self-Hosted (RECOMMENDED)
 
-| Component | Monthly Cost | Notes |
-|-----------|--------------|-------|
-| VPS (16GB RAM, 4 vCPU) | $80-150 | Hetzner, DigitalOcean, Vultr |
-| PostgreSQL backup storage | $10-20 | S3-compatible (Backblaze B2) |
-| Redis (self-hosted) | $0 | Included in VPS |
-| Elasticsearch (3 nodes) | $150-300 | Or use existing VPS |
-| Monitoring stack | $0-50 | Self-hosted Prometheus/Grafana |
-| AI/ML GPU (spot instances) | $200-400 | For LSTM training |
-| Claude API (LLM chatbot) | $200-500 | Pay-per-use, ~5-20M tokens |
-| **TOTAL** | **$640-1,420** | Full control, no vendor lock-in |
+| Component                  | Monthly Cost   | Notes                           |
+| -------------------------- | -------------- | ------------------------------- |
+| VPS (16GB RAM, 4 vCPU)     | $80-150        | Hetzner, DigitalOcean, Vultr    |
+| PostgreSQL backup storage  | $10-20         | S3-compatible (Backblaze B2)    |
+| Redis (self-hosted)        | $0             | Included in VPS                 |
+| Elasticsearch (3 nodes)    | $150-300       | Or use existing VPS             |
+| Monitoring stack           | $0 (FREE)      | Grafana Cloud free tier         |
+| AI/ML GPU (spot instances) | $200-400       | For LSTM training               |
+| Claude API (LLM chatbot)   | $200-500       | Pay-per-use, ~5-20M tokens      |
+| **TOTAL**                  | **$640-1,420** | Full control, no vendor lock-in |
 
 #### Option B: Managed Services (SaaS)
 
-| Component | Monthly Cost | Notes |
-|-----------|--------------|-------|
-| Elastic Cloud (ES + Kibana) | $150-300 | Managed Elasticsearch |
-| Datadog (monitoring) | $250-500 | APM + logs + metrics |
-| PostgreSQL managed (RDS) | $100-200 | AWS RDS or equivalent |
-| Keycloak managed | $100-200 | Red Hat SSO or third-party |
-| **TOTAL** | **$600-1,200** | Bill shock risk, vendor lock-in |
+| Component                   | Monthly Cost   | Notes                           |
+| --------------------------- | -------------- | ------------------------------- |
+| Elastic Cloud (ES + Kibana) | $150-300       | Managed Elasticsearch           |
+| Datadog (monitoring)        | $250-500       | APM + logs + metrics            |
+| PostgreSQL managed (RDS)    | $100-200       | AWS RDS or equivalent           |
+| Keycloak managed            | $100-200       | Red Hat SSO or third-party      |
+| **TOTAL**                   | **$600-1,200** | Bill shock risk, vendor lock-in |
 
 **Recommendation:** Self-hosted (Option A) - more control, predictable cost.
 
@@ -2080,6 +2077,7 @@ inventory-management-system/
 #### 4.1.1 Semantic Search (✅ POC Completed Feb 4, 2026)
 
 **Architecture:**
+
 ```
 User Query: "Cà phê" (Vietnamese)
      ↓
@@ -2093,6 +2091,7 @@ Return results: "Organic Coffee Beans" (score: 7.35)
 ```
 
 **Performance:**
+
 - Multilingual: Vietnamese ↔ English semantic matching
 - Latency: <500ms for 100K+ SKUs
 - Accuracy: Better than pure keyword search
@@ -2102,6 +2101,7 @@ Return results: "Organic Coffee Beans" (score: 7.35)
 #### 4.1.2 Real-Time Inventory Updates
 
 **WebSocket Flow:**
+
 ```
 Database Update (Stock Change)
      ↓
@@ -2121,6 +2121,7 @@ React components re-render (optimistic UI)
 #### 4.1.3 Label Printing
 
 **Technology:**
+
 - **PDF Generation:** jsPDF or Puppeteer (headless browser)
 - **Barcode/QR:** qrcode.react + react-barcode
 - **Templates:** HTML/CSS templates → PDF rendering
@@ -2131,6 +2132,7 @@ React components re-render (optimistic UI)
 #### 4.1.4 Excel Export
 
 **Technology:**
+
 - **Library:** xlsx or ExcelJS
 - **Use Case:** Export inventory reports, audit logs, transaction history
 - **Format:** .xlsx with formulas, styling
@@ -2139,39 +2141,44 @@ React components re-render (optimistic UI)
 
 #### 4.1.5 AI-Powered Features (Roadmap)
 
-| Feature | Status | Timeline |
-|---------|--------|----------|
-| **Semantic Search** | ✅ POC Complete | Prod-ready |
-| **Demand Forecasting** | 📋 Planned | Phase 1-2 (Month 1-4) |
-| **Anomaly Detection** | 📋 Planned | Phase 3 (Month 5-6) |
-| **QC Computer Vision** | 📋 Planned | Phase 3 (Month 5-6) |
-| **LLM Chatbot** | 📋 Planned | Phase 4 (Month 7-8) |
+| Feature                | Status          | Timeline              |
+| ---------------------- | --------------- | --------------------- |
+| **Semantic Search**    | ✅ POC Complete | Prod-ready            |
+| **Demand Forecasting** | 📋 Planned      | Phase 1-2 (Month 1-4) |
+| **Anomaly Detection**  | 📋 Planned      | Phase 3 (Month 5-6)   |
+| **QC Computer Vision** | 📋 Planned      | Phase 3 (Month 5-6)   |
+| **LLM Chatbot**        | 📋 Planned      | Phase 4 (Month 7-8)   |
 
 **Estimated Investment:**
+
 - Development: ~$93K (one-time)
 - Infrastructure: $400-700/month
 - ROI: 6-12 month payback (save $50K-100K/year)
 
 ### 4.2 Implementation Phases
 
-#### Phase 1: Monitoring & Observability (Week 1-4)
-- ✅ Deploy Prometheus + Grafana
-- ✅ Configure OpenTelemetry + Jaeger
-- ✅ Setup Fluentd → Elasticsearch logs
-- ✅ Create core dashboards
+#### Phase 1: Monitoring & Observability (Week 1-2)
+
+- ✅ Setup Grafana Cloud Free account
+- ✅ Configure /metrics endpoint (prom-client)
+- ✅ Integrate Fly.io logs with Grafana Loki
+- ✅ Import core dashboards (Node.js, PostgreSQL)
+- ✅ Setup alerts (Slack integration)
 
 #### Phase 2: AI Foundation (Month 1-2)
+
 - ✅ Production deployment of semantic search
 - ✅ Data pipeline for demand forecasting
 - ✅ Prophet baseline model
 
 #### Phase 3: Advanced AI (Month 3-6)
+
 - ✅ LSTM demand forecasting
 - ✅ Anomaly detection (Isolation Forest)
 - ✅ Computer vision QC
 
 #### Phase 4: Business Intelligence (Month 5-8)
-- ✅ Metabase deployment
+
 - ✅ Manager dashboards
 - ✅ LLM chatbot (Claude API)
 
@@ -2199,18 +2206,21 @@ React components re-render (optimistic UI)
 ## 6. References
 
 ### Industry Research
+
 - Modern IMS Architectures: [Research Report](plans/reports/researcher-260205-1541-modern-ims-architectures.md)
 - Monitoring & Observability: [Research Report](plans/reports/researcher-260205-1540-monitoring-observability-stack.md)
 - AI Capabilities: [Research Report](plans/reports/researcher-260205-1541-ai-capabilities-for-ims.md)
 
 ### Internal POCs
+
 - Keycloak Integration POC: [06_Proof of Concept.md](01_Documents/06_Proof of Concept.md) - Section Keycloak
 - Elasticsearch Semantic Search POC: [06_Proof of Concept.md](01_Documents/06_Proof of Concept.md) - Section Elasticsearch
 
 ### External Standards
+
 - OAuth 2.0 / OIDC: [RFC 6749](https://tools.ietf.org/html/rfc6749)
 - OpenTelemetry: [Official Docs](https://opentelemetry.io/)
-- Prometheus: [Monitoring Guide](https://prometheus.io/docs/)
+- Grafana Cloud: [Documentation](https://grafana.com/docs/grafana-cloud/)
 - Domain-Driven Design: [IBM Architecture](https://ibm-cloud-architecture.github.io/refarch-eda/methodology/domain-driven-design/)
 
 ---
