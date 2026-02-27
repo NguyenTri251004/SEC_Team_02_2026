@@ -1,4 +1,4 @@
-# 05_Architecture - Modern IMS
+# 05_Architecture
 
 ## 1. Tổng quan kiến trúc
 
@@ -9,78 +9,78 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 - **Năng lực AI/ML (AI/ML capabilities)** hỗ trợ các chức năng thông minh
 - **Khả năng quan sát (observability)** với logs và metrics tập trung phục vụ giám sát và vận hành
 
-### 1.1 Kiến trúc tổng thể (Solution Sketch)
+### 1.1 Kiến trúc tổng thể
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────┐
-│                        IMS ARCHITECTURE                                   │
+│                             IMS ARCHITECTURE                                   │
 ├────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │  CLIENT LAYER                                                             │ │
-│  │  ────────────────────────────────────────────────────────────────────── │ │
-│  │  • Web Browser (React SPA)                                               │ │
-│  │  • Mobile Browser (Responsive)                                           │ │
-│  │  • Real-time Updates (WebSocket)                                        │ │
-│  └──────────────────────────────────────────────────────────────────────────┘ │
-│                              │                                                 │
-│                              │ HTTPS + JWT + WebSocket                         │
-│                              ▼                                                 │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │  API GATEWAY (Kong/NGINX)                                                │ │
-│  │  • Routing, Auth Verification, Rate Limiting                            │ │
-│  │  • Load Balancing, SSL Termination                                      │ │
-│  └──────────────────────────────────────────────────────────────────────────┘ │
-│                              │                                                 │
-│                              ▼                                                 │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │  APPLICATION LAYER (Modular Monolith)                                    │ │
-│  │  ────────────────────────────────────────────────────────────────────── │ │
-│  │  CORE MODULES:                                                           │ │
-│  │  ├─ Material Module (Material CRUD, Categories)                         │ │
-│  │  ├─ Inventory Lot Module (Lot Tracking, Expiry, Location)               │ │
-│  │  ├─ Transaction Module (Receive, Issue, Adjust, Transfer)               │ │
-│  │  ├─ Labeling Module (QR/Barcode Generation, Printing)                   │ │
-│  │  ├─ Stock Management Module (Real-time Levels, Reservations, Reorder)   │ │
-│  │  ├─ QC Module (Quality Control, Approval/Reject)                        │ │
-│  │  ├─ Production Module (Batches, Components)                             │ │
-│  │  ├─ Reporting Module (Analytics, Audit Logs)                            │ │
-│  │  └─ User Management (RBAC integration with Keycloak)                    │ │
-│  │                                                                           │ │
-│  │  AI/ML SERVICES (FastAPI):                                               │ │
-│  │  ├─ Semantic Search (Elasticsearch + Vector Embeddings)                  │ │
-│  │  ├─ Demand Forecasting (Prophet + LSTM)                                 │ │
-│  │  ├─ Anomaly Detection (Isolation Forest)                                │ │
-│  │  ├─ QC Vision (YOLOv8 - Computer Vision)                               │ │
-│  │  └─ LLM Chatbot (Claude API)                                            │ │
-│  └──────────────────────────────────────────────────────────────────────────┘ │
-│                              │                                                 │
-│                              │ Event Bus (Kafka/RabbitMQ)                      │
-│                              ▼                                                 │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │  DATA & INFRASTRUCTURE LAYER                                             │ │
-│  │  ────────────────────────────────────────────────────────────────────── │ │
-│  │  PRIMARY STORAGE:                                                         │ │
-│  │  ├─ PostgreSQL 15+ (OLTP - inventory data)                              │ │
-│  │  ├─ Redis (Cache - stock levels, sessions)                              │ │
-│  │  └─ Elasticsearch 8.12+ (Search + Vectors)                              │ │
-│  │                                                                           │ │
-│  │  IDENTITY & ACCESS:                                                       │ │
-│  │  └─ Keycloak 24+ (SSO, RBAC, OAuth2/OIDC)                               │ │
-│  │                                                                           │ │
-│  │  OBSERVABILITY STACK:                                                     │ │
-│  │  ├─ Grafana Cloud (Metrics, Logs & Dashboards - Managed)                │ │
-│  │  └─ Fly.io Metrics (Built-in monitoring)                                │ │
-│  └──────────────────────────────────────────────────────────────────────────┘ │
+│   ┌──────────────────────────────────────────────────────────────────────┐     │
+│   │  CLIENT LAYER                                                        │     │
+│   │  ──────────────────────────────────────────────────────────────────  │     │
+│   │  • Web Browser (React SPA)                                           │     │
+│   │  • Mobile Browser (Responsive)                                       │     │
+│   │  • Real-time Updates (WebSocket)                                     │     │
+│   └──────────────────────────────────────────────────────────────────────┘     │
+│                                │                                               │
+│                                │ HTTPS + JWT + WebSocket                       │
+│                                ▼                                               │
+│   ┌──────────────────────────────────────────────────────────────────────┐     │
+│   │  API GATEWAY (Kong/NGINX)                                            │     │
+│   │  • Routing, Auth Verification, Rate Limiting                         │     │
+│   │  • Load Balancing, SSL Termination                                   │     │
+│   └──────────────────────────────────────────────────────────────────────┘     │
+│                                │                                               │
+│                                ▼                                               │
+│   ┌──────────────────────────────────────────────────────────────────────┐     │
+│   │  APPLICATION LAYER (Modular Monolith)                                │     │
+│   │  ──────────────────────────────────────────────────────────────────  │     │
+│   │  CORE MODULES:                                                       │     │
+│   │  ├─ Material Module (Material CRUD, Categories)                      │     │
+│   │  ├─ Inventory Lot Module (Lot Tracking, Expiry, Location)            │     │
+│   │  ├─ Transaction Module (Receive, Issue, Adjust, Transfer)            │     │
+│   │  ├─ Labeling Module (QR/Barcode Generation, Printing)                │     │
+│   │  ├─ Stock Management Module (Real-time Levels, Reservations, Reorder)│     │
+│   │  ├─ QC Module (Quality Control, Approval/Reject)                     │     │
+│   │  ├─ Production Module (Batches, Components)                          │     │
+│   │  ├─ Reporting Module (Analytics, Audit Logs)                         │     │
+│   │  └─ User Management (RBAC integration with Keycloak)                 │     │
+│   │                                                                      │     │
+│   │  AI/ML SERVICES (FastAPI):                                           │     │
+│   │  ├─ Semantic Search (Elasticsearch + Vector Embeddings)              │     │
+│   │  ├─ Demand Forecasting (Prophet + LSTM)                              │     │
+│   │  ├─ Anomaly Detection (Isolation Forest)                             │     │
+│   │  ├─ QC Vision (YOLOv8 - Computer Vision)                             │     │
+│   │  └─ LLM Chatbot (Claude API)                                         │     │
+│   └──────────────────────────────────────────────────────────────────────┘     │
+│                                │                                               │
+│                                │ Event Bus (Kafka/RabbitMQ)                    │
+│                                ▼                                               │
+│   ┌──────────────────────────────────────────────────────────────────────┐     │
+│   │  DATA & INFRASTRUCTURE LAYER                                         │     │
+│   │  ──────────────────────────────────────────────────────────────────  │     │
+│   │  PRIMARY STORAGE:                                                    │     │
+│   │  ├─ PostgreSQL 15+ (OLTP - inventory data)                           │     │
+│   │  ├─ Redis (Cache - stock levels, sessions)                           │     │
+│   │  └─ Elasticsearch 8.12+ (Search + Vectors)                           │     │
+│   │                                                                      │     │
+│   │  IDENTITY & ACCESS:                                                  │     │
+│   │  └─ Keycloak 24+ (SSO, RBAC, OAuth2/OIDC)                            │     │
+│   │                                                                      │     │
+│   │  OBSERVABILITY STACK:                                                │     │
+│   │  ├─ Grafana Cloud (Metrics, Logs & Dashboards - Managed)             │     │
+│   │  └─ Fly.io Metrics (Built-in monitoring)                             │     │
+│   └──────────────────────────────────────────────────────────────────────┘     │
 │                                                                                │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │  DEPLOYMENT & ORCHESTRATION                                              │ │
-│  │  ────────────────────────────────────────────────────────────────────── │ │
-│  │  • Docker Containers (All services)                                      │ │
-│  │  • Docker Compose (Orchestration)                                        │ │
-│  │  • GitHub Actions (CI/CD Pipeline)                                       │ │
-│  │  • PostgreSQL Backups (Automated)                                        │ │
-│  └──────────────────────────────────────────────────────────────────────────┘ │
+│   ┌──────────────────────────────────────────────────────────────────────┐     │
+│   │  DEPLOYMENT & ORCHESTRATION                                          │     │
+│   │  ──────────────────────────────────────────────────────────────────  │     │
+│   │  • Docker Containers (All services)                                  │     │
+│   │  • Docker Compose (Orchestration)                                    │     │
+│   │  • GitHub Actions (CI/CD Pipeline)                                   │     │
+│   │  • PostgreSQL Backups (Automated)                                    │     │
+│   └──────────────────────────────────────────────────────────────────────┘     │
 │                                                                                │
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -141,7 +141,7 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 │  │  │  ├─ QC Dashboard (quality control, approval workflow)          │  │ │
 │  │  │  ├─ Production Tracking UI (batches, components)               │  │ │
 │  │  │  ├─ Reporting & Analytics UI (KPIs, audit logs)                │  │ │
-│  │  │  └─ Authentication UI (Keycloak integration)                    │  │ │
+│  │  │  └─ User Management UI (Keycloak integration)                    │  │ │
 │  │  │                                                                  │  │ │
 │  │  │  Technologies:                                                   │  │ │
 │  │  │  • React 18 + TypeScript                                        │  │ │
@@ -1657,53 +1657,79 @@ TOTAL: ~$110/month
 
 ### 2.6 Góc nhìn bảo mật (Security View)
 
-**Zero Trust Architecture:**
-
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  SECURITY LAYERS                                           │
+│             CÁC LỚP BẢO MẬT (SECURITY LAYERS)              │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│  Layer 1: Authentication (Keycloak)                       │
-│  • OAuth 2.0 / OIDC                                       │
-│  • JWT Access Token (5 min) + Refresh Token (30 min)     │
-│  • Multi-factor authentication (MFA) for Admin            │
-│  • Social login support (Google, GitHub)                  │
+│  LAYER 1: IDENTITY & AUTHENTICATION                        │
+│  (Xác thực danh tính - Identity Provider)                  │
 │                                                            │
-│  Layer 2: Authorization (RBAC)                            │
-│  • 5 roles: admin, inventory_manager, quality_control,   │
-│            production, viewer                             │
-│  • Fine-grained permissions (read/write per resource)     │
-│  • Site-specific RBAC (warehouse isolation)              │
+│  • Identity Provider: Keycloak                             │
+│  • Giao thức: OpenID Connect (OIDC)                        │
+│    - Authorization Code Flow + PKCE                        │
+│  • Token phát hành:                                        │
+│    - Access Token (JWT, 5 phút)                            │
+│    - Refresh Token (30 phút)                               │
+│  • Public Key cung cấp qua JWKS endpoint                   │
 │                                                            │
-│  Layer 3: API Security                                    │
-│  • JWT verification at API Gateway                        │
-│  • Rate limiting (10K req/min per user)                  │
-│  • CORS policies (allowed origins)                        │
-│  • Input validation (Joi/Zod schemas)                    │
+│  Nơi chặn (Enforcement Point):                             │
+│    - Keycloak xác thực username/password                   │
+│    - Chỉ phát hành token khi xác thực thành công           │
 │                                                            │
-│  Layer 4: Data Protection                                 │
-│  • TLS 1.3 (all traffic encrypted)                       │
-│  • Database encryption at rest (AES-256)                  │
-│  • Secrets management (.env files + Docker secrets)      │
-│  • PII masking in logs                                    │
+├────────────────────────────────────────────────────────────┤
 │                                                            │
-│  Layer 5: Audit & Compliance                              │
-│  • All mutations logged (who, what, when)                │
-│  • Audit trail immutable (append-only)                    │
-│  • Regulatory compliance (GDPR, HIPAA if needed)         │
+│  LAYER 2: API GATEWAY SECURITY                             │
+│  (Bảo vệ lớp biên hệ thống)                                │
+│                                                            │
+│  • Rate Limiting                                           │
+│  • CORS Policy (allowed origins)                           │
+│  • Security Headers (CSP, X-Content-Type-Options, ...)     │
+│                                                            │
+│  Nơi chặn (Enforcement Point): API Gateway (NGINX/Kong)    │
+│                                                            │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  LAYER 3: APPLICATION SECURITY                             │
+│ (Bảo mật trong tầng ứng dụng)                              │                                                            │
+│  • Kiểm tra JWT tại Backend                                │
+│  • Phân quyền theo vai trò (RBAC):                         │
+│    admin, inventory_manager, quality_control,              │
+│    production, viewer                                      │
+│  • Role lấy từ JWT claim, middleware requireRole           │
+│  • Phân quyền chi tiết theo tài nguyên (resource-level)    │
+│  • Input validation (Joi/Zod)                              │
+│  • Chống SQL injection (Sequelize parameterized)           │
+│  • Logging chuẩn hóa (structured logging)                  │
+│                                                            │
+│  Nơi chặn (Enforcement Point): Backend API (Express        │
+│  Middleware + Controllers)                                 │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  LAYER 4: DATA PROTECTION                                  │
+│  (Bảo vệ dữ liệu và thông tin nhạy cảm)                    │
+│                                                            │
+│  • TLS 1.3 (mã hóa toàn bộ traffic)                        │
+│  • Encryption at Rest (disk-level encryption)              │
+│  • Secrets Management: Docker Secrets / ENV variables      │
+│  • Không hardcode mật khẩu                                 │
+│  • Masking dữ liệu nhạy cảm trong logs (PII masking)       │
+│                                                            │
+│  Nơi chặn (Enforcement Point): Infrastructure & Database   │
+│ Layer                                                      │
+│                                                            │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  LAYER 5: AUDIT & MONITORING                               │
+│  (Giám sát và kiểm toán bảo mật)                           │
+│                                                            │
+│  • Ghi log mọi thay đổi dữ liệu (who, what, when)          │
+│  • Audit trail dạng append-only                            │
+│  • Centralized logging (Grafana Loki)                      │
+│  • Theo dõi bất thường và truy vết sự cố                   │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
-
-**Security Best Practices Implemented:**
-
-- ✅ No passwords in code (environment variables)
-- ✅ JWT signature verification (JWKS from Keycloak)
-- ✅ SQL injection prevention (parameterized queries)
-- ✅ XSS protection (React auto-escaping + CSP headers)
-- ✅ CSRF tokens (SameSite cookies)
-- ✅ Dependency scanning (GitHub Dependabot)
 
 ---
 
