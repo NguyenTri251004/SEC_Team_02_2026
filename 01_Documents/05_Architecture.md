@@ -13,74 +13,74 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────┐
-│                             IMS ARCHITECTURE                                   │
+│                             IMS ARCHITECTURE                                  │
 ├────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                │
-│   ┌──────────────────────────────────────────────────────────────────────┐     │
-│   │  CLIENT LAYER                                                        │     │
-│   │  ──────────────────────────────────────────────────────────────────  │     │
-│   │  • Web Browser (React SPA)                                           │     │
-│   │  • Mobile Browser (Responsive)                                       │     │
-│   │  • Real-time Updates (WebSocket)                                     │     │
-│   └──────────────────────────────────────────────────────────────────────┘     │
-│                                │                                               │
-│                                │ HTTPS + JWT + WebSocket                       │
-│                                ▼                                               │
-│   ┌──────────────────────────────────────────────────────────────────────┐     │
-│   │  API GATEWAY (Kong/NGINX)                                            │     │
-│   │  • Routing, Auth Verification, Rate Limiting                         │     │
-│   │  • Load Balancing, SSL Termination                                   │     │
-│   └──────────────────────────────────────────────────────────────────────┘     │
-│                                │                                               │
-│                                ▼                                               │
-│   ┌──────────────────────────────────────────────────────────────────────┐     │
-│   │  APPLICATION LAYER (Modular Monolith)                                │     │
-│   │  ──────────────────────────────────────────────────────────────────  │     │
-│   │  CORE MODULES:                                                       │     │
-│   │  ├─ Material Module (Material CRUD, Categories)                      │     │
-│   │  ├─ Inventory Lot Module (Lot Tracking, Expiry, Location)            │     │
-│   │  ├─ Transaction Module (Receive, Issue, Adjust, Transfer)            │     │
-│   │  ├─ Labeling Module (QR/Barcode Generation, Printing)                │     │
-│   │  ├─ Stock Management Module (Real-time Levels, Reservations, Reorder)│     │
-│   │  ├─ QC Module (Quality Control, Approval/Reject)                     │     │
-│   │  ├─ Production Module (Batches, Components)                          │     │
-│   │  ├─ Reporting Module (Analytics, Audit Logs)                         │     │
-│   │  └─ User Management (RBAC integration with Keycloak)                 │     │
-│   │                                                                      │     │
-│   │  AI/ML SERVICES (FastAPI):                                           │     │
-│   │  ├─ Semantic Search (Elasticsearch + Vector Embeddings)              │     │
-│   │  ├─ Demand Forecasting (Prophet + LSTM)                              │     │
-│   │  ├─ Anomaly Detection (Isolation Forest)                             │     │
-│   │  ├─ QC Vision (YOLOv8 - Computer Vision)                             │     │
-│   │  └─ LLM Chatbot (Claude API)                                         │     │
-│   └──────────────────────────────────────────────────────────────────────┘     │
-│                                │                                               │
-│                                │ Event Bus (Kafka/RabbitMQ)                    │
-│                                ▼                                               │
-│   ┌──────────────────────────────────────────────────────────────────────┐     │
-│   │  DATA & INFRASTRUCTURE LAYER                                         │     │
-│   │  ──────────────────────────────────────────────────────────────────  │     │
-│   │  PRIMARY STORAGE:                                                    │     │
-│   │  ├─ PostgreSQL 15+ (OLTP - inventory data)                           │     │
-│   │  ├─ Redis (Cache - stock levels, sessions)                           │     │
-│   │  └─ Elasticsearch 8.12+ (Search + Vectors)                           │     │
-│   │                                                                      │     │
-│   │  IDENTITY & ACCESS:                                                  │     │
-│   │  └─ Keycloak 24+ (SSO, RBAC, OAuth2/OIDC)                            │     │
-│   │                                                                      │     │
-│   │  OBSERVABILITY STACK:                                                │     │
-│   │  ├─ Grafana Cloud (Metrics, Logs & Dashboards - Managed)             │     │
-│   │  └─ Fly.io Metrics (Built-in monitoring)                             │     │
-│   └──────────────────────────────────────────────────────────────────────┘     │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │  CLIENT LAYER                                                            │  │
+│  │  ──────────────────────────────────────────────────────────────────────  │  │
+│  │  • Web Browser (React SPA)                                               │  │
+│  │  • Mobile Browser (Responsive)                                           │  │
+│  │  • Real-time Updates (WebSocket)                                         │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                 │
+│                              │ HTTPS + JWT + REST/GraphQL/WebSocket            │
+│                              ▼                                                 │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │  API GATEWAY (Kong/NGINX)                                                │  │
+│  │  • Routing, Auth Verification, Rate Limiting                             │  │
+│  │  • Load Balancing, SSL Termination                                       │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                 │
+│                              ▼                                                 │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │  APPLICATION LAYER (Modular Monolith)                                    │  │
+│  │  ──────────────────────────────────────────────────────────────────────  │  │
+│  │  CORE MODULES:                                                           │  │
+│  │  ├─ Material Module (Material CRUD, Categories)                          │  │
+│  │  ├─ Inventory Lot Module (Lot Tracking, Expiry, Location)                │  │
+│  │  ├─ Transaction Module (Receive, Issue, Adjust, Transfer)                │  │
+│  │  ├─ Labeling Module (QR/Barcode Generation, Printing)                    │  │
+│  │  ├─ Stock Management Module (Real-time Levels, Reservations, Reorder)    │  │
+│  │  ├─ QC Module (Quality Control, Approval/Reject)                         │  │
+│  │  ├─ Production Module (Batches, Components)                              │  │
+│  │  ├─ Reporting Module (Analytics, Audit Logs)                             │  │
+│  │  └─ User Management (RBAC integration with Keycloak)                     │  │
+│  │                                                                          │  │
+│  │  AI/ML SERVICES (FastAPI):                                               │  │
+│  │  ├─ Semantic Search (Elasticsearch + Vector Embeddings)                  │  │
+│  │  ├─ Demand Forecasting (Prophet + LSTM)                                  │  │
+│  │  ├─ Anomaly Detection (Isolation Forest)                                 │  │
+│  │  ├─ QC Vision (YOLOv8 - Computer Vision)                                 │  │
+│  │  └─ LLM Chatbot (Claude API)                                             │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
+│                              │                                                 │
+│                              │ Internal Event Emitter                          │
+│                              ▼                                                 │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │  DATA & INFRASTRUCTURE LAYER                                             │  │
+│  │  ──────────────────────────────────────────────────────────────────────  │  │
+│  │  PRIMARY STORAGE:                                                        │  │
+│  │  ├─ PostgreSQL 16 (OLTP - inventory data)                                │  │
+│  │  ├─ Redis (Cache - stock levels, sessions)                               │  │
+│  │  └─ Elasticsearch 8.12+ (Search + Vectors)                               │  │
+│  │                                                                          │  │
+│  │  IDENTITY & ACCESS:                                                      │  │
+│  │  └─ Keycloak 24+ (SSO, RBAC, OAuth2/OIDC)                                │  │
+│  │                                                                          │  │
+│  │  OBSERVABILITY STACK:                                                    │  │
+│  │  ├─ Grafana Cloud (Metrics, Logs & Dashboards - Managed)                 │  │
+│  │  └─ Fly.io Metrics (Built-in monitoring)                                 │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                │
-│   ┌──────────────────────────────────────────────────────────────────────┐     │
-│   │  DEPLOYMENT & ORCHESTRATION                                          │     │
-│   │  ──────────────────────────────────────────────────────────────────  │     │
-│   │  • Docker Containers (All services)                                  │     │
-│   │  • Docker Compose (Orchestration)                                    │     │
-│   │  • GitHub Actions (CI/CD Pipeline)                                   │     │
-│   │  • PostgreSQL Backups (Automated)                                    │     │
-│   └──────────────────────────────────────────────────────────────────────┘     │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │  DEPLOYMENT & ORCHESTRATION                                              │  │
+│  │  ──────────────────────────────────────────────────────────────────────  │  │
+│  │  • Docker Containers (All services)                                      │  │
+│  │  • Docker Compose (Orchestration)                                        │  │
+│  │  • GitHub Actions (CI/CD Pipeline)                                       │  │
+│  │  • PostgreSQL Backups (Automated)                                        │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                │
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -93,11 +93,10 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 
 - **Vai trò người dùng (User Roles):**
   - `Admin` - Quản trị hệ thống, cấu hình, quản lý người dùng
-  - `InventoryManager` - Quản lý kho, nhập/xuất hàng, truy xuất
-  - `QualityControl` - Kiểm tra chất lượng, duyệt/từ chối lô
-  - `Production` - Tạo lô sản xuất, quản lý batches
+  - `InventoryManager` - Quản lý kho, nhập/xuất hàng, truy xuất, giám sát báo cáo
+  - `QualityControl` - Kiểm tra chất lượng, duyệt/từ chối lô hàng
+  - `Operator` - Nhân viên vận hành: nhập hàng, xuất hàng, kiểm kê, in nhãn
   - `Viewer` - Xem báo cáo, bảng điều khiển (dashboard) chỉ đọc
-
 - **Quy trình chính:**
   - **Nhập kho (receiving):** Nhập kho → Tạo InventoryLot → Kiểm tra QC → Duyệt/từ chối
   - **Sản xuất (production):** Tạo ProductionBatch → Tiêu thụ vật tư → Theo dõi thành phần
@@ -115,191 +114,192 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│                        LOGICAL ARCHITECTURE                                 │
-│                     (Component & Relationship View)                         │
+│                        LOGICAL ARCHITECTURE                                │
+│                     (Component & Relationship View)                        │
 ├────────────────────────────────────────────────────────────────────────────┤
 │                                                                            │
-│  ┌──────────────────────────────────────────────────────────────────────┐ │
-│  │  CLIENT TIER                                                          │ │
-│  │  ──────────────────────────────────────────────────────────────────  │ │
-│  │                                                                        │ │
-│  │  ┌────────────────────────────────────────────────────────────────┐  │ │
-│  │  │  Frontend Component (React SPA)                                 │  │ │
-│  │  │  ────────────────────────────────────────────────────────────  │  │ │
-│  │  │  Responsibilities:                                              │  │ │
-│  │  │  • User interface rendering                                     │  │ │
-│  │  │  • Client-side routing & state management                       │  │ │
-│  │  │  • Form validation & user input handling                        │  │ │
-│  │  │  • Real-time UI updates (WebSocket)                            │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  Sub-components:                                                 │  │ │
-│  │  │  ├─ Material Management UI (CRUD, categories, search)           │  │ │
-│  │  │  ├─ Inventory Lot UI (lot tracking, expiry alerts)             │  │ │
-│  │  │  ├─ Transaction UI (receive, issue, adjust, transfer)          │  │ │
-│  │  │  ├─ Labeling UI (generate QR/barcode, print labels)            │  │ │
-│  │  │  ├─ Stock Dashboard (real-time levels, reservations)           │  │ │
-│  │  │  ├─ QC Dashboard (quality control, approval workflow)          │  │ │
-│  │  │  ├─ Production Tracking UI (batches, components)               │  │ │
-│  │  │  ├─ Reporting & Analytics UI (KPIs, audit logs)                │  │ │
-│  │  │  └─ User Management UI (Keycloak integration)                    │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  Technologies:                                                   │  │ │
-│  │  │  • React 18 + TypeScript                                        │  │ │
-│  │  │  • Ant Design (UI components)                                   │  │ │
-│  │  │  • React Query (server state)                                   │  │ │
-│  │  │  • Zustand (client state)                                       │  │ │
-│  │  │  • React Router v6                                              │  │ │
-│  │  └────────────────────────────────────────────────────────────────┘  │ │
-│  └──────────────────────────────────────────────────────────────────────┘ │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │  CLIENT TIER                                                         │  │
+│  │  ──────────────────────────────────────────────────────────────────  │  │
+│  │                                                                      │  │
+│  │  ┌────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Frontend Component (React SPA)                                │  │  │
+│  │  │  ────────────────────────────────────────────────────────────  │  │  │
+│  │  │  Responsibilities:                                             │  │  │
+│  │  │  • User interface rendering                                    │  │  │
+│  │  │  • Client-side routing & state management                      │  │  │
+│  │  │  • Form validation & user input handling                       │  │  │
+│  │  │  • Real-time UI updates (WebSocket)                            │  │  │
+│  │  │                                                                │  │  │
+│  │  │  Sub-components:                                               │  │  │
+│  │  │  ├─ Material Management UI (CRUD, categories, search)          │  │  │
+│  │  │  ├─ Inventory Lot UI (lot tracking, expiry alerts)             │  │  │
+│  │  │  ├─ Transaction UI (receive, issue, adjust, transfer)          │  │  │
+│  │  │  ├─ Labeling UI (generate QR/barcode, print labels)            │  │  │
+│  │  │  ├─ Stock Dashboard (real-time levels, reservations)           │  │  │
+│  │  │  ├─ QC Dashboard (quality control, approval workflow)          │  │  │
+│  │  │  ├─ Production Tracking UI (batches, components)               │  │  │
+│  │  │  ├─ Reporting & Analytics UI (KPIs, audit logs)                │  │  │
+│  │  │  └─ Authentication UI (Keycloak integration)                   │  │  │
+│  │  │                                                                │  │  │
+│  │  │  Technologies:                                                 │  │  │
+│  │  │  • React 19 + TypeScript                                       │  │  │
+│  │  │  • Ant Design (UI components — planned)                        │  │  │
+│  │  │  • React Query (server state)                                  │  │  │
+│  │  │  • Zustand (client state)                                      │  │  │
+│  │  │  • React Router v6                                             │  │  │
+│  │  └────────────────────────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
 │                              │                                             │
-│                              │ REST API (JSON)                             │
-│                              │ WebSocket (Real-time)                       │
-│                              │ OAuth2/OIDC (Auth)                          │
+│                              │ REST API (JSON) — CRUD operations           │
+│                              │ GraphQL (/graphql) — Complex queries        │
+│                              │ WebSocket (Real-time updates)               │
+│                              │ OAuth2/OIDC (Auth via Keycloak)             │
 │                              ▼                                             │
-│  ┌──────────────────────────────────────────────────────────────────────┐ │
-│  │  APPLICATION TIER                                                     │ │
-│  │  ──────────────────────────────────────────────────────────────────  │ │
-│  │                                                                        │ │
-│  │  ┌────────────────────────────────────────────────────────────────┐  │ │
-│  │  │  API Gateway Component (NGINX/Kong)                             │  │ │
-│  │  │  ────────────────────────────────────────────────────────────  │  │ │
-│  │  │  Responsibilities:                                              │  │ │
-│  │  │  • Request routing & load balancing                             │  │ │
-│  │  │  • SSL termination                                              │  │ │
-│  │  │  • JWT validation (initial check)                               │  │ │
-│  │  │  • Rate limiting & throttling                                   │  │ │
-│  │  │  • CORS policy enforcement                                      │  │ │
-│  │  └────────────────────────────────────────────────────────────────┘  │ │
-│  │                              ▼                                         │ │
-│  │  ┌────────────────────────────────────────────────────────────────┐  │ │
-│  │  │  Backend API Component (Node.js + Express)                      │  │ │
-│  │  │  ────────────────────────────────────────────────────────────  │  │ │
-│  │  │  Responsibilities:                                              │  │ │
-│  │  │  • Business logic orchestration                                 │  │ │
-│  │  │  • API endpoint implementation                                  │  │ │
-│  │  │  • Request/Response handling                                    │  │ │
-│  │  │  • WebSocket server (real-time events)                         │  │ │
-│  │  │  • Event publishing/subscribing                                 │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  Core Modules (Bounded Contexts):                               │  │ │
-│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
-│  │  │  │ MaterialModule                                            │  │  │ │
-│  │  │  │ • MaterialService (CRUD, search, categorize)             │  │  │ │
-│  │  │  │ • MaterialValidationService (business rules)             │  │  │ │
-│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
-│  │  │  │ InventoryLotModule                                        │  │  │ │
-│  │  │  │ • LotService (create, track, update status)              │  │  │ │
-│  │  │  │ • LotExpiryService (expiry tracking, alerts)             │  │  │ │
-│  │  │  │ • LotLocationService (warehouse location)                │  │  │ │
-│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
-│  │  │  │ TransactionModule                                         │  │  │ │
-│  │  │  │ • ReceiveService (goods receipt)                         │  │  │ │
-│  │  │  │ • IssueService (goods issue)                             │  │  │ │
-│  │  │  │ • AdjustmentService (stock adjustments)                  │  │  │ │
-│  │  │  │ • TransferService (inter-warehouse transfers)            │  │  │ │
-│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
-│  │  │  │ LabelingModule                                            │  │  │ │
-│  │  │  │ • LabelGenerationService (QR/Barcode)                    │  │  │ │
-│  │  │  │ • PrintService (label printing)                          │  │  │ │
-│  │  │  │ • TemplateService (label templates)                      │  │  │ │
-│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
-│  │  │  │ StockManagementModule                                     │  │  │ │
-│  │  │  │ • StockLevelService (real-time stock tracking)           │  │  │ │
-│  │  │  │ • ReservationService (reserve/release stock)             │  │  │ │
-│  │  │  │ • ReorderService (auto-reorder alerts)                   │  │  │ │
-│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
-│  │  │  │ QualityControlModule                                      │  │  │ │
-│  │  │  │ • QCTestService (create tests, record results)            │  │  │ │
-│  │  │  │ • ApprovalWorkflowService (approve/reject lots)           │  │  │ │
-│  │  │  │ • QuarantineService (quarantine enforcement)              │  │  │ │
-│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
-│  │  │  │ ProductionModule                                          │  │  │ │
-│  │  │  │ • BatchService (batch creation, tracking)                 │  │  │ │
-│  │  │  │ • ComponentTrackingService (material → batch)            │  │  │ │
-│  │  │  │ • ProductionHistoryService (audit trail)                  │  │  │ │
-│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │ │
-│  │  │  │ ReportingModule                                           │  │  │ │
-│  │  │  │ • ReportService (generate reports)                        │  │  │ │
-│  │  │  │ • AnalyticsService (KPI calculations)                     │  │  │ │
-│  │  │  │ • AuditService (audit trail queries)                      │  │  │ │
-│  │  │  │ • TraceabilityService (lot → batch → product)           │  │  │ │
-│  │  │  └──────────────────────────────────────────────────────────┘  │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  Cross-Cutting Services:                                        │  │ │
-│  │  │  • AuthService (JWT verification with Keycloak)                │  │ │
-│  │  │  • ValidationService (request validation)                       │  │ │
-│  │  │  • LoggingService (structured logging)                          │  │ │
-│  │  │  • EventBusService (internal event pub/sub)                    │  │ │
-│  │  │  • CacheService (Redis integration)                             │  │ │
-│  │  └────────────────────────────────────────────────────────────────┘  │ │
-│  │                              ▼                                         │ │
-│  │  ┌────────────────────────────────────────────────────────────────┐  │ │
-│  │  │  AI/ML Services Component (FastAPI)                            │  │ │
-│  │  │  ────────────────────────────────────────────────────────────  │  │ │
-│  │  │  Responsibilities:                                              │  │ │
-│  │  │  • AI model inference & predictions                             │  │ │
-│  │  │  • ML pipeline orchestration                                    │  │ │
-│  │  │  • Semantic search processing                                   │  │ │
-│  │  │                                                                  │  │ │
-│  │  │  Services:                                                       │  │ │
-│  │  │  • SemanticSearchService (embeddings + kNN search)             │  │ │
-│  │  │  • DemandForecastService (Prophet + LSTM)                      │  │ │
-│  │  │  • AnomalyDetectionService (Isolation Forest)                  │  │ │
-│  │  │  • ComputerVisionService (YOLOv8 QC)                           │  │ │
-│  │  │  • ChatbotService (Claude API integration)                     │  │ │
-│  │  └────────────────────────────────────────────────────────────────┘  │ │
-│  └──────────────────────────────────────────────────────────────────────┘ │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │  APPLICATION TIER                                                    │  │
+│  │  ──────────────────────────────────────────────────────────────────  │  │
+│  │                                                                      │  │
+│  │  ┌────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  API Gateway Component (NGINX/Kong)                            │  │  │
+│  │  │  ────────────────────────────────────────────────────────────  │  │  │
+│  │  │  Responsibilities:                                             │  │  │
+│  │  │  • Request routing & load balancing                            │  │  │
+│  │  │  • SSL termination                                             │  │  │
+│  │  │  • JWT validation (initial check)                              │  │  │
+│  │  │  • Rate limiting & throttling                                  │  │  │
+│  │  │  • CORS policy enforcement                                     │  │  │
+│  │  └────────────────────────────────────────────────────────────────┘  │  │
+│  │                              ▼                                       │  │
+│  │  ┌────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Backend API Component (Node.js + Express)                     │  │  │
+│  │  │  ────────────────────────────────────────────────────────────  │  │  │
+│  │  │  Responsibilities:                                             │  │  │
+│  │  │  • Business logic orchestration                                │  │  │
+│  │  │  • API endpoint implementation                                 │  │  │
+│  │  │  • Request/Response handling                                   │  │  │
+│  │  │  • WebSocket server (real-time events)                         │  │  │
+│  │  │  • Event publishing/subscribing                                │  │  │
+│  │  │                                                                │  │  │
+│  │  │  Core Modules (Bounded Contexts):                              │  │  │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │  │
+│  │  │  │ MaterialModule                                           │  │  │  │
+│  │  │  │ • MaterialService (CRUD, search, categorize)             │  │  │  │
+│  │  │  │ • MaterialValidationService (business rules)             │  │  │  │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │  │
+│  │  │                                                                │  │  │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │  │
+│  │  │  │ InventoryLotModule                                       │  │  │  │
+│  │  │  │ • LotService (create, track, update status)              │  │  │  │
+│  │  │  │ • LotExpiryService (expiry tracking, alerts)             │  │  │  │
+│  │  │  │ • LotLocationService (warehouse location)                │  │  │  │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │  │
+│  │  │                                                                │  │  │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │  │
+│  │  │  │ TransactionModule                                        │  │  │  │
+│  │  │  │ • ReceiveService (goods receipt)                         │  │  │  │
+│  │  │  │ • IssueService (goods issue)                             │  │  │  │
+│  │  │  │ • AdjustmentService (stock adjustments)                  │  │  │  │
+│  │  │  │ • TransferService (inter-warehouse transfers)            │  │  │  │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │  │
+│  │  │                                                                │  │  │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │  │
+│  │  │  │ LabelingModule                                           │  │  │  │
+│  │  │  │ • LabelGenerationService (QR/Barcode)                    │  │  │  │
+│  │  │  │ • PrintService (label printing)                          │  │  │  │
+│  │  │  │ • TemplateService (label templates)                      │  │  │  │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │  │
+│  │  │                                                                │  │  │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │  │
+│  │  │  │ StockManagementModule                                    │  │  │  │
+│  │  │  │ • StockLevelService (real-time stock tracking)           │  │  │  │
+│  │  │  │ • ReservationService (reserve/release stock)             │  │  │  │
+│  │  │  │ • ReorderService (auto-reorder alerts)                   │  │  │  │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │  │
+│  │  │                                                                │  │  │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │  │
+│  │  │  │ QualityControlModule                                     │  │  │  │
+│  │  │  │ • QCTestService (create tests, record results)           │  │  │  │
+│  │  │  │ • ApprovalWorkflowService (approve/reject lots)          │  │  │  │
+│  │  │  │ • QuarantineService (quarantine enforcement)             │  │  │  │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │  │
+│  │  │                                                                │  │  │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │  │
+│  │  │  │ ProductionModule                                         │  │  │  │
+│  │  │  │ • BatchService (batch creation, tracking)                │  │  │  │
+│  │  │  │ • ComponentTrackingService (material → batch)            │  │  │  │
+│  │  │  │ • ProductionHistoryService (audit trail)                 │  │  │  │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │  │
+│  │  │                                                                │  │  │
+│  │  │  ┌──────────────────────────────────────────────────────────┐  │  │  │
+│  │  │  │ ReportingModule                                          │  │  │  │
+│  │  │  │ • ReportService (generate reports)                       │  │  │  │
+│  │  │  │ • AnalyticsService (KPI calculations)                    │  │  │  │
+│  │  │  │ • AuditService (audit trail queries)                     │  │  │  │
+│  │  │  │ • TraceabilityService (lot → batch → product)            │  │  │  │
+│  │  │  └──────────────────────────────────────────────────────────┘  │  │  │
+│  │  │                                                                │  │  │
+│  │  │  Cross-Cutting Services:                                       │  │  │
+│  │  │  • AuthService (JWT verification with Keycloak)                │  │  │
+│  │  │  • ValidationService (request validation)                      │  │  │
+│  │  │  • LoggingService (structured logging)                         │  │  │
+│  │  │  • EventBusService (internal event pub/sub)                    │  │  │
+│  │  │  • CacheService (Redis integration)                            │  │  │
+│  │  └────────────────────────────────────────────────────────────────┘  │  │
+│  │                              ▼                                       │  │
+│  │  ┌────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  AI/ML Services Component (FastAPI)                            │  │  │
+│  │  │  ────────────────────────────────────────────────────────────  │  │  │
+│  │  │  Responsibilities:                                             │  │  │
+│  │  │  • AI model inference & predictions                            │  │  │
+│  │  │  • ML pipeline orchestration                                   │  │  │
+│  │  │  • Semantic search processing                                  │  │  │
+│  │  │                                                                │  │  │
+│  │  │  Services:                                                     │  │  │
+│  │  │  • SemanticSearchService (embeddings + kNN search)             │  │  │
+│  │  │  • DemandForecastService (Prophet + LSTM)                      │  │  │
+│  │  │  • AnomalyDetectionService (Isolation Forest)                  │  │  │
+│  │  │  • ComputerVisionService (YOLOv8 QC)                           │  │  │
+│  │  │  • ChatbotService (Claude API integration)                     │  │  │
+│  │  └────────────────────────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
 │                              │                                             │
 │                              │ Database Queries (SQL)                      │
 │                              │ Cache Operations (Redis)                    │
 │                              │ Search Queries (Elasticsearch)              │
 │                              ▼                                             │
-│  ┌──────────────────────────────────────────────────────────────────────┐ │
-│  │  DATA TIER                                                            │ │
-│  │  ──────────────────────────────────────────────────────────────────  │ │
-│  │                                                                        │ │
-│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────┐ │ │
-│  │  │ Auth Component │  │ Data Component │  │ Search Component       │ │ │
-│  │  │ (Keycloak)     │  │ (PostgreSQL)   │  │ (Elasticsearch)        │ │ │
-│  │  │                │  │                │  │                        │ │ │
-│  │  │ • User mgmt    │  │ • Inventory    │  │ • Full-text search     │ │ │
-│  │  │ • RBAC         │  │ • Transactions │  │ • Semantic search      │ │ │
-│  │  │ • SSO/OIDC     │  │ • QC data      │  │ • Vector embeddings    │ │ │
-│  │  │ • Token mgmt   │  │ • Production   │  │ • Log aggregation      │ │ │
-│  │  └────────────────┘  │ • Audit logs   │  └────────────────────────┘ │ │
-│  │                      └────────────────┘                              │ │
-│  │                                                                        │ │
-│  │  ┌────────────────────────────────────────────────────────────────┐  │ │
-│  │  │  Cache Component (Redis)                                        │  │ │
-│  │  │  • Stock levels cache                                           │  │ │
-│  │  │  • Session storage                                              │  │ │
-│  │  │  • Rate limiting counters                                       │  │ │
-│  │  │  • WebSocket session management                                 │  │ │
-│  │  └────────────────────────────────────────────────────────────────┘  │ │
-│  └──────────────────────────────────────────────────────────────────────┘ │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │  DATA TIER                                                           │  │
+│  │  ──────────────────────────────────────────────────────────────────  │  │
+│  │                                                                      │  │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────┐  │  │
+│  │  │ Auth Component │  │ Data Component │  │ Search Component       │  │  │
+│  │  │ (Keycloak)     │  │ (PostgreSQL)   │  │ (Elasticsearch)        │  │  │
+│  │  │                │  │                │  │                        │  │  │
+│  │  │ • User mgmt    │  │ • Inventory    │  │ • Full-text search     │  │  │
+│  │  │ • RBAC         │  │ • Transactions │  │ • Semantic search      │  │  │
+│  │  │ • SSO/OIDC     │  │ • QC data      │  │ • Vector embeddings    │  │  │
+│  │  │ • Token mgmt   │  │ • Production   │  │ • Log aggregation      │  │  │
+│  │  └────────────────┘  │ • Audit logs   │  └────────────────────────┘  │  │
+│  │                      └────────────────┘                              │  │
+│  │                                                                      │  │
+│  │  ┌────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Cache Component (Redis)                                       │  │  │
+│  │  │  • Stock levels cache                                          │  │  │
+│  │  │  • Session storage                                             │  │  │
+│  │  │  • Rate limiting counters                                      │  │  │
+│  │  │  • WebSocket session management                                │  │  │
+│  │  └────────────────────────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
 │                                                                            │
-│  ┌──────────────────────────────────────────────────────────────────────┐ │
-│  │  EXTERNAL SERVICES                                                    │ │
-│  │  ──────────────────────────────────────────────────────────────────  │ │
-│  │  • Claude API (LLM for chatbot)                                      │ │
-│  │  • Email Service (notifications)                                     │ │
-│  │  • SMS Gateway (alerts - optional)                                   │ │
-│  │  • Backup Storage (S3-compatible)                                    │ │
-│  └──────────────────────────────────────────────────────────────────────┘ │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │  EXTERNAL SERVICES                                                   │  │
+│  │  ──────────────────────────────────────────────────────────────────  │  │
+│  │  • Claude API (LLM for chatbot)                                      │  │
+│  │  • Email Service (notifications)                                     │  │
+│  │  • SMS Gateway (alerts - optional)                                   │  │
+│  │  • Backup Storage (S3-compatible)                                    │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -316,71 +316,71 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │  1. Authentication Flow (OAuth2/OIDC)                               │
-│     ────────────────────────────────────────────────────────────   │
-│     Frontend → Keycloak: Request authorization                     │
-│     Keycloak → Frontend: Redirect with code                        │
-│     Frontend → Keycloak: Exchange code for tokens                  │
-│     Keycloak → Frontend: JWT (access + refresh)                    │
-│     Frontend → Backend API: Request with JWT                       │
-│     Backend API → Keycloak: Validate JWT (JWKS)                    │
-│     Backend API → Frontend: Protected resource                     │
+│     ────────────────────────────────────────────────────────────    │
+│     Frontend → Keycloak: Request authorization                      │
+│     Keycloak → Frontend: Redirect with code                         │
+│     Frontend → Keycloak: Exchange code for tokens                   │
+│     Keycloak → Frontend: JWT (access + refresh)                     │
+│     Frontend → Backend API: Request with JWT                        │
+│     Backend API → Keycloak: Validate JWT (JWKS)                     │
+│     Backend API → Frontend: Protected resource                      │
 │                                                                     │
-│  2. Inventory Transaction Flow (Create Lot)                        │
-│     ────────────────────────────────────────────────────────────   │
-│     Frontend → Backend API: POST /api/inventory/lots               │
-│     Backend API → ValidationService: Validate request              │
-│     Backend API → InventoryModule.LotService: createLot()          │
-│     LotService → PostgreSQL: INSERT inventory_lots                 │
-│     LotService → EventBus: Emit 'lot.created' event                │
-│     EventBus → SearchService: Index lot in Elasticsearch           │
-│     EventBus → CacheService: Invalidate stock cache                │
-│     EventBus → WebSocketService: Broadcast update                  │
-│     WebSocketService → Frontend: Real-time notification            │
-│     Backend API → Frontend: Success response (201)                 │
+│  2. Inventory Transaction Flow (Create Lot)                         │
+│     ────────────────────────────────────────────────────────────    │
+│     Frontend → Backend API: POST /api/inventory/lots                │
+│     Backend API → ValidationService: Validate request               │
+│     Backend API → InventoryModule.LotService: createLot()           │
+│     LotService → PostgreSQL: INSERT inventory_lots                  │
+│     LotService → EventBus: Emit 'lot.created' event                 │
+│     EventBus → SearchService: Index lot in Elasticsearch            │
+│     EventBus → CacheService: Invalidate stock cache                 │
+│     EventBus → WebSocketService: Broadcast update                   │
+│     WebSocketService → Frontend: Real-time notification             │
+│     Backend API → Frontend: Success response (201)                  │
 │                                                                     │
 │  3. QC Approval Workflow                                            │
-│     ────────────────────────────────────────────────────────────   │
-│     Frontend → Backend API: POST /api/qc/approve/{lotId}           │
-│     Backend API → QCModule.ApprovalWorkflowService: approveLot()   │
-│     ApprovalWorkflowService → PostgreSQL: UPDATE lot status        │
-│     ApprovalWorkflowService → EventBus: Emit 'lot.approved'        │
-│     EventBus → InventoryModule: Release from quarantine            │
-│     EventBus → AI/ML Service: Trigger anomaly detection            │
-│     EventBus → NotificationService: Send approval notification     │
-│     Backend API → Frontend: Success response                       │
+│     ────────────────────────────────────────────────────────────    │
+│     Frontend → Backend API: POST /api/qc/approve/{lotId}            │
+│     Backend API → QCModule.ApprovalWorkflowService: approveLot()    │
+│     ApprovalWorkflowService → PostgreSQL: UPDATE lot status         │
+│     ApprovalWorkflowService → EventBus: Emit 'lot.approved'         │
+│     EventBus → InventoryModule: Release from quarantine             │
+│     EventBus → AI/ML Service: Trigger anomaly detection             │
+│     EventBus → NotificationService: Send approval notification      │
+│     Backend API → Frontend: Success response                        │
 │                                                                     │
 │  4. Semantic Search Flow                                            │
-│     ────────────────────────────────────────────────────────────   │
-│     Frontend → Backend API: GET /api/search?q=coffee               │
-│     Backend API → AI/ML Service: POST /semantic-search             │
-│     AI/ML Service → EmbeddingModel: Generate vector                │
-│     AI/ML Service → Elasticsearch: kNN vector search               │
-│     Elasticsearch → AI/ML Service: Search results                  │
-│     AI/ML Service → Backend API: Ranked results                    │
-│     Backend API → PostgreSQL: Enrich with latest data              │
-│     Backend API → Frontend: Search results (JSON)                  │
+│     ────────────────────────────────────────────────────────────    │
+│     Frontend → Backend API: GET /api/search?q=coffee                │
+│     Backend API → AI/ML Service: POST /semantic-search              │
+│     AI/ML Service → EmbeddingModel: Generate vector                 │
+│     AI/ML Service → Elasticsearch: kNN vector search                │
+│     Elasticsearch → AI/ML Service: Search results                   │
+│     AI/ML Service → Backend API: Ranked results                     │
+│     Backend API → PostgreSQL: Enrich with latest data               │
+│     Backend API → Frontend: Search results (JSON)                   │
 │                                                                     │
-│  5. Demand Forecasting Flow (Batch Process)                        │
-│     ────────────────────────────────────────────────────────────   │
-│     Cron Job → Backend API: POST /api/forecast/run                 │
-│     Backend API → AI/ML Service: POST /forecast/demand             │
-│     AI/ML Service → PostgreSQL: Fetch historical data              │
-│     AI/ML Service → Prophet Model: Generate baseline forecast      │
-│     AI/ML Service → LSTM Model: Generate advanced forecast         │
-│     AI/ML Service → PostgreSQL: Store predictions                  │
-│     AI/ML Service → Backend API: Forecast results                  │
-│     Backend API → EventBus: Emit 'forecast.completed'              │
-│     EventBus → NotificationService: Alert inventory managers       │
+│  5. Demand Forecasting Flow (Batch Process)                         │
+│     ────────────────────────────────────────────────────────────    │
+│     Cron Job → Backend API: POST /api/forecast/run                  │
+│     Backend API → AI/ML Service: POST /forecast/demand              │
+│     AI/ML Service → PostgreSQL: Fetch historical data               │
+│     AI/ML Service → Prophet Model: Generate baseline forecast       │
+│     AI/ML Service → LSTM Model: Generate advanced forecast          │
+│     AI/ML Service → PostgreSQL: Store predictions                   │
+│     AI/ML Service → Backend API: Forecast results                   │
+│     Backend API → EventBus: Emit 'forecast.completed'               │
+│     EventBus → NotificationService: Alert inventory managers        │
 │                                                                     │
-│  6. Real-time Stock Update Flow (WebSocket)                        │
-│     ────────────────────────────────────────────────────────────   │
-│     Frontend → Backend API: Establish WebSocket connection         │
-│     Backend API → WebSocketService: Register client                │
-│     [Stock change occurs via API]                                  │
-│     InventoryModule → EventBus: Emit 'stock.updated' event         │
-│     EventBus → WebSocketService: Receive event                     │
-│     WebSocketService → Frontend: Broadcast to all clients          │
-│     Frontend → React State: Update UI optimistically               │
+│  6. Real-time Stock Update Flow (WebSocket)                         │
+│     ────────────────────────────────────────────────────────────    │
+│     Frontend → Backend API: Establish WebSocket connection          │
+│     Backend API → WebSocketService: Register client                 │
+│     [Stock change occurs via API]                                   │
+│     InventoryModule → EventBus: Emit 'stock.updated' event          │
+│     EventBus → WebSocketService: Receive event                      │
+│     WebSocketService → Frontend: Broadcast to all clients           │
+│     Frontend → React State: Update UI optimistically                │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -567,6 +567,272 @@ class AIServiceInterface:
     }
 ```
 
+**E. GraphQL API (Frontend ↔ Backend — Complex Queries)**
+
+Hệ thống sử dụng **GraphQL** song song với REST API cho các trường hợp frontend cần truy vấn dữ liệu phức tạp, tổng hợp nhiều nguồn, hoặc client cần tự chọn fields để tối ưu bandwidth.
+
+```graphql
+# Schema Definition (Apollo Server)
+
+type Material {
+  id: ID!
+  sku: String!
+  name: String!
+  description: String
+  category: String!
+  unit: String!
+  currentStock: Float
+  lots: [InventoryLot!]!
+  recentTransactions(limit: Int = 10): [Transaction!]!
+}
+
+type InventoryLot {
+  id: ID!
+  lotNumber: String!
+  material: Material!
+  quantity: Float!
+  status: LotStatus!
+  expiryDate: String
+  qcTests: [QCTest!]!
+}
+
+type Transaction {
+  id: ID!
+  type: TransactionType!
+  quantity: Float!
+  material: Material!
+  lot: InventoryLot
+  performedBy: String!
+  createdDate: String!
+}
+
+type DashboardSummary {
+  totalMaterials: Int!
+  totalLots: Int!
+  lowStockAlerts: Int!
+  expiringLots: Int!
+  recentTransactions: [Transaction!]!
+  stockByCategory: [CategoryStock!]!
+}
+
+enum LotStatus { QUARANTINE APPROVED REJECTED IN_USE DEPLETED }
+enum TransactionType { IN OUT ADJUST TRANSFER }
+
+type Query {
+  # Single query that fetches all dashboard data (vs 5+ REST calls)
+  dashboard: DashboardSummary!
+
+  # Flexible material queries with nested lots & transactions
+  materials(filter: MaterialFilter, limit: Int, offset: Int): [Material!]!
+  material(id: ID!): Material
+
+  # Full traceability: lot → material → transactions → QC
+  lotTraceability(lotNumber: String!): InventoryLot
+}
+
+type Mutation {
+  createMaterial(input: CreateMaterialInput!): Material!
+  updateMaterial(id: ID!, input: UpdateMaterialInput!): Material!
+  recordTransaction(input: CreateTransactionInput!): Transaction!
+}
+
+type Subscription {
+  # Real-time stock updates via GraphQL subscriptions (WebSocket)
+  stockUpdated(materialId: ID): Transaction!
+  lotStatusChanged: InventoryLot!
+}
+```
+
+**Khi nào dùng GraphQL vs REST:**
+
+| Use Case | Protocol | Lý do |
+|:---|:---|:---|
+| CRUD đơn giản (Material, Transaction) | REST | Đơn giản, cacheable, dễ test |
+| Dashboard tổng hợp (nhiều entity) | GraphQL | 1 query thay vì 5+ REST calls |
+| Truy xuất nguồn gốc (lot → material → QC) | GraphQL | Nested queries, client chọn fields |
+| Real-time updates | GraphQL Subscriptions | WebSocket-based, typed schema |
+| External integrations, webhooks | REST | Standard, dễ tích hợp |
+
+**Implementation:**
+
+```typescript
+// backend/src/shared/graphql/schema.ts
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@apollo/server/express4";
+
+const server = new ApolloServer({ typeDefs, resolvers });
+await server.start();
+app.use("/graphql", expressMiddleware(server));
+```
+
+**F. gRPC API (Backend ↔ AI/ML Service — Internal Communication)**
+
+Hệ thống sử dụng **gRPC** cho giao tiếp nội bộ giữa Backend (Node.js) và AI/ML Service (FastAPI/Python), thay thế REST cho các internal calls để đạt hiệu năng cao hơn.
+
+**Lý do chọn gRPC cho internal communication:**
+
+- **Performance:** Binary protocol (Protobuf) nhanh hơn JSON 5-10x
+- **Type safety:** Proto definitions sinh code cho cả Node.js và Python
+- **Streaming:** Hỗ trợ bidirectional streaming (real-time anomaly detection)
+- **Contract-first:** Proto file là single source of truth cho cả 2 services
+
+```protobuf
+// proto/ai_service.proto
+
+syntax = "proto3";
+package ims.ai;
+
+// Semantic Search Service
+service SemanticSearchService {
+  rpc Search (SearchRequest) returns (SearchResponse);
+  rpc IndexMaterial (IndexRequest) returns (IndexResponse);
+}
+
+message SearchRequest {
+  string query = 1;
+  int32 limit = 2;
+  map<string, string> filters = 3;
+}
+
+message SearchResponse {
+  repeated SearchResult results = 1;
+  float latency_ms = 2;
+}
+
+message SearchResult {
+  string material_id = 1;
+  string name = 2;
+  string sku = 3;
+  float score = 4;
+}
+
+// Demand Forecasting Service
+service ForecastService {
+  rpc PredictDemand (ForecastRequest) returns (ForecastResponse);
+  rpc StreamForecast (ForecastRequest) returns (stream ForecastPoint);
+}
+
+message ForecastRequest {
+  string sku = 1;
+  int32 horizon_days = 2;
+  string model = 3;  // "prophet" or "lstm"
+}
+
+message ForecastResponse {
+  repeated ForecastPoint predictions = 1;
+  float confidence = 2;
+}
+
+message ForecastPoint {
+  string date = 1;
+  float predicted_quantity = 2;
+  float lower_bound = 3;
+  float upper_bound = 4;
+}
+
+// Anomaly Detection Service
+service AnomalyService {
+  rpc DetectAnomalies (AnomalyRequest) returns (AnomalyResponse);
+  rpc StreamAnomalies (AnomalyStreamRequest) returns (stream AnomalyAlert);
+}
+
+message AnomalyRequest {
+  repeated DataPoint data = 1;
+  float threshold = 2;
+}
+
+message AnomalyAlert {
+  string material_id = 1;
+  string anomaly_type = 2;  // "theft", "data_error", "unusual_pattern"
+  float severity = 3;
+  string description = 4;
+}
+```
+
+**Architecture — Multi-Protocol API:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  MULTI-PROTOCOL API ARCHITECTURE                                        │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Frontend (React SPA)                                                   │
+│      │                                                                  │
+│      ├── REST API (/api/*)         → CRUD operations, simple queries    │
+│      ├── GraphQL (/graphql)        → Complex queries, dashboard data    │
+│      └── WebSocket (ws://)         → Real-time updates                  │
+│                                                                         │
+│  Backend (Node.js + Express)                                            │
+│      │                                                                  │
+│      ├── REST endpoints            → Express Router (existing)          │
+│      ├── GraphQL endpoint          → Apollo Server middleware           │
+│      ├── WebSocket server          → ws library                         │
+│      └── gRPC client               → @grpc/grpc-js                      │
+│              │                                                          │
+│              │ gRPC (Protobuf, binary, high-performance)                │
+│              ▼                                                          │
+│  AI/ML Service (Python + FastAPI)                                       │
+│      └── gRPC server               → grpcio (Python)                    │
+│          ├── SemanticSearchService                                      │
+│          ├── ForecastService                                            │
+│          └── AnomalyService                                             │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Implementation — gRPC Client (Node.js):**
+
+```typescript
+// backend/src/shared/grpc/ai-client.ts
+import * as grpc from "@grpc/grpc-js";
+import * as protoLoader from "@grpc/proto-loader";
+
+const packageDef = protoLoader.loadSync("proto/ai_service.proto");
+const aiProto = grpc.loadPackageDefinition(packageDef).ims.ai;
+
+const searchClient = new aiProto.SemanticSearchService(
+  process.env.AI_SERVICE_URL || "localhost:50051",
+  grpc.credentials.createInsecure()
+);
+
+export async function semanticSearch(query: string, limit: number) {
+  return new Promise((resolve, reject) => {
+    searchClient.Search({ query, limit }, (err, response) => {
+      if (err) reject(err);
+      else resolve(response);
+    });
+  });
+}
+```
+
+**Implementation — gRPC Server (Python):**
+
+```python
+# ai_service/grpc_server.py
+import grpc
+from concurrent import futures
+import ai_service_pb2
+import ai_service_pb2_grpc
+
+class SemanticSearchServicer(ai_service_pb2_grpc.SemanticSearchServiceServicer):
+    def Search(self, request, context):
+        results = self.search_engine.search(
+            query=request.query,
+            limit=request.limit,
+            filters=dict(request.filters)
+        )
+        return ai_service_pb2.SearchResponse(
+            results=[ai_service_pb2.SearchResult(**r) for r in results]
+        )
+
+server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+ai_service_pb2_grpc.add_SemanticSearchServiceServicer_to_server(
+    SemanticSearchServicer(), server
+)
+server.add_insecure_port("[::]:50051")
+server.start()
+```
+
 ---
 
 #### 2.2.4 Key Domain Models & Abstractions
@@ -648,16 +914,7 @@ interface BatchComponent {
 
 #### 2.2.5 Design Patterns Used
 
-**1. Layered Architecture**
-
-```
-Presentation → Application → Domain → Data Access → Database
-• Clear separation of concerns
-• Each layer depends only on layer below
-• Easier testing via layer isolation
-```
-
-**2. Repository Pattern**
+**1. Repository Pattern**
 
 ```typescript
 // Abstraction over data access
@@ -678,7 +935,7 @@ class InventoryLotRepository implements IInventoryLotRepository {
 }
 ```
 
-**3. Service Layer Pattern**
+**2. Service Layer Pattern**
 
 ```typescript
 // Business logic encapsulation
@@ -699,7 +956,7 @@ class LotService {
 }
 ```
 
-**4. Event-Driven Architecture (EDA)**
+**3. Event-Driven Architecture (EDA)**
 
 ```typescript
 // Loose coupling via events
@@ -775,20 +1032,20 @@ class WebSocketService {
 │  DEPENDENCY GRAPH                                          │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│  Frontend Component                                         │
+│  Frontend Component                                        │
 │      ↓ depends on                                          │
-│      ├─→ Backend API Component (REST/WebSocket)            │
+│      ├─→ Backend API Component (REST/GraphQL/WebSocket)    │
 │      └─→ Keycloak Component (Auth)                         │
 │                                                            │
-│  Backend API Component                                      │
+│  Backend API Component                                     │
 │      ↓ depends on                                          │
 │      ├─→ PostgreSQL Component (OLTP data)                  │
 │      ├─→ Redis Component (Cache)                           │
 │      ├─→ Elasticsearch Component (Search)                  │
 │      ├─→ Keycloak Component (JWT validation)               │
-│      └─→ AI/ML Services Component (Optional)               │
+│      └─→ AI/ML Services Component (via gRPC)               │
 │                                                            │
-│  AI/ML Services Component                                   │
+│  AI/ML Services Component                                  │
 │      ↓ depends on                                          │
 │      ├─→ PostgreSQL Component (Read historical data)       │
 │      ├─→ Elasticsearch Component (Vector storage)          │
@@ -814,132 +1071,84 @@ class WebSocketService {
 
 ### 2.3 Góc nhìn phát triển (Development View)
 
-#### 2.2.1 Kiến trúc phân lớp (Layered Architecture)
+#### 2.3.1 Kiến trúc Modular Monolith
+
+Hệ thống backend được tổ chức theo mô hình **Modular Monolith** — mỗi module là một bounded context độc lập, giao tiếp qua internal interfaces. Toàn bộ module nằm trong cùng một deployable unit (Express.js server) nhưng được tách biệt rõ ràng về mặt code.
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│  PRESENTATION LAYER (React)                                        │
+│  FRONTEND (React SPA)                                              │
 │  ────────────────────────────────────────────────────────────────  │
-│  • Components (Ant Design UI)                                      │
-│  • Pages/Routes (React Router v6)                                  │
-│  • State Management (React Query + Zustand)                        │
-│  • Real-time Updates (WebSocket client)                            │
-│  • Keycloak Auth Integration (@react-keycloak/web)                │
+│  • Pages & Components (React + Ant Design)                         │
+│  • Routing (React Router v6)                                       │
+│  • State (React Query + Zustand)                                   │
+│  • Auth (Keycloak integration)                                     │
 └────────────────────────────────────────────────────────────────────┘
                               │
-                              │ REST API (JSON) + WebSocket
+                              │ REST + GraphQL (JSON) + WebSocket
                               ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│  APPLICATION/SERVICE LAYER (Node.js + Express)                    │
+│  BACKEND — MODULAR MONOLITH (Node.js + Express + TypeScript)       │
 │  ────────────────────────────────────────────────────────────────  │
-│  • Controllers (Route handlers)                                    │
-│  • Middleware (Auth, Validation, Error Handling)                   │
-│  • Services (Business logic modules)                               │
-│  • WebSocket Server (Real-time events)                            │
-│  • API Documentation (Swagger/OpenAPI)                             │
+│                                                                    │
+│  src/                                                              │
+│  ├── server.ts                  ← Entry point, mount routes        │
+│  │                                                                 │
+│  ├── shared/                    ← Shared infrastructure            │
+│  │   ├── db/pool.ts             (PostgreSQL connection pool)       │
+│  │   └── cache/redis.ts         (Redis client, graceful fallback)  │
+│  │                                                                 │
+│  └── modules/                   ← Nghiệp vụ chia theo module       │
+│      │                                                             │
+│      ├── materials/             ← Quản lý nguyên vật liệu          │
+│      │   ├── material.types.ts  (interfaces + DTOs)                │
+│      │   ├── material.service.ts(DB queries + cache)               │
+│      │   └── material.routes.ts (GET/POST/PUT/DELETE)              │
+│      │                                                             │
+│      ├── transactions/          ← Nhập/xuất kho                    │
+│      │   ├── transaction.types.ts                                  │
+│      │   ├── transaction.service.ts                                │
+│      │   └── transaction.routes.ts                                 │
+│      │                                                             │
+│      ├── inventory-lots/        ← Quản lý lô hàng (planned)        │
+│      ├── qc/                    ← Kiểm soát chất lượng (planned)   │
+│      ├── labeling/              ← Tem nhãn QR/Barcode (planned)    │
+│      ├── stock/                 ← Quản lý tồn kho (planned)        │
+│      └── reporting/             ← Báo cáo nghiệp vụ (planned)      │
+│                                                                    │
+│  Mỗi module có 3 file chuẩn:                                       │
+│  • *.types.ts   — TypeScript interfaces, DTOs                      │
+│  • *.service.ts — Business logic, DB access, cache                 │
+│  • *.routes.ts  — Express routes, validation, error handling       │
 └────────────────────────────────────────────────────────────────────┘
                               │
-                              │ Internal Module Calls + Events
+                              │ SQL (pg driver) + Redis
                               ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│  DOMAIN/BUSINESS LOGIC LAYER                                       │
+│  DATA LAYER                                                        │
 │  ────────────────────────────────────────────────────────────────  │
-│  CORE DOMAIN MODULES (Bounded Contexts):                           │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Material Module                                              │  │
-│  │ • Material CRUD operations                                   │  │
-│  │ • Category management                                        │  │
-│  │ • Material search & filtering                               │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Inventory Lot Module                                         │  │
-│  │ • Lot creation & tracking                                    │  │
-│  │ • Expiry date monitoring                                     │  │
-│  │ • Warehouse location management                              │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Transaction Module                                           │  │
-│  │ • Goods receipt processing                                   │  │
-│  │ • Goods issue tracking                                       │  │
-│  │ • Stock adjustments                                          │  │
-│  │ • Inter-warehouse transfers                                  │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Labeling Module                                              │  │
-│  │ • QR/Barcode generation                                      │  │
-│  │ • Label template management                                  │  │
-│  │ • Print queue handling                                       │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Stock Management Module                                      │  │
-│  │ • Real-time stock level tracking                            │  │
-│  │ • Stock reservation system                                   │  │
-│  │ • Auto-reorder point alerts                                  │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Quality Control Module                                       │  │
-│  │ • QC tests (sampling, results)                              │  │
-│  │ • Approval/Rejection workflow                                │  │
-│  │ • Quarantine enforcement                                     │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Production Module                                            │  │
-│  │ • Batch creation/management                                  │  │
-│  │ • Component tracking (materials → batches)                  │  │
-│  │ • Production history                                         │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ Reporting & Analytics Module                                 │  │
-│  │ • KPI calculations                                           │  │
-│  │ • Audit trail                                                │  │
-│  │ • Traceability (lot → batch → product)                     │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │ AI/ML Module (FastAPI Services)                             │  │
-│  │ • Semantic search engine                                     │  │
-│  │ • Demand forecasting (Prophet + LSTM)                       │  │
-│  │ • Anomaly detection (Isolation Forest)                      │  │
-│  │ • Computer vision QC (YOLOv8)                               │  │
-│  │ • LLM chatbot assistant                                      │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  CROSS-CUTTING CONCERNS:                                           │
-│  • Validation (Joi/Zod schemas)                                    │
-│  • Logging (Winston structured logs)                               │
-│  • Error handling (Custom exceptions)                              │
-│  • Event publishing (Internal event bus)                           │
-└────────────────────────────────────────────────────────────────────┘
-                              │
-                              │ ORM (Sequelize) + Direct Queries
-                              ▼
-┌────────────────────────────────────────────────────────────────────┐
-│  DATA ACCESS LAYER                                                 │
-│  ────────────────────────────────────────────────────────────────  │
-│  • Sequelize Models (ORM)                                          │
-│  • Database Migrations (Sequelize CLI)                             │
-│  • Connection Pooling                                              │
-│  • Query Optimization (Indexes, Views)                             │
-│  • Cache Integration (Redis)                                       │
+│  • PostgreSQL 16 (OLTP — Supabase managed)                         │
+│  • Redis (Cache — stock levels, session, materials list)           │
+│  • Elasticsearch (Search + Vectors — planned)                      │
 └────────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│  DATABASE LAYER                                                    │
+│  AI/ML SERVICE (FastAPI — tách biệt, giao tiếp qua gRPC)           │
 │  ────────────────────────────────────────────────────────────────  │
-│  • PostgreSQL 15+ (Primary OLTP)                                   │
-│  • Redis (Cache - hot data <100ms)                                │
-│  • Elasticsearch (Search + Vectors)                                │
+│  • Semantic Search (Elasticsearch + Embeddings)                    │
+│  • Demand Forecasting (Prophet + LSTM)                             │
+│  • Anomaly Detection (Isolation Forest)                            │
+│  • LLM Chatbot (Claude API)                                        │
 └────────────────────────────────────────────────────────────────────┘
 ```
+
+**Nguyên tắc Modular Monolith:**
+
+1. **Mỗi module là bounded context riêng** — materials không gọi trực tiếp DB query của transactions
+2. **Giao tiếp qua public interface** — import service functions, không import internal logic
+3. **Shared infrastructure dùng chung** — pool, redis, middleware nằm trong `shared/`
+4. **Có thể tách thành microservice sau** — mỗi module đã có routes/service/types độc lập
 
 #### 2.2.2 Modular Monolith Pattern (Recommended)
 
@@ -1016,7 +1225,7 @@ Database Change (Inventory Update)
           ↓
     Event Publisher
           ↓
-    Message Queue (Kafka/RabbitMQ)
+    Internal Event Emitter (Node.js EventEmitter)
           ↓
     WebSocket Server
           ↓
@@ -1033,14 +1242,16 @@ Database Change (Inventory Update)
 
 **3. Task Distribution Patterns:**
 
+
 | Operation             | Pattern                              | Rationale                             |
 | --------------------- | ------------------------------------ | ------------------------------------- |
 | **Stock Lookup**      | Direct DB query + Redis cache        | <100ms read, 80/20 rule (hot SKUs)    |
 | **Lot Creation**      | Sync write + Async event             | Ensure data consistency, notify async |
 | **QC Approval**       | Optimistic locking                   | Prevent concurrent approval conflicts |
 | **Demand Forecast**   | Batch processing (daily)             | Non-realtime, GPU training            |
-| **Anomaly Detection** | Stream processing (Kafka)            | Continuous monitoring                 |
+| **Anomaly Detection** | Batch processing (daily)             | Continuous monitoring                 |
 | **Search**            | Elasticsearch hybrid (kNN + keyword) | Sub-second semantic search            |
+
 
 **4. Event-Driven Architecture (CQRS Light)**
 
@@ -1082,26 +1293,26 @@ Database schema giữ nguyên như đã thiết kế:
 │  DATA STORAGE ARCHITECTURE                                 │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│  Layer 1: Real-time Cache (Redis)                         │
-│  • Stock levels by SKU (TTL: 5 min)                       │
-│  • Top 1000 SKUs (80/20 rule)                             │
+│  Layer 1: Real-time Cache (Redis)                          │
+│  • Stock levels by SKU (TTL: 5 min)                        │
+│  • Top 1000 SKUs (80/20 rule)                              │
 │  • Session data, rate limiting                             │
 │  • Response time: <10ms                                    │
 │                                                            │
-│  Layer 2: Primary OLTP (PostgreSQL)                       │
+│  Layer 2: Primary OLTP (PostgreSQL)                        │
 │  • All inventory records                                   │
-│  • Transactional data (ACID compliance)                   │
+│  • Transactional data (ACID compliance)                    │
 │  • Audit logs                                              │
 │  • Response time: 10-100ms                                 │
 │                                                            │
-│  Layer 3: Search & Vectors (Elasticsearch)                │
+│  Layer 3: Search & Vectors (Elasticsearch)                 │
 │  • Full-text search                                        │
-│  • Semantic search (vector embeddings)                    │
+│  • Semantic search (vector embeddings)                     │
 │  • Log aggregation                                         │
 │  • Response time: 50-200ms                                 │
 │                                                            │
-│  Layer 4: Analytics (Future - Optional)                   │
-│  • Data warehouse (Snowflake/BigQuery)                    │
+│  Layer 4: Analytics (Future - Optional)                    │
+│  • Data warehouse (Snowflake/BigQuery)                     │
 │  • Daily snapshots from PostgreSQL                         │
 │  • Historical trends, ML features                          │
 │                                                            │
@@ -1112,9 +1323,9 @@ Database schema giữ nguyên như đã thiết kế:
 
 ```
 1. Write to PostgreSQL (definitive source)
-2. Publish event to Kafka/RabbitMQ
-3. Redis consumer updates cache (async, <1 second)
-4. Elasticsearch indexer updates search (async, <5 seconds)
+2. Emit event via Internal Event Emitter (Node.js EventEmitter)
+3. Cache handler invalidates/updates Redis (async, <1 second)
+4. Search handler updates Elasticsearch index (async, <5 seconds)
 ```
 
 **Data Consistency Model:**
@@ -1134,10 +1345,10 @@ Database schema giữ nguyên như đã thiết kế:
 │  DOCKER COMPOSE STACK (All Environments)                     │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  ┌────────────────┐  ┌────────────────┐  ┌───────────────┐ │
-│  │ Frontend       │  │ Backend        │  │ AI/ML API     │ │
-│  │ (React:5173)   │  │ (Node.js:3000) │  │ (FastAPI:8000)│ │
-│  └────────────────┘  └────────────────┘  └───────────────┘ │
+│  ┌────────────────┐  ┌────────────────┐  ┌───────────────┐   │
+│  │ Frontend       │  │ Backend        │  │ AI/ML API     │   │
+│  │ (React:5173)   │  │ (Node.js:3000) │  │ (FastAPI:8000)│   │
+│  └────────────────┘  └────────────────┘  └───────────────┘   │
 │          │                   │                    │          │
 │          └───────────────────┴────────────────────┘          │
 │                              │                               │
@@ -1167,13 +1378,13 @@ Database schema giữ nguyên như đã thiết kế:
 │  1. Build Process:                                         │
 │     cd frontend                                            │
 │     npm install                                            │
-│     npm run build    # Vite builds to dist/               │
+│     npm run build    # Vite builds to dist/                │
 │     ↓                                                      │
-│     Output: Static files (HTML, JS, CSS, assets)          │
+│     Output: Static files (HTML, JS, CSS, assets)           │
 │                                                            │
 │  2. Deploy to Vercel:                                      │
 │     vercel --prod                                          │
-│     OR: Auto-deploy via Git push (GitHub integration)     │
+│     OR: Auto-deploy via Git push (GitHub integration)      │
 │                                                            │
 │  3. Configuration:                                         │
 │     vercel.json:                                           │
@@ -1184,26 +1395,26 @@ Database schema giữ nguyên như đã thiết kế:
 │     }                                                      │
 │                                                            │
 │     Environment Variables (via Vercel Dashboard):          │
-│     - VITE_API_URL=https://api.yourdomain.com             │
-│     - VITE_KEYCLOAK_URL=https://auth.yourdomain.com       │
-│     - VITE_WS_URL=wss://api.yourdomain.com/ws             │
+│     - VITE_API_URL=https://api.yourdomain.com              │
+│     - VITE_KEYCLOAK_URL=https://auth.yourdomain.com        │
+│     - VITE_WS_URL=wss://api.yourdomain.com/ws              │
 │                                                            │
 │  4. Custom Domain:                                         │
-│     app.yourdomain.com → Vercel                           │
-│     (Add CNAME record in DNS: app → cname.vercel-dns.com) │
+│     app.yourdomain.com → Vercel                            │
+│     (Add CNAME record in DNS: app → cname.vercel-dns.com)  │
 │                                                            │
 │  5. Features:                                              │
-│     ✓ Global CDN (100+ locations)                         │
-│     ✓ Auto SSL/TLS certificates                           │
-│     ✓ Automatic deployments from Git                      │
-│     ✓ Preview deployments for PRs                         │
-│     ✓ Edge caching & compression                          │
-│     ✓ DDoS protection included                            │
+│     ✓ Global CDN (100+ locations)                          │
+│     ✓ Auto SSL/TLS certificates                            │
+│     ✓ Automatic deployments from Git                       │
+│     ✓ Preview deployments for PRs                          │
+│     ✓ Edge caching & compression                           │
+│     ✓ DDoS protection included                             │
 │                                                            │
 │  6. Cost:                                                  │
-│     • Hobby Plan: FREE (personal/small projects)          │
-│     • Pro Plan: $20/month (commercial, custom domains)    │
-│     • Bandwidth: 100GB/mo included                        │
+│     • Hobby Plan: FREE (personal/small projects)           │
+│     • Pro Plan: $20/month (commercial, custom domains)     │
+│     • Bandwidth: 100GB/mo included                         │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
@@ -1225,353 +1436,151 @@ vercel
 
 ---
 
-##### B. BACKEND DEPLOYMENT - Docker on VPS
+##### B. BACKEND DEPLOYMENT - Fly.io
 
-**Phương án deployment: Docker Containers on VPS (Hetzner/DigitalOcean)**
+**Phương án deployment: Fly.io (PaaS — Managed Container Platform)**
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  BACKEND - DOCKER ON VPS ARCHITECTURE                      │
+│  BACKEND - FLY.IO ARCHITECTURE                             │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│  VPS Specifications:                                       │
-│  • Provider: Hetzner CPX41 (recommended for cost)         │
-│  • Specs: 16GB RAM, 8 vCPU, 240GB NVMe SSD                │
-│  • Cost: ~$80/month                                        │
-│  • OS: Ubuntu 22.04 LTS                                    │
-│  • Location: Choose closest to users (EU/US/Asia)         │
+│  Platform: Fly.io                                          │
+│  • Region: Singapore (sin) — gần nhất với người dùng       │
+│  • Auto SSL/TLS, Force HTTPS                               │
+│  • Auto-scaling (min 0 → scale up khi có request)          │
+│  • Built-in health checks, metrics, logs                   │
 │                                                            │
-│  ┌──────────────────────────────────────────────────────┐ │
-│  │  VPS Server (IP: 123.456.789.0)                       │ │
-│  │                                                        │ │
-│  │  ┌──────────────────────────────────────────────────┐│ │
-│  │  │ NGINX Reverse Proxy (:80, :443)                  ││ │
-│  │  │ • SSL/TLS termination (Let's Encrypt)            ││ │
-│  │  │ • Load balancing across backend instances        ││ │
-│  │  │ • Rate limiting (10K req/min per IP)             ││ │
-│  │  │ • CORS & security headers                        ││ │
-│  │  └──────────────────────────────────────────────────┘│ │
-│  │                       ↓                                │ │
-│  │  ┌──────────────────────────────────────────────────┐│ │
-│  │  │ Backend Containers (Docker Compose)              ││ │
-│  │  │ ├─ backend-1 (:3000) ─┐                          ││ │
-│  │  │ ├─ backend-2 (:3001)  │ Load balanced            ││ │
-│  │  │ └─ backend-3 (:3002) ─┘                          ││ │
-│  │  │                                                   ││ │
-│  │  │ ├─ ai-ml-service (:8000) FastAPI                 ││ │
-│  │  │ ├─ redis (:6379) Cache                           ││ │
-│  │  │ └─ elasticsearch (:9200) Search                  ││ │
-│  │  └──────────────────────────────────────────────────┘│ │
-│  │                                                        │ │
-│  │  ┌──────────────────────────────────────────────────┐│ │
-│  │  │ Metrics (Grafana Cloud Integration)              ││ │
-│  │  │ └─ /metrics endpoint (:3000/metrics)             ││ │
-│  │  └──────────────────────────────────────────────────┘│ │
-│  └──────────────────────────────────────────────────────┘ │
+│  App: backend-bitter-wildflower-4393                       │
+│  URL: https://backend-bitter-wildflower-4393.fly.dev       │
 │                                                            │
-│  Docker Compose Configuration:                             │
-│  ──────────────────────────────────────────────────────── │
-│  services:                                                 │
-│    backend:                                                │
-│      build: ./backend                                      │
-│      image: ims-backend:latest                            │
-│      deploy:                                               │
-│        replicas: 3                                         │
-│        resources:                                          │
-│          limits:                                           │
-│            cpus: '2'                                       │
-│            memory: 4G                                      │
-│      environment:                                          │
-│        - NODE_ENV=production                               │
-│        - DATABASE_URL=${DATABASE_URL}                      │
-│        - REDIS_URL=redis://redis:6379                     │
-│        - KEYCLOAK_URL=${KEYCLOAK_URL}                     │
-│      ports:                                                │
-│        - "3000-3002:3000"                                  │
-│      restart: always                                       │
-│      healthcheck:                                          │
-│        test: ["CMD", "curl", "-f", "http://localhost:3000/health"]│
-│        interval: 30s                                       │
-│        timeout: 10s                                        │
-│        retries: 3                                          │
-│      depends_on:                                           │
-│        - redis                                             │
-│        - elasticsearch                                     │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │  Fly.io Machine (Shared CPU, 1GB RAM)                 │ │
+│  │                                                       │ │
+│  │  ┌──────────────────────────────────────────────────┐ │ │
+│  │  │ Docker Container                                 │ │ │
+│  │  │ ├─ Node.js + Express (:3000)                     │ │ │
+│  │  │ │  ├─ /api/materials (CRUD + Redis cache)        │ │ │
+│  │  │ │  ├─ /api/transactions (nhập/xuất kho)          │ │ │
+│  │  │ │  └─ /health (health check)                     │ │ │
+│  │  │ └─ Multi-stage Dockerfile (build → run)          │ │ │
+│  │  └──────────────────────────────────────────────────┘ │ │
+│  │                                                       │ │
+│  │  Fly.io tự quản lý:                                   │ │
+│  │  • SSL termination                                    │ │
+│  │  • Load balancing                                     │ │
+│  │  • Auto-restart on crash                              │ │
+│  │  • Rolling deploys                                    │ │
+│  └───────────────────────────────────────────────────────┘ │
 │                                                            │
-│    ai-ml-service:                                          │
-│      build: ./ai-ml-services                              │
-│      image: ims-ai-ml:latest                              │
-│      ports:                                                │
-│        - "8000:8000"                                       │
-│      environment:                                          │
-│        - PYTHONUNBUFFERED=1                                │
-│        - ES_URL=http://elasticsearch:9200                 │
-│      restart: always                                       │
+│  fly.toml:                                                 │
+│  ────────────────────────────────────────────────────────  │
+│  app = 'backend-bitter-wildflower-4393'                    │
+│  primary_region = 'sin'                                    │
+│  [http_service]                                            │
+│    internal_port = 3000                                    │
+│    force_https = true                                      │
+│    auto_stop_machines = 'stop'                             │
+│    auto_start_machines = true                              │
+│    min_machines_running = 0                                │
+│  [[vm]]                                                    │
+│    memory = '1gb'                                          │
+│    cpu_kind = 'shared'                                     │
 │                                                            │
-│    redis:                                                  │
-│      image: redis:7-alpine                                │
-│      ports:                                                │
-│        - "6379:6379"                                       │
-│      volumes:                                              │
-│        - redis-data:/data                                  │
-│      command: redis-server --appendonly yes               │
-│                                                            │
-│    elasticsearch:                                          │
-│      image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0│
-│      environment:                                          │
-│        - discovery.type=single-node                       │
-│        - "ES_JAVA_OPTS=-Xms2g -Xmx2g"                     │
-│      ports:                                                │
-│        - "9200:9200"                                       │
-│      volumes:                                              │
-│        - es-data:/usr/share/elasticsearch/data            │
-│                                                            │
-│  volumes:                                                  │
-│    redis-data:                                             │
-│    es-data:                                                │
+│  Deploy Commands:                                          │
+│  ────────────────────────────────────────────────────────  │
+│  flyctl auth login                                         │
+│  flyctl deploy                   # Deploy mới              │
+│  flyctl logs                     # Xem logs                │
+│  flyctl secrets set KEY=VALUE    # Set env vars            │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
-```
-
-**NGINX Configuration:**
-
-```nginx
-# /etc/nginx/sites-available/ims-api
-upstream backend {
-    least_conn;
-    server localhost:3000 max_fails=3 fail_timeout=30s;
-    server localhost:3001 max_fails=3 fail_timeout=30s;
-    server localhost:3002 max_fails=3 fail_timeout=30s;
-}
-
-server {
-    listen 80;
-    server_name api.yourdomain.com;
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name api.yourdomain.com;
-
-    # SSL Configuration (Let's Encrypt)
-    ssl_certificate /etc/letsencrypt/live/api.yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.yourdomain.com/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
-    # Security Headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-
-    # Rate Limiting
-    limit_req_zone $binary_remote_addr zone=api:10m rate=100r/s;
-    limit_req zone=api burst=200 nodelay;
-
-    # API Proxy
-    location /api/ {
-        proxy_pass http://backend;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_cache_bypass $http_upgrade;
-
-        # Timeouts
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
-
-    # WebSocket Support
-    location /ws/ {
-        proxy_pass http://backend;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_read_timeout 86400;
-    }
-
-    # Health Check
-    location /health {
-        proxy_pass http://backend/health;
-        access_log off;
-    }
-}
-```
-
-**Deployment Script:**
-
-```bash
-#!/bin/bash
-# /opt/ims/deploy.sh
-
-set -e  # Exit on error
-
-echo "🚀 Deploying IMS Backend..."
-
-# Navigate to project directory
-cd /opt/ims
-
-# Pull latest code
-echo "📥 Pulling latest code from Git..."
-git pull origin master
-
-# Build Docker images
-echo "🏗️  Building Docker images..."
-docker-compose build --no-cache
-
-# Stop old containers
-echo "🛑 Stopping old containers..."
-docker-compose down
-
-# Start new containers
-echo "✅ Starting new containers..."
-docker-compose up -d --scale backend=3
-
-# Wait for health checks
-echo "⏳ Waiting for services to be healthy..."
-sleep 30
-
-# Check health
-echo "🏥 Checking service health..."
-curl -f http://localhost:3000/health || exit 1
-
-# Reload NGINX
-echo "🔄 Reloading NGINX..."
-sudo systemctl reload nginx
-
-echo "✅ Deployment completed successfully!"
 ```
 
 **CI/CD Pipeline (GitHub Actions):**
 
 ```yaml
 # .github/workflows/deploy-backend.yml
-name: Deploy Backend to VPS
+name: Deploy Backend to Fly.io
 
 on:
   push:
     branches: [master]
     paths:
-      - "backend/**"
-      - "ai-ml-services/**"
-      - "docker-compose.yml"
+      - "02_Source/01_Source Code/backend/**"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/ims
-            bash deploy.sh
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
+        working-directory: "02_Source/01_Source Code/backend"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 ```
 
 ---
 
-##### C. DATABASE DEPLOYMENT - Hybrid Approach
+##### C. DATABASE DEPLOYMENT - Supabase (Managed PostgreSQL)
 
-**Phương án deployment: PostgreSQL Managed + Redis/ES Self-hosted**
+**Phương án deployment: Supabase — PostgreSQL Managed + Built-in Auth (tùy chọn)**
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  DATABASE ARCHITECTURE (Hybrid)                            │
+│  DATABASE - SUPABASE ARCHITECTURE                          │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│  1. PostgreSQL (DigitalOcean Managed Database)            │
+│  1. PostgreSQL (Supabase Managed)                          │
 │     ─────────────────────────────────────────────────────  │
-│     • Plan: Basic ($120/mo)                                │
-│     • Specs: 4GB RAM, 2 vCPU, 115GB storage               │
+│     • Plan: Free tier (500MB) → Pro ($25/mo, 8GB)          │
+│     • Region: Singapore (ap-southeast-1)                   │
 │     • Features:                                            │
-│       - Automated daily backups (7 days retention)        │
-│       - Standby node for HA                                │
-│       - Point-in-time recovery                             │
-│       - SSL connections required                           │
-│       - Connection pooling built-in                        │
+│       - Automated daily backups (7 days retention)         │
+│       - SSL connections enforced                           │
+│       - Connection pooling (PgBouncer built-in)            │
+│       - Dashboard + SQL Editor                             │
 │     • Connection:                                          │
-│       postgresql://user:pass@db-postgresql-sgp1-12345.db.ondigitalocean.com:25060/ims?sslmode=require│
+│       postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres│
 │                                                            │
-│  2. Redis (Self-hosted on VPS)                            │
+│  2. Redis (Docker local dev / Fly.io Upstash production)   │
 │     ─────────────────────────────────────────────────────  │
-│     • Deployment: Docker container on same VPS as backend │
-│     • Memory: 4GB allocated                                │
-│     • Persistence: RDB + AOF enabled                       │
+│     • Local: docker run -d -p 6379:6379 redis:alpine       │
+│     • Production: Upstash Redis (serverless, free tier)    │
 │     • Use Cases:                                           │
-│       - Stock levels cache (TTL: 5 min)                   │
+│       - Materials list cache (TTL: 60s)                    │
 │       - Session storage                                    │
 │       - Rate limiting counters                             │
-│       - WebSocket connection tracking                      │
-│     • Configuration:                                       │
-│       maxmemory 4gb                                        │
-│       maxmemory-policy allkeys-lru                         │
-│       save 900 1     # RDB snapshot every 15min           │
-│       appendonly yes # AOF for durability                 │
 │                                                            │
-│  3. Elasticsearch (Self-hosted on VPS)                    │
+│  3. Elasticsearch (Docker local dev)                       │
 │     ─────────────────────────────────────────────────────  │
-│     • Deployment: Docker container on same VPS            │
-│     • Heap: 4GB (50% of allocated 8GB)                    │
-│     • Storage: 50GB dedicated                              │
+│     • Local: Docker container                              │
+│     • Production: Elastic Cloud / Bonsai (managed)         │
 │     • Use Cases:                                           │
-│       - Semantic search (vector embeddings)               │
-│       - Full-text search (materials, lots)                │
-│       - Log aggregation (Grafana Loki)                    │
-│     • Configuration:                                       │
-│       cluster.name: ims-search                             │
-│       discovery.type: single-node                          │
-│       xpack.security.enabled: false (internal network)    │
+│       - Full-text search (materials, lots)                 │
+│       - Semantic search (vector embeddings)                │
 │                                                            │
 │  4. Backup Strategy                                        │
 │     ─────────────────────────────────────────────────────  │
-│     PostgreSQL:                                            │
-│     • Automated by DigitalOcean (daily backups)           │
-│     • Manual exports: pg_dump weekly to S3                │
-│                                                            │
-│     Redis:                                                 │
-│     • RDB snapshots (automatic)                           │
-│     • AOF logs (continuous)                               │
-│     • Daily backup RDB to S3 via cron                     │
-│                                                            │
-│     Elasticsearch:                                         │
-│     • Snapshot repository to S3 (weekly)                  │
-│     • Can rebuild index from PostgreSQL if needed         │
+│     PostgreSQL: Supabase tự động backup hàng ngày          │
+│     Redis: Dữ liệu cache — không cần backup                │
+│     Elasticsearch: Rebuild từ PostgreSQL khi cần           │
 │                                                            │
 │  5. Monitoring                                             │
 │     ─────────────────────────────────────────────────────  │
-│     • Metrics: /metrics endpoint (Prometheus format)       │
-│     • Logs: Fly.io logs → Grafana Loki                     │
-│     • Dashboards: Grafana Cloud (managed)                  │
-│     • Alerts: Grafana Cloud Alerting                       │
-│       - PostgreSQL connections >80%                        │
-│       - Redis memory >90%                                  │
-│       - Elasticsearch disk >85%                            │
+│     • Fly.io: Built-in metrics + logs (flyctl logs)        │
+│     • Supabase: Dashboard metrics, query performance       │
+│     • Grafana Cloud: Custom dashboards (optional)          │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
-
-**Why Hybrid Approach?**
-
-| Database          | Deployment   | Reason                                                                                                                    |
-| ----------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| **PostgreSQL**    | Managed (DO) | • Critical data needs HA & backups<br>• Automatic failover<br>• Professional support<br>• Worth $120/mo for peace of mind |
-| **Redis**         | Self-hosted  | • Cache layer, acceptable data loss<br>• Easy to restore<br>• Save $40-100/mo                                             |
-| **Elasticsearch** | Self-hosted  | • Search index, can rebuild from PG<br>• Non-critical data<br>• Save $150-300/mo                                          |
 
 ---
 
 #### 2.5.3 Tổng hợp Chi phí & Khuyến nghị Deployment
 
-**RECOMMENDED ARCHITECTURE (Cost-Optimized):**
+**RECOMMENDED ARCHITECTURE (Cloud-native, Cost-Optimized):**
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -1579,79 +1588,59 @@ jobs:
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
 │  ┌──────────────────┐                                      │
-│  │  FRONTEND        │  Vercel (FREE-$20/mo)                │
+│  │  FRONTEND        │  Vercel (FREE — Hobby Plan)          │
 │  │  React SPA       │  • Global CDN                        │
-│  │  (Vercel CDN)    │  • Auto SSL                          │
-│  └──────────────────┘  • Git deploy                        │
-│          │                                                  │
-│          │ HTTPS                                            │
-│          ▼                                                  │
-│  ┌──────────────────┐                                      │
-│  │  API GATEWAY     │  VPS - NGINX Reverse Proxy           │
-│  │  (NGINX)         │  Cost: Included in VPS               │
+│  │  (Vercel CDN)    │  • Auto SSL + Git deploy             │
 │  └──────────────────┘                                      │
-│          │                                                  │
-│          ▼                                                  │
+│          │                                                 │
+│          │ HTTPS                                           │
+│          ▼                                                 │
 │  ┌──────────────────┐                                      │
-│  │  BACKEND         │  VPS - Docker Containers             │
-│  │  Node.js + AI/ML │  Hetzner CPX41: $80/mo              │
-│  │  (3 replicas)    │  • 16GB RAM, 8 vCPU                 │
-│  └──────────────────┘  • 240GB NVMe                        │
-│          │                                                  │
-│          ▼                                                  │
+│  │  BACKEND         │  Fly.io (FREE tier → $5-10/mo)       │
+│  │  Node.js Express │  • Singapore region                  │
+│  │  (Fly.io)        │  • Auto SSL, auto-scaling            │
+│  └──────────────────┘  • Shared CPU, 1GB RAM               │
+│          │                                                 │
+│          ▼                                                 │
 │  ┌──────────────────┐                                      │
-│  │  DATABASES       │  Hybrid Approach:                    │
-│  │                  │                                       │
-│  │  PostgreSQL      │  DigitalOcean Managed: $120/mo      │
-│  │  (Managed)       │  • Auto backups, HA                  │
-│  │                  │                                       │
-│  │  Redis           │  Self-hosted on VPS: $0              │
-│  │  (Self-hosted)   │  • Cache layer                       │
-│  │                  │                                       │
-│  │  Elasticsearch   │  Self-hosted on VPS: $0              │
-│  │  (Self-hosted)   │  • Search indexing                   │
+│  │  DATABASE        │                                      │
+│  │                  │                                      │
+│  │  PostgreSQL      │  Supabase (FREE → $25/mo Pro)        │
+│  │  (Supabase)      │  • Auto backups, SSL                 │
+│  │                  │                                      │
+│  │  Redis           │  Upstash (FREE tier)                 │
+│  │  (Upstash)       │  • Serverless Redis                  │
+│  │                  │                                      │
+│  │  Elasticsearch   │  Elastic Cloud / Bonsai              │
+│  │  (Managed)       │  • Search indexing                   │
 │  └──────────────────┘                                      │
 │                                                            │
-│  TOTAL COST: ~$220/month                                   │
-│  • Frontend: $20 (Vercel)                                  │
-│  • Backend VPS: $80 (Hetzner)                              │
-│  • PostgreSQL: $120 (DigitalOcean Managed)                │
-│  • Redis + ES: $0 (self-hosted)                            │
+│  TOTAL COST (Student/MVP): $0/month (all free tiers)       │
+│  TOTAL COST (Production):  ~$35-60/month                   │
+│  • Frontend: $0 (Vercel Hobby)                             │
+│  • Backend: $5-10 (Fly.io)                                 │
+│  • PostgreSQL: $25 (Supabase Pro)                          │
+│  • Redis: $0 (Upstash Free)                                │
+│  • Elasticsearch: $0-25 (Bonsai/Elastic free tier)         │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
 
-**ALTERNATIVE: Budget-Constrained (<$150/mo):**
+**So sánh chi phí:**
 
-```
-Single VPS Deployment (All-in-One):
-• VPS: Hetzner CCX33 ($100/mo) - 32GB RAM, 8 vCPU
-  ├── Frontend: NGINX static files
-  ├── Backend: Docker containers (3 replicas)
-  ├── PostgreSQL: Self-hosted with daily backups to S3
-  ├── Redis: Self-hosted
-  └── Elasticsearch: Self-hosted (or skip, use PostgreSQL FTS)
 
-• Backups: Backblaze B2 ($10/mo)
-• SSL: Let's Encrypt (FREE)
-• Monitoring: Grafana Cloud Free tier
+| Deployment Model              | Monthly Cost | Max Users | Reliability | Complexity |
+| ----------------------------- | ------------ | --------- | ----------- | ---------- |
+| **Free tier (Student/MVP)**   | $0           | ~100      | Medium      | Low        |
+| **Production (Cloud-native)** | $35-60       | ~5,000    | High        | Low        |
 
-TOTAL: ~$110/month
-```
 
-**Cost Comparison:**
+**Note:** Kiến trúc cloud-native này có thể scale bằng cách:
 
-| Deployment Model            | Monthly Cost | Max Users | Reliability | Complexity |
-| --------------------------- | ------------ | --------- | ----------- | ---------- |
-| **Budget (All-in-One VPS)** | $110         | ~500      | Medium      | Low        |
-| **Recommended (Hybrid)**    | $220         | ~5,000    | High        | Medium     |
-
-**Note:** Kiến trúc monolith này có thể scale đến 10,000+ users bằng cách:
-
-- Tăng VPS resources (vertical scaling)
-- Thêm Read replicas cho PostgreSQL
-- Sử dụng CDN cho static assets
-- Optimize database queries và caching
+- Fly.io: tăng VM size hoặc thêm machines
+- Supabase: nâng plan Pro/Team
+- Thêm Upstash Redis Pro nếu cần throughput cao
+- CDN cho static assets (Vercel đã có sẵn)
 
 ---
 
@@ -1680,50 +1669,52 @@ TOTAL: ~$110/month
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
 │  LAYER 2: API GATEWAY SECURITY                             │
-│  (Bảo vệ lớp biên hệ thống)                                │
+│  (Bảo vệ lớp biên hệ thống)                               │
 │                                                            │
 │  • Rate Limiting                                           │
 │  • CORS Policy (allowed origins)                           │
 │  • Security Headers (CSP, X-Content-Type-Options, ...)     │
 │                                                            │
-│  Nơi chặn (Enforcement Point): API Gateway (NGINX/Kong)    │
+│  Nơi chặn (Enforcement Point): API Gateway (NGINX/Kong)   │
 │                                                            │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
 │  LAYER 3: APPLICATION SECURITY                             │
-│ (Bảo mật trong tầng ứng dụng)                              │                                                            │
+│  (Bảo mật trong tầng ứng dụng)                             │
+│                                                            │
 │  • Kiểm tra JWT tại Backend                                │
 │  • Phân quyền theo vai trò (RBAC):                         │
 │    admin, inventory_manager, quality_control,              │
-│    production, viewer                                      │
+│    operator, viewer                                        │
 │  • Role lấy từ JWT claim, middleware requireRole           │
-│  • Phân quyền chi tiết theo tài nguyên (resource-level)    │
-│  • Input validation (Joi/Zod)                              │
-│  • Chống SQL injection (Sequelize parameterized)           │
+│  • Phân quyền chi tiết theo tài nguyên (resource-level)   │
+│  • Input validation (Zod)                                  │
+│  • Chống SQL injection (pg parameterized queries)          │
 │  • Logging chuẩn hóa (structured logging)                  │
 │                                                            │
-│  Nơi chặn (Enforcement Point): Backend API (Express        │
-│  Middleware + Controllers)                                 │
+│  Nơi chặn (Enforcement Point): Backend API (Express       │
+│  Middleware + Controllers)                                  │
+│                                                            │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
 │  LAYER 4: DATA PROTECTION                                  │
-│  (Bảo vệ dữ liệu và thông tin nhạy cảm)                    │
+│  (Bảo vệ dữ liệu và thông tin nhạy cảm)                   │
 │                                                            │
-│  • TLS 1.3 (mã hóa toàn bộ traffic)                        │
+│  • TLS 1.3 (mã hóa toàn bộ traffic)                       │
 │  • Encryption at Rest (disk-level encryption)              │
-│  • Secrets Management: Docker Secrets / ENV variables      │
+│  • Secrets Management: .env files + Fly.io secrets         │
 │  • Không hardcode mật khẩu                                 │
-│  • Masking dữ liệu nhạy cảm trong logs (PII masking)       │
+│  • Masking dữ liệu nhạy cảm trong logs (PII masking)      │
 │                                                            │
-│  Nơi chặn (Enforcement Point): Infrastructure & Database   │
-│ Layer                                                      │
+│  Nơi chặn (Enforcement Point): Infrastructure & Database  │
+│  Layer                                                     │
 │                                                            │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
 │  LAYER 5: AUDIT & MONITORING                               │
 │  (Giám sát và kiểm toán bảo mật)                           │
 │                                                            │
-│  • Ghi log mọi thay đổi dữ liệu (who, what, when)          │
+│  • Ghi log mọi thay đổi dữ liệu (who, what, when)        │
 │  • Audit trail dạng append-only                            │
 │  • Centralized logging (Grafana Loki)                      │
 │  • Theo dõi bất thường và truy vết sự cố                   │
@@ -1742,138 +1733,126 @@ TOTAL: ~$110/month
 │                           COMPLETE TECHNOLOGY STACK                             │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  FRONTEND (Client)                                                       │   │
-│  │  ────────────────────────────────────────────────────────────────────── │   │
-│  │  • Framework:       React 18 + TypeScript                               │   │
-│  │  • UI Library:      Ant Design 5.x                                      │   │
-│  │  • State:           React Query (server) + Zustand (client)             │   │
-│  │  • Routing:         React Router v6                                     │   │
-│  │  • Build Tool:      Vite                                                │   │
-│  │  • Auth Client:     @react-keycloak/web                                 │   │
-│  │  • Charts:          Recharts / Chart.js                                 │   │
-│  │  • Real-time:       WebSocket client                                    │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │  FRONTEND (Client)                                                      │    │
+│  │  ────────────────────────────────────────────────────────────────────── │    │
+│  │  • Framework:       React 19 + TypeScript                               │    │
+│  │  • UI Library:      Ant Design 5.x (planned)                            │    │
+│  │  • State:           React Query (server) + Zustand (client)             │    │
+│  │  • Routing:         React Router v6                                     │    │
+│  │  • Build Tool:      Vite 6                                              │    │
+│  │  • Auth Client:     @react-keycloak/web (planned)                       │    │
+│  │  • Charts:          Recharts / Chart.js (planned)                       │    │
+│  │  • Real-time:       WebSocket client (planned)                          │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
 │                              │                                                  │
-│                              │ REST API (JSON) + JWT + WebSocket                │
+│                              │ REST + GraphQL (JSON) + JWT + WebSocket          │
 │                              ▼                                                  │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  BACKEND (Server)                                                        │   │
-│  │  ────────────────────────────────────────────────────────────────────── │   │
-│  │  • Runtime:         Node.js 20 LTS                                       │   │
-│  │  • Framework:       Express.js + TypeScript                              │   │
-│  │  • ORM:             Sequelize v6                                         │   │
-│  │  • Validation:      Joi / Zod                                            │   │
-│  │  • Auth:            Keycloak JWT Verify (express-jwt + jwks-rsa)        │   │
-│  │  • API Docs:        Swagger / OpenAPI 3.0                               │   │
-│  │  • Logging:         Winston (structured JSON logs)                       │   │
-│  │  • WebSocket:       ws / Socket.io                                      │   │
-│  │  • Metrics:         prom-client (Prometheus format for Grafana Cloud)   │   │
-│  │  • Tracing:         OpenTelemetry SDK                                   │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │  BACKEND (Server)                                                       │    │
+│  │  ────────────────────────────────────────────────────────────────────── │    │
+│  │  • Runtime:         Node.js 22 LTS                                      │    │
+│  │  • Framework:       Express.js + TypeScript                             │    │
+│  │  • Database:        pg (raw SQL queries, no ORM)                        │    │
+│  │  • Cache:           redis (npm package v5)                              │    │
+│  │  • Validation:      Manual (planned: Zod)                               │    │
+│  │  • Auth:            Keycloak JWT Verify (planned: express-jwt)          │    │
+│  │  • API Protocols:   REST (primary) + GraphQL + gRPC                     │    │
+│  │  • API Docs:        Swagger / OpenAPI 3.0 (planned)                     │    │
+│  │  • Logging:         console (planned: Winston structured JSON logs)     │    │
+│  │  • WebSocket:       ws (planned)                                        │    │
+│  │  • Tracing:         OpenTelemetry SDK (planned)                         │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
 │                              │                                                  │
-│                              │ ORM + Direct Queries                             │
+│                              │ Raw SQL (pg driver) + Redis commands             │
 │                              ▼                                                  │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  DATABASE & STORAGE                                                      │   │
-│  │  ────────────────────────────────────────────────────────────────────── │   │
-│  │  PRIMARY OLTP:                                                           │   │
-│  │  • PostgreSQL 15+   UUID, ENUM, DECIMAL(10,3), JSONB                    │   │
-│  │  • Features:        Partitioning, Replication, Point-in-time Recovery   │   │
-│  │  • Backup:          pg_dump automated daily                             │   │
-│  │                                                                           │   │
-│  │  CACHE:                                                                   │   │
-│  │  • Redis 7.x        Stock levels, sessions, rate limiting               │   │
-│  │  • TTL:             5-60 minutes (per use case)                          │   │
-│  │                                                                           │   │
-│  │  SEARCH & VECTORS:                                                        │   │
-│  │  • Elasticsearch 8.12+  Full-text search, semantic search (vectors)     │   │
-│  │  • Vector Model:    BAAI/bge-m3 (1024 dims, multilingual)              │   │
-│  │  • Analyzer:        ICU tokenizer (Vietnamese support)                  │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │  DATABASE & STORAGE                                                     │    │
+│  │  ────────────────────────────────────────────────────────────────────── │    │
+│  │  PRIMARY OLTP:                                                          │    │
+│  │  • PostgreSQL 16    UUID, ENUM, DECIMAL(10,3), JSONB                    │    │
+│  │  • Hosting:         Supabase (managed, free tier)                       │    │
+│  │  • Backup:          Supabase automated daily + pg_dump                  │    │
+│  │                                                                         │    │
+│  │  CACHE:                                                                 │    │
+│  │  • Redis            Stock levels, sessions, rate limiting               │    │
+│  │  • Hosting:         Upstash Redis (managed, free tier) / local Docker   │    │ 
+│  │  • TTL:             60 seconds default (per use case)                   │    │
+│  │  • Fallback:        App runs without Redis (graceful degradation)       │    │ 
+│  │                                                                         │    │
+│  │  SEARCH & VECTORS (planned):                                            │    │
+│  │  • Elasticsearch 8.12+  Full-text search, semantic search (vectors)     │    │
+│  │  • Hosting:         Elastic Cloud (managed)                             │    │
+│  │  • Vector Model:    BAAI/bge-m3 (1024 dims, multilingual)               │    │
+│  │  • Analyzer:        ICU tokenizer (Vietnamese support)                  │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
 │                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  IDENTITY & ACCESS MANAGEMENT                                            │   │
-│  │  ────────────────────────────────────────────────────────────────────── │   │
-│  │  • Provider:        Keycloak 24+ (Self-hosted)                           │   │
-│  │  • Protocol:        OAuth 2.0 / OpenID Connect (OIDC)                   │   │
-│  │  • Features:        SSO, RBAC, MFA, Social Login, User Federation       │   │
-│  │  • Database:        PostgreSQL (shared or dedicated)                    │   │
-│  │  • Admin UI:        http://localhost:8080/admin                         │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │  IDENTITY & ACCESS MANAGEMENT (planned)                                 │    │
+│  │  ────────────────────────────────────────────────────────────────────── │    │
+│  │  • Provider:        Keycloak 24+ (Self-hosted on Fly.io)                │    │
+│  │  • Protocol:        OAuth 2.0 / OpenID Connect (OIDC)                   │    │
+│  │  • Features:        SSO, RBAC, MFA, Social Login, User Federation       │    │
+│  │  • Database:        PostgreSQL (shared or dedicated)                    │    │
+│  │  • Admin UI:        http://localhost:8080/admin                         │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
 │                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  AI/ML SERVICES                                                          │   │
-│  │  ────────────────────────────────────────────────────────────────────── │   │
-│  │  SEMANTIC SEARCH (Already POC'd):                                       │   │
-│  │  • Embeddings:      @xenova/transformers (BAAI/bge-m3)                  │   │
-│  │  • Storage:         Elasticsearch vectors                                │   │
-│  │  • Status:          ✅ Production Ready                                  │   │
-│  │                                                                           │   │
-│  │  DEMAND FORECASTING:                                                      │   │
-│  │  • Baseline:        Prophet (Facebook)                                   │   │
-│  │  • Advanced:        TensorFlow LSTM (GPU)                               │   │
-│  │  • Serving:         FastAPI + Uvicorn                                   │   │
-│  │                                                                           │   │
-│  │  ANOMALY DETECTION:                                                       │   │
-│  │  • Algorithm:       Isolation Forest (scikit-learn)                     │   │
-│  │  • Use Case:        Theft, data errors, unusual patterns                │   │
-│  │                                                                           │   │
-│  │  COMPUTER VISION QC:                                                      │   │
-│  │  • Model:           YOLOv8 (lightweight)                                │   │
-│  │  • Accuracy:        97% defect detection                                │   │
-│  │  • Alternative:     Cloud APIs (AWS Rekognition, Cloudinary)            │   │
-│  │                                                                           │   │
-│  │  LLM CHATBOT:                                                             │   │
-│  │  • Provider:        Anthropic Claude 3.5 Haiku API                      │   │
-│  │  • Cost:            $0.003/1K tokens (cost-effective)                   │   │
-│  │  • Fallback:        Self-hosted Llama-2 7B (if >20M tokens/month)      │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │  AI/ML SERVICES (planned)                                               │    │
+│  │  ────────────────────────────────────────────────────────────────────── │    │
+│  │  SEMANTIC SEARCH (POC completed):                                       │    │
+│  │  • Embeddings:      @xenova/transformers (BAAI/bge-m3)                  │    │
+│  │  • Storage:         Elasticsearch vectors                               │    │
+│  │                                                                         │    │
+│  │  DEMAND FORECASTING:                                                    │    │
+│  │  • Baseline:        Prophet (Facebook)                                  │    │
+│  │  • Advanced:        TensorFlow LSTM (GPU)                               │    │
+│  │  • Serving:         FastAPI + Uvicorn                                   │    │
+│  │                                                                         │    │
+│  │  ANOMALY DETECTION:                                                     │    │
+│  │  • Algorithm:       Isolation Forest (scikit-learn)                     │    │
+│  │  • Use Case:        Theft, data errors, unusual patterns                │    │
+│  │                                                                         │    │
+│  │  COMPUTER VISION QC:                                                    │    │
+│  │  • Model:           YOLOv8 (lightweight)                                │    │
+│  │                                                                         │    │
+│  │  LLM CHATBOT:                                                           │    │
+│  │  • Provider:        Anthropic Claude 4.5/4.6 API                        │    │
+│  │  • SDK:             @anthropic-ai/sdk                                   │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
 │                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  OBSERVABILITY & MONITORING                                              │   │
-│  │  ────────────────────────────────────────────────────────────────────── │   │
-│  │  METRICS (Grafana Cloud):                                    │   │
-│  │  • Endpoint:        /metrics (Prometheus format via prom-client)         │   │
-│  │  • Collection:      Grafana Cloud Agent (auto-scrape from Fly.io)        │   │
-│  │  • Visualization:   Grafana Cloud dashboards                             │   │
-│  │  • Retention:       14 days metrics (free tier)                          │   │
-│  │  • URL:             https://yourorg.grafana.net                          │   │
-│  │                                                                           │   │
-│  │  LOGS (Grafana Loki):                                        │   │
-│  │  • Collection:      Fly.io logs → Grafana Loki integration               │   │
-│  │  • Storage:         Grafana Cloud (managed)                              │   │
-│  │  • Visualization:   Grafana Explore (logs browser)                       │   │
-│  │  • Retention:       7 days logs (free tier)                              │   │
-│  │                                                                           │   │
-│  │  ALERTING (Grafana Alerts):                                              │   │
-│  │  • Manager:         Grafana Cloud Alerting (built-in)                    │   │
-│  │  • Channels:        Slack, Email, PagerDuty (webhook integrations)       │   │
-│  │  • SLOs:            99.5% availability, p99 latency <200ms               │   │
-│  │                                                                           │   │              │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │  OBSERVABILITY & MONITORING                                             │    │
+│  │  ────────────────────────────────────────────────────────────────────── │    │
+│  │  METRICS:                                                               │    │
+│  │  • Fly.io Metrics    Built-in monitoring (CPU, memory, network)         │    │
+│  │  • Grafana Cloud     Dashboards & visualization (free tier)             │    │
+│  │  • Retention:        14 days metrics (free tier)                        │    │
+│  │                                                                         │    │
+│  │  LOGS:                                                                  │    │
+│  │  • Fly.io Logs       Built-in log streaming                             │    │
+│  │  • Grafana Loki      Log aggregation (Fly.io → Loki integration)        │    │
+│  │  • Retention:        7 days logs (free tier)                            │    │
+│  │                                                                         │    │
+│  │  ALERTING:                                                              │    │
+│  │  • Grafana Alerts    Slack, Email webhook integrations                  │    │
+│  │  • SLOs:             99.5% availability, p99 latency <200ms             │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
 │                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  DEVOPS & TOOLS                                                          │   │
-│  │  ────────────────────────────────────────────────────────────────────── │   │
-│  │  • Version Control:     Git + GitHub                                     │   │
-│  │  • CI/CD:               GitHub Actions                                   │   │
-│  │  • Container:           Docker + Docker Compose                          │   │
-│  │  • Orchestration:       Docker Compose (all environments)                │   │
-│  │  • API Testing:         Postman / Thunder Client                         │   │
-│  │  • Code Quality:        ESLint + Prettier                                │   │
-│  │  • Testing:             Jest + React Testing Library                     │   │
-│  │  • Load Testing:        k6                                               │   │
-│  │  • Secret Management:   .env files + Docker secrets                     │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  MESSAGE QUEUE (Future - Optional)                                       │   │
-│  │  ────────────────────────────────────────────────────────────────────── │   │
-│  │  • High-volume events:  Apache Kafka                                     │   │
-│  │  • Service-to-service:  RabbitMQ                                        │   │
-│  │  • Use Case:            Event streaming, async processing                │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │  DEVOPS & TOOLS                                                         │    │
+│  │  ────────────────────────────────────────────────────────────────────── │    │
+│  │  • Version Control:     Git + GitHub                                    │    │
+│  │  • CI/CD:               GitHub Actions                                  │    │
+│  │  • Container:           Docker + Docker Compose                         │    │
+│  │  • Backend Hosting:     Fly.io (free tier)                              │    │
+│  │  • Frontend Hosting:    Vercel (free tier)                              │    │
+│  │  • Database Hosting:    Supabase (free tier)                            │    │
+│  │  • API Testing:         Postman / Thunder Client / curl                 │    │
+│  │  • Code Quality:        ESLint (planned)                                │    │
+│  │  • Testing:             Vitest + React Testing Library (planned)        │    │
+│  │  • Secret Management:   .env files + Fly.io secrets                     │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1882,215 +1861,144 @@ TOTAL: ~$110/month
 
 ### 3.2 Kiến trúc tổ chức thư mục (Project Structure)
 
+Cấu trúc theo **Modular Monolith** — backend chia module theo nghiệp vụ, mỗi module chứa routes/service/types riêng.
+
 ```
-inventory-management-system/
-├── frontend/                          # React Application
-│   ├── src/
-│   │   ├── components/                # Reusable UI components
-│   │   │   ├── common/                # Shared components (Button, Table, Modal)
-│   │   │   ├── inventory/             # Inventory-specific components
-│   │   │   ├── qc/                    # Quality Control components
-│   │   │   ├── production/            # Production management components
-│   │   │   └── layout/                # Layout components (Header, Sidebar)
-│   │   ├── pages/                     # Page components (routes)
-│   │   │   ├── Dashboard.tsx
-│   │   │   ├── Inventory/             # Inventory pages
-│   │   │   ├── QualityControl/
-│   │   │   ├── Production/
-│   │   │   └── Reports/
-│   │   ├── hooks/                     # Custom React hooks
-│   │   │   ├── useInventory.ts
-│   │   │   ├── useAuth.ts
-│   │   │   └── useWebSocket.ts
-│   │   ├── services/                  # API calls
-│   │   │   ├── api.ts                 # Axios instance
-│   │   │   ├── inventoryService.ts
-│   │   │   ├── qcService.ts
-│   │   │   └── productionService.ts
-│   │   ├── store/                     # State management
-│   │   │   ├── useAuthStore.ts        # Zustand stores
-│   │   │   └── useNotificationStore.ts
-│   │   ├── types/                     # TypeScript interfaces
-│   │   │   ├── inventory.ts
-│   │   │   ├── qc.ts
-│   │   │   └── production.ts
-│   │   ├── utils/                     # Helper functions
-│   │   │   ├── formatters.ts
-│   │   │   ├── validators.ts
-│   │   │   └── constants.ts
-│   │   ├── auth/                      # Keycloak configuration
-│   │   │   └── keycloak.ts
-│   │   ├── App.tsx
-│   │   └── main.tsx
-│   ├── public/
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── tsconfig.json
+SEC_Team_02_2026/
+├── 01_Documents/                          # Tài liệu dự án
+│   ├── 01_Product Requirements Document.md
+│   ├── 02_Domain Model.md
+│   ├── 03_Prototype.md
+│   ├── 04_Product Backlog.md
+│   ├── 05_Architecture.md
+│   └── ...
 │
-├── backend/                           # Express Application
-│   ├── src/
-│   │   ├── controllers/               # Route handlers
-│   │   │   ├── inventory.controller.ts
-│   │   │   ├── qc.controller.ts
-│   │   │   ├── production.controller.ts
-│   │   │   └── report.controller.ts
-│   │   ├── models/                    # Sequelize models
-│   │   │   ├── index.ts
-│   │   │   ├── User.ts
-│   │   │   ├── Material.ts
-│   │   │   ├── InventoryLot.ts
-│   │   │   ├── InventoryTransaction.ts
-│   │   │   ├── QCTest.ts
-│   │   │   ├── ProductionBatch.ts
-│   │   │   └── BatchComponent.ts
-│   │   ├── routes/                    # API routes
-│   │   │   ├── index.ts
-│   │   │   ├── inventory.routes.ts
-│   │   │   ├── qc.routes.ts
-│   │   │   ├── production.routes.ts
-│   │   │   └── report.routes.ts
-│   │   ├── middleware/                # Auth, validation, error handling
-│   │   │   ├── auth.ts                # JWT verify + RBAC
-│   │   │   ├── validation.ts          # Joi/Zod schemas
-│   │   │   ├── errorHandler.ts
-│   │   │   └── metrics.ts             # /metrics endpoint for Grafana Cloud
-│   │   ├── services/                  # Business logic
-│   │   │   ├── inventory.service.ts
-│   │   │   ├── qc.service.ts
-│   │   │   ├── production.service.ts
-│   │   │   ├── search.service.ts      # Elasticsearch semantic search
-│   │   │   └── websocket.service.ts   # Real-time updates
-│   │   ├── utils/                     # Helpers
-│   │   │   ├── logger.ts              # Winston logger
-│   │   │   ├── validation.ts
-│   │   │   └── constants.ts
-│   │   ├── config/                    # Configuration
-│   │   │   ├── database.ts            # Sequelize config
-│   │   │   ├── keycloak.config.ts
-│   │   │   ├── elasticsearch.config.ts
-│   │   │   ├── redis.config.ts
-│   │   │   └── env.ts                 # Environment variables
-│   │   └── server.ts                  # Express app entry point
-│   ├── migrations/                    # Database migrations
-│   │   └── YYYYMMDDHHMMSS-create-*.js
-│   ├── seeders/                       # Test data
-│   │   └── demo-data.js
-│   ├── tests/                         # Unit & Integration tests
-│   │   ├── unit/
-│   │   └── integration/
-│   ├── package.json
-│   └── tsconfig.json
+├── 02_Source/01_Source Code/
+│   ├── frontend/                          # React + Vite + TypeScript
+│   │   ├── src/
+│   │   │   ├── components/                # UI components
+│   │   │   │   ├── common/                # Button, Table, Modal, ...
+│   │   │   │   ├── materials/             # Material-specific components
+│   │   │   │   └── layout/                # Header, Sidebar, ...
+│   │   │   ├── pages/                     # Route pages
+│   │   │   │   ├── Dashboard.tsx
+│   │   │   │   ├── Materials/
+│   │   │   │   ├── Transactions/
+│   │   │   │   ├── QualityControl/
+│   │   │   │   └── Reports/
+│   │   │   ├── hooks/                     # Custom React hooks
+│   │   │   ├── services/                  # API calls (fetch/axios)
+│   │   │   ├── store/                     # State management (Zustand)
+│   │   │   ├── types/                     # TypeScript interfaces
+│   │   │   ├── auth/                      # Keycloak configuration
+│   │   │   ├── App.tsx
+│   │   │   └── main.tsx
+│   │   ├── package.json
+│   │   ├── vite.config.ts
+│   │   └── tsconfig.json
+│   │
+│   ├── backend/                           # Express + TypeScript (Modular Monolith)
+│   │   ├── src/
+│   │   │   ├── server.ts                  # Entry point — mount routes
+│   │   │   │
+│   │   │   ├── shared/                    # Shared infrastructure
+│   │   │   │   ├── db/pool.ts             # PostgreSQL connection pool
+│   │   │   │   └── cache/redis.ts         # Redis client (graceful fallback)
+│   │   │   │
+│   │   │   └── modules/                   # Nghiệp vụ chia theo module
+│   │   │       ├── materials/             # Quản lý nguyên vật liệu
+│   │   │       │   ├── material.types.ts  # Interfaces + DTOs
+│   │   │       │   ├── material.service.ts# DB queries + cache logic
+│   │   │       │   └── material.routes.ts # GET/POST/PUT/DELETE
+│   │   │       │
+│   │   │       ├── transactions/          # Nhập/xuất kho
+│   │   │       │   ├── transaction.types.ts
+│   │   │       │   ├── transaction.service.ts
+│   │   │       │   └── transaction.routes.ts
+│   │   │       │
+│   │   │       ├── inventory-lots/        # Quản lý lô hàng (planned)
+│   │   │       ├── qc/                    # Kiểm soát chất lượng (planned)
+│   │   │       ├── labeling/              # QR/Barcode (planned)
+│   │   │       ├── stock/                 # Quản lý tồn kho (planned)
+│   │   │       └── reporting/             # Báo cáo nghiệp vụ (planned)
+│   │   │
+│   │   ├── Dockerfile                     # Multi-stage build
+│   │   ├── fly.toml                       # Fly.io deployment config
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── .env.example
+│   │
+│   ├── db_schema/                         # PostgreSQL schema + Docker
+│   │   ├── db-init.sql                    # Tables: users, materials, transactions
+│   │   └── docker-compose.yml             # PostgreSQL + Redis (local dev)
+│   │
+│   ├── ai-ml-services/                    # AI/ML FastAPI Services (planned)
+│   │   ├── src/
+│   │   │   ├── semantic_search/           # Elasticsearch + Embeddings
+│   │   │   ├── forecasting/               # Demand forecasting (Prophet)
+│   │   │   ├── anomaly_detection/         # Isolation Forest
+│   │   │   ├── chatbot/                   # Claude API integration
+│   │   │   └── main.py                    # FastAPI entry point
+│   │   ├── requirements.txt
+│   │   └── Dockerfile
+│   │
+│   ├── README.md                          # Hướng dẫn development
+│   └── DEPLOYMENT.md                      # Hướng dẫn triển khai
 │
-├── ai-ml-services/                    # AI/ML FastAPI Services
-│   ├── src/
-│   │   ├── semantic_search/           # Semantic search service
-│   │   │   ├── __init__.py
-│   │   │   ├── embeddings.py          # BAAI/bge-m3 model
-│   │   │   └── search.py              # Elasticsearch integration
-│   │   ├── forecasting/               # Demand forecasting
-│   │   │   ├── __init__.py
-│   │   │   ├── prophet_model.py       # Prophet baseline
-│   │   │   ├── lstm_model.py          # TensorFlow LSTM
-│   │   │   └── serving.py             # FastAPI endpoints
-│   │   ├── anomaly_detection/         # Anomaly detection
-│   │   │   ├── __init__.py
-│   │   │   └── isolation_forest.py
-│   │   ├── computer_vision/           # QC computer vision
-│   │   │   ├── __init__.py
-│   │   │   └── yolo_model.py          # YOLOv8
-│   │   ├── chatbot/                   # LLM chatbot
-│   │   │   ├── __init__.py
-│   │   │   └── claude_client.py       # Claude API integration
-│   │   ├── main.py                    # FastAPI app
-│   │   └── config.py
-│   ├── models/                        # Trained models storage
-│   ├── data/                          # Training data
-│   ├── requirements.txt
-│   └── Dockerfile
-│
-├── keycloak/                          # Keycloak Configuration
-│   ├── realm-export.json              # Realm config (import on startup)
-│   └── themes/                        # Custom login themes (optional)
-│
-├── monitoring/                        # Observability Configs (Grafana Cloud)
-│   ├── grafana-cloud/
-│   │   ├── dashboards/                # JSON dashboard definitions (import to cloud)
-│   │   ├── grafana-agent.yaml        # Grafana Cloud Agent config (optional)
-│   │   └── alert-rules.yaml          # Alert rules (upload to cloud)
-│   └── README.md                     # Setup instructions for Grafana Cloud
-│
-├── infrastructure/                    # Infrastructure as Code
-│   ├── docker/
-│   │   └── docker-compose.yml         # All environments
-│   └── scripts/
-│       ├── setup-dev.sh
-│       └── backup-db.sh
-│
-├── docs/                              # Documentation
-│   ├── architecture/
-│   ├── api/                           # API documentation
-│   ├── deployment/
-│   └── user-guide/
-│
-├── .github/                           # CI/CD
-│   └── workflows/
-│       ├── ci.yml                     # Build & Test
-│       └── cd.yml                     # Deploy
-│
-├── init-db.sql                        # Database initialization
-├── .env.example                       # Environment variables template
-├── .gitignore
+├── 03_Deployment/                         # Deployment guides & scripts
 └── README.md
 ```
 
-**Key Organization Principles:**
+**Nguyên tắc tổ chức:**
 
-1. **Separation of Concerns:**
-   - Frontend, Backend, AI/ML services hoàn toàn tách biệt
-   - Mỗi service có dependencies và deployment độc lập
-
-2. **Module Boundaries:**
-   - Backend: Controllers → Services → Models (layered architecture)
-   - Frontend: Pages → Components → Services (feature-based)
-   - AI/ML: Mỗi model là một module riêng
-
-3. **Configuration Centralized:**
-   - Tất cả configs trong `config/` directories
-   - Environment-specific configs (dev, staging, prod)
-
-4. **Infrastructure as Code:**
-   - Docker Compose cho tất cả môi trường (dev, staging, production)
-
-5. **Monitoring & Observability:**
-   - Dedicated `monitoring/` directory
-   - Pre-configured dashboards và alert rules
+1. **Modular Monolith (Backend):**
+  - Mỗi module = 1 folder trong `modules/` với 3 file: `types.ts`, `service.ts`, `routes.ts`
+  - Module giao tiếp qua public interface (import service), không truy cập trực tiếp DB của module khác
+  - plannedShared infrastructure (`db/`, `cache/`) dùng chung
+2. **Feature-based (Frontend):**
+  - `pages/` tổ chức theo route
+  - `components/` chia theo domain (materials, layout, common)
+  - `services/` là API client layer
+3. **Tách biệt deployment:**
+  - Frontend → Vercel (tự deploy từ Git)
+  - Backend → Fly.io (Docker container)
+  - Database → Supabase (managed PostgreSQL)
+  - AI/ML → Fly.io hoặc Docker riêng
+4. **Monitoring & Observability:**
+  - Dedicated `monitoring/` directory
+  - Pre-configured dashboards và alert rules
 
 ---
 
 ### 3.3 Cost Analysis (Infrastructure)
 
-#### Option A: Self-Hosted (RECOMMENDED)
+#### Option A: Cloud-native Free Tier (RECOMMENDED — Student/MVP)
 
-| Component                  | Monthly Cost   | Notes                           |
-| -------------------------- | -------------- | ------------------------------- |
-| VPS (16GB RAM, 4 vCPU)     | $80-150        | Hetzner, DigitalOcean, Vultr    |
-| PostgreSQL backup storage  | $10-20         | S3-compatible (Backblaze B2)    |
-| Redis (self-hosted)        | $0             | Included in VPS                 |
-| Elasticsearch (3 nodes)    | $150-300       | Or use existing VPS             |
-| Monitoring stack           | $0 (FREE)      | Grafana Cloud free tier         |
-| AI/ML GPU (spot instances) | $200-400       | For LSTM training               |
-| Claude API (LLM chatbot)   | $200-500       | Pay-per-use, ~5-20M tokens      |
-| **TOTAL**                  | **$640-1,420** | Full control, no vendor lock-in |
 
-#### Option B: Managed Services (SaaS)
+| Component              | Monthly Cost | Notes                            |
+| ---------------------- | ------------ | -------------------------------- |
+| Frontend (Vercel)      | $0           | Hobby plan, auto SSL + CDN       |
+| Backend (Fly.io)       | $0-10        | Free tier, shared CPU, 1GB RAM   |
+| PostgreSQL (Supabase)  | $0-25        | Free 500MB → Pro $25/mo          |
+| Redis (Upstash)        | $0           | Serverless Redis free tier       |
+| Elasticsearch (Bonsai) | $0-25        | Free tier hoặc Bonsai sandbox    |
+| Monitoring             | $0           | Fly.io logs + Supabase dashboard |
+| **TOTAL**              | **$0-60**    | Phù hợp MVP, dễ scale lên        |
 
-| Component                   | Monthly Cost   | Notes                           |
-| --------------------------- | -------------- | ------------------------------- |
-| Elastic Cloud (ES + Kibana) | $150-300       | Managed Elasticsearch           |
-| Datadog (monitoring)        | $250-500       | APM + logs + metrics            |
-| PostgreSQL managed (RDS)    | $100-200       | AWS RDS or equivalent           |
-| Keycloak managed            | $100-200       | Red Hat SSO or third-party      |
-| **TOTAL**                   | **$600-1,200** | Bill shock risk, vendor lock-in |
+
+#### Option B: Production Scale
+
+
+| Component                     | Monthly Cost | Notes                      |
+| ----------------------------- | ------------ | -------------------------- |
+| Frontend (Vercel Pro)         | $20          | Custom domains, analytics  |
+| Backend (Fly.io scaled)       | $20-50       | Dedicated CPU, 2GB+ RAM    |
+| PostgreSQL (Supabase Pro)     | $25          | 8GB storage, daily backups |
+| Redis (Upstash Pro)           | $10-30       | Higher throughput          |
+| Elasticsearch (Elastic Cloud) | $50-150      | Managed cluster            |
+| Claude API (LLM chatbot)      | $50-200      | Pay-per-use                |
+| **TOTAL**                     | **$175-475** | Production-ready           |
+
 
 **Recommendation:** Self-hosted (Option A) - more control, predictable cost.
 
@@ -2133,7 +2041,7 @@ Database Update (Stock Change)
      ↓
 Event Trigger (PostgreSQL trigger or app-level)
      ↓
-Publish to Message Queue (optional: Kafka/RabbitMQ)
+Emit via Internal Event Emitter (Node.js EventEmitter)
      ↓
 WebSocket Server broadcasts event
      ↓
@@ -2167,26 +2075,31 @@ React components re-render (optimistic UI)
 
 #### 4.1.5 AI-Powered Features (Roadmap)
 
-| Feature                | Status          | Timeline              |
-| ---------------------- | --------------- | --------------------- |
-| **Semantic Search**    | ✅ POC Complete | Prod-ready            |
-| **Demand Forecasting** | 📋 Planned      | Phase 1-2 (Month 1-4) |
-| **Anomaly Detection**  | 📋 Planned      | Phase 3 (Month 5-6)   |
-| **QC Computer Vision** | 📋 Planned      | Phase 3 (Month 5-6)   |
-| **LLM Chatbot**        | 📋 Planned      | Phase 4 (Month 7-8)   |
+
+| Feature                | Status         | Timeline              |
+| ---------------------- | -------------- | --------------------- |
+| **Semantic Search**    | ✅ POC Complete| Prod-ready            |
+| **Demand Forecasting** | 📋 Planned     | Phase 1-2 (Month 1-4) |
+| **Anomaly Detection**  | 📋 Planned     | Phase 3 (Month 5-6)   |
+| **QC Computer Vision** | 📋 Planned     | Phase 3 (Month 5-6)   |
+| **LLM Chatbot**        | 📋 Planned     | Phase 4 (Month 7-8)   |
+
 
 **Estimated Investment:**
 
-- Development: ~$93K (one-time)
-- Infrastructure: $400-700/month
-- ROI: 6-12 month payback (save $50K-100K/year)
+- Development: Student project (no budget)
+- Infrastructure: $0-60/month (free tier services)
+- Fly.io: $0 (free tier — 3 shared VMs, 256MB)
+- Supabase: $0 (free tier — 500MB, 50K rows)
+- Vercel: $0 (free tier)
+- Grafana Cloud: $0 (free tier — 14d metrics, 7d logs)
 
 ### 4.2 Implementation Phases
 
 #### Phase 1: Monitoring & Observability (Week 1-2)
 
 - ✅ Setup Grafana Cloud Free account
-- ✅ Configure /metrics endpoint (prom-client)
+- ✅ Integrate Fly.io metrics with Grafana Cloud
 - ✅ Integrate Fly.io logs with Grafana Loki
 - ✅ Import core dashboards (Node.js, PostgreSQL)
 - ✅ Setup alerts (Slack integration)
@@ -2210,22 +2123,21 @@ React components re-render (optimistic UI)
 
 ---
 
-## 5. Unresolved Questions & Next Steps
+## 5. Next Steps & Priorities
 
-### Questions Requiring Clarification
+### Immediate Priorities
 
-1. **Budget:** Confirm $100K development + $10-20K/year infrastructure OK?
-2. **Team:** Do we have data scientist + ML engineer? Or need hire?
-3. **Compliance:** Any GDPR/HIPAA requirements affecting data retention?
-4. **Scale:** Expected growth (users, SKUs, transactions) by end 2026?
-5. **AI Priority:** Which AI feature most valuable? (Forecast vs Anomaly vs Vision)
+1. **Keycloak Integration:** Deploy Keycloak on Fly.io, implement RBAC with 5 roles (Admin, InventoryManager, QualityControl, Operator, Viewer)
+2. **GraphQL API:** Add Apollo Server alongside REST for complex frontend queries (dashboard aggregation, nested entity fetches)
+3. **gRPC Service:** Setup gRPC interface between Backend ↔ AI/ML service for high-performance internal communication
+4. **Frontend Implementation:** Build core pages — Dashboard, Material CRUD, Transaction history
+5. **Remaining Backend Modules:** Implement inventory-lots, qc, labeling, stock, reporting modules
 
-### Recommended Next Steps
+### Open Questions
 
-1. **Week 1:** Review this architecture document with team
-2. **Week 2-3:** Answer unresolved questions, finalize tech decisions
-3. **Week 4:** Kickoff Phase 1 (monitoring stack deployment)
-4. **Month 2:** Begin AI/ML pilot (semantic search production + forecast POC)
+1. **Elasticsearch hosting:** Elastic Cloud free tier vs self-hosted on Fly.io?
+2. **AI/ML priority:** Which AI feature to implement first for demo? (Semantic Search is POC-ready)
+3. **gRPC scope:** Full internal communication or selective (only Backend ↔ AI/ML)?
 
 ---
 
@@ -2251,6 +2163,6 @@ React components re-render (optimistic UI)
 
 ---
 
-**Document Version:** 2.0 (Updated 2026-02-05)
-**Status:** ✅ Complete - Ready for Review & Implementation
-**Next Review:** After Phase 1 completion (Month 1)
+**Document Version:** 3.0 (Updated 2026-02-28)
+**Status:** ✅ Updated - Aligned with current source code & deployment
+**Next Review:** After Keycloak + GraphQL + gRPC integration
