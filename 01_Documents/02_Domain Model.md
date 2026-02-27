@@ -95,7 +95,8 @@ Mẫu nhãn để in cho nguyên vật liệu và sản phẩm.
 
 **ENUM label_type:**
 - `Raw Material` - Nhãn nguyên liệu thô
-- `API` - Nhãn API
+- `API` - Nhãn cho vật liệu có material_type = `API`
+- `Sample` - Nhãn mẫu thử
 - `Intermediate` - Nhãn sản phẩm trung gian
 - `Finished Product` - Nhãn thành phẩm
 - `Status` - Nhãn trạng thái (Quarantine/Accepted/Rejected)
@@ -103,9 +104,14 @@ Mẫu nhãn để in cho nguyên vật liệu và sản phẩm.
 **Quy tắc Label Generation:**
 > Label được generate từ dữ liệu của **InventoryLot** hoặc **ProductionBatch**, KHÔNG phải từ Transaction.
 
+**Quy tắc phân loại Label theo Material Type:**
+- Nếu `Materials.material_type = 'API'` → label_type = `API`.
+- Nếu `Materials.material_type ≠ 'API'` → label_type = `Raw Material`.
+
 | Label Type | Data Source | Thời điểm generate |
 |------------|-------------|-------------------|
 | Raw Material | InventoryLot + Material | Khi nhận hàng vào kho |
+| Sample | InventoryLot (is_sample=true) + Material | Khi tạo lô mẫu thử (Split) |
 | API | InventoryLot + Material | Khi nhận API |
 | Status | InventoryLot (status) | Khi status thay đổi |
 | Intermediate | ProductionBatch | Trong quá trình sản xuất |
@@ -174,6 +180,7 @@ Lịch sử di chuyển và sử dụng của mỗi lô hàng.
 |------|-------|-----------------|
 | `Receipt` | Nhận hàng vào kho | +quantity |
 | `Usage` | Sử dụng cho production | -quantity |
+| `Split` | Chia lô hàng (tạo lô mẫu/lô con) | -quantity (từ lô gốc) |
 | `Transfer` | Chuyển location | 0 (chỉ đổi location) |
 | `Adjustment` | Điều chỉnh số lượng | ±quantity |
 | `Disposal` | Hủy bỏ | -quantity |
