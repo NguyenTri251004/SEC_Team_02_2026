@@ -1,93 +1,37 @@
-import { useState, useEffect } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { AuthProvider } from "./auth/AuthProvider";
+import { ProtectedRoute } from "./auth/ProtectedRoute";
+import { MainLayout } from "./components/layout/MainLayout";
 
-interface DataItem {
-  id: number;
-  name: string;
-  created_at: string;
-}
+import DashboardPage from "./pages/DashboardPage"; 
+import MaterialsPage from "./pages/MaterialsPage";
 
-function App() {
-  const [count, setCount] = useState(0);
-  const [data, setData] = useState<DataItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch data from backend API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-        const response = await fetch(`${apiUrl}/api/users`);
-        const result = await response.json();
-
-        if (result.success) {
-          setData(result.data);
-        } else {
-          setError("Failed to fetch data");
-        }
-      } catch (err) {
-        setError("Error connecting to backend: " + (err as Error).message);
-      } finally {
-        setLoading(false);
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <ProtectedRoute />, 
+    children: [
+      {
+        element: <MainLayout />, 
+        children: [
+          { index: true, element: <DashboardPage /> }, 
+          
+          {
+            element: <ProtectedRoute allowedRoles={['inventory_manager', 'admin', 'viewer','production','quality_control']} />,
+            children: [
+              { path: "materials", element: <MaterialsPage /> }
+            ]
+          }
+        ]
       }
-    };
+    ],
+  },
+]);
 
-    fetchData();
-  }, []);
-
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-
-      {/* Display data from backend */}
-      <div className="card">
-        <h2>Data from Backend:</h2>
-        {loading && <p>Loading...</p>}
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        {!loading && !error && data.length > 0 && (
-          <div>
-            {data.map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  padding: "10px",
-                  margin: "10px 0",
-                  border: "1px solid #646cff",
-                  borderRadius: "8px",
-                }}
-              >
-                <h3>{item.name}</h3>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   );
 }
-
-export default App;
