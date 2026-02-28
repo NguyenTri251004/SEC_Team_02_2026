@@ -1,12 +1,8 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard, Users, Package, Tags, Warehouse,
-  ArrowLeftRight, ClipboardCheck, Factory, Layers, Menu, X, FileBarChart,
-  LogIn, LogOut // Imported the new icons
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/auth/AuthProvider';
+import {LayoutDashboard, Package, Warehouse, Menu, X, LogIn, LogOut} from 'lucide-react';
+import { cn } from '../../lib/utils';
+import { useAuth } from '../../auth/AuthProvider';
 
 const navItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },

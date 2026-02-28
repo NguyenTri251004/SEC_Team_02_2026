@@ -1,5 +1,5 @@
 import axios from 'axios';
-import keycloak from '@/auth/keycloak';
+import keycloak from '../auth/keycloak';
 
 const api = axios.create({
   // Read backend URL from environment variable, with a fallback to localhost for development

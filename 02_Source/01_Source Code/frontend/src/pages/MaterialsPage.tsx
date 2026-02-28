@@ -8,8 +8,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 
-import { MaterialFormDialog } from '@/components/materials/MaterialFormDialog';
-import api from '@/services/api'; 
+import { MaterialFormDialog } from '../components/materials/MaterialFormDialog';
+import api from '../services/api';
 
 type Material = {
   material_id: string;
@@ -278,7 +278,12 @@ export default function MaterialsPage() {
         isOpen={isDialogOpen} 
         onClose={() => setIsDialogOpen(false)} 
         onSuccess={handleSaveMaterial}
-        initialData={editingMaterial}
+        initialData={editingMaterial ? {
+          ...editingMaterial,
+          // Fallback to empty strings if the database returned null
+          storage_conditions: editingMaterial.storage_conditions || '',
+          specification_document: editingMaterial.specification_document || ''
+        } : null}
       />
     </div>
   );
