@@ -1,4 +1,4 @@
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../auth/context";
 import AdminDashboard from "./AdminDashboard";
 import InventoryManagerDashboard from "./InventoryManagerDashboard";
 import QualityControlDashboard from "./QualityControlDashboard";

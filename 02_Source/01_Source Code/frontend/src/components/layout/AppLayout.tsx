@@ -25,7 +25,7 @@ import {
   MenuUnfoldOutlined,
 } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../auth/context";
 import type { UserRole } from "../../types";
 import { ROLE_TAG } from "../../constants/roles";
 

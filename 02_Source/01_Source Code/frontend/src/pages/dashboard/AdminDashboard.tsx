@@ -38,7 +38,7 @@ import {
   createUserRoleColumn,
   createLastLoginColumn,
   createUserStatusColumn,
-} from "../../utils/columnFactories";
+} from "../../components/tables/columnFactories";
 import type {
   AdminStats,
   InventoryTransaction,
@@ -296,6 +296,7 @@ export default function AdminDashboard() {
             dataSource={transactions}
             rowKey="transaction_id"
             loading={txnLoading}
+            pagination={{ pageSize: 10, showSizeChanger: true }}
             scroll={{ x: 600 }}
           />
         </Col>
@@ -310,6 +311,7 @@ export default function AdminDashboard() {
             dataSource={users}
             rowKey="user_id"
             loading={usersLoading}
+            pagination={{ pageSize: 10, showSizeChanger: true }}
             scroll={{ x: 500 }}
           />
         </Col>

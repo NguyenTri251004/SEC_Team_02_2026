@@ -1,3 +1,6 @@
+import axios, { type AxiosRequestConfig } from "axios";
+import keycloak from "../auth/keycloak";
+
 import type {
   AdminStats,
   InventorySummary,
@@ -14,34 +17,73 @@ import type {
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-// ────────────────────────────────────────────────────────────
-// Generic fetch helper
-// ────────────────────────────────────────────────────────────
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-  if (init?.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
+const api = axios.create({
+  baseURL: BASE_URL,
+});
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...init,
-    headers,
-  });
-  if (!res.ok) {
-    throw new Error(`API ${res.status}: ${res.statusText}`);
+// ────────────────────────────────────────────────────────────
+// Request interceptor: attach Keycloak token
+// ────────────────────────────────────────────────────────────
+api.interceptors.request.use((config) => {
+  if (keycloak.token) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${keycloak.token}`;
   }
-  return res.json() as Promise<T>;
+  return config;
+});
+
+// ────────────────────────────────────────────────────────────
+// Response interceptor: refresh token on 401 then retry once
+// ────────────────────────────────────────────────────────────
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (
+      error.response?.status === 401 &&
+      keycloak.token &&
+      !originalRequest._retry
+    ) {
+      try {
+        originalRequest._retry = true;
+
+        await keycloak.updateToken(30);
+        originalRequest.headers.Authorization = `Bearer ${keycloak.token}`;
+
+        return api.request(originalRequest); // use api instead of axios
+      } catch {
+        keycloak.logout({ redirectUri: window.location.origin });
+      }
+    }
+
+    return Promise.reject(error);
+  },
+);
+
+// ────────────────────────────────────────────────────────────
+// Generic request helper using axios (typed)
+// ────────────────────────────────────────────────────────────
+async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
+  const res = await api.request<T>(config);
+  return res.data;
 }
 
 // ────────────────────────────────────────────────────────────
 // Admin
 // ────────────────────────────────────────────────────────────
 export const adminApi = {
-  getStats: () => apiFetch<ApiResponse<AdminStats>>("/api/admin/stats"),
+  getStats: () =>
+    apiRequest<ApiResponse<AdminStats>>({
+      url: "/api/admin/stats",
+      method: "GET",
+    }),
+
   getUsers: (params?: string) =>
-    apiFetch<PaginatedResponse<User>>(
-      `/api/admin/users${params ? `?${params}` : ""}`,
-    ),
+    apiRequest<PaginatedResponse<User>>({
+      url: `/api/admin/users${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
 };
 
 // ────────────────────────────────────────────────────────────
@@ -49,13 +91,16 @@ export const adminApi = {
 // ────────────────────────────────────────────────────────────
 export const dashboardApi = {
   getInventorySummary: (params?: string) =>
-    apiFetch<ApiResponse<InventorySummary>>(
-      `/api/dashboard/inventory-summary${params ? `?${params}` : ""}`,
-    ),
+    apiRequest<ApiResponse<InventorySummary>>({
+      url: `/api/dashboard/inventory-summary${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
+
   getTransactionSummary: (params?: string) =>
-    apiFetch<ApiResponse<TransactionSummary>>(
-      `/api/dashboard/transaction-summary${params ? `?${params}` : ""}`,
-    ),
+    apiRequest<ApiResponse<TransactionSummary>>({
+      url: `/api/dashboard/transaction-summary${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
 };
 
 // ────────────────────────────────────────────────────────────
@@ -63,9 +108,10 @@ export const dashboardApi = {
 // ────────────────────────────────────────────────────────────
 export const transactionApi = {
   list: (params?: string) =>
-    apiFetch<PaginatedResponse<InventoryTransaction>>(
-      `/api/transactions${params ? `?${params}` : ""}`,
-    ),
+    apiRequest<PaginatedResponse<InventoryTransaction>>({
+      url: `/api/transactions${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
 };
 
 // ────────────────────────────────────────────────────────────
@@ -73,15 +119,22 @@ export const transactionApi = {
 // ────────────────────────────────────────────────────────────
 export const qcApi = {
   getStats: (params?: string) =>
-    apiFetch<ApiResponse<QCStats>>(
-      `/api/qc/stats${params ? `?${params}` : ""}`,
-    ),
+    apiRequest<ApiResponse<QCStats>>({
+      url: `/api/qc/stats${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
+
   getQueue: (params?: string) =>
-    apiFetch<PaginatedResponse<QCQueueItem>>(
-      `/api/qc/queue${params ? `?${params}` : ""}`,
-    ),
+    apiRequest<PaginatedResponse<QCQueueItem>>({
+      url: `/api/qc/queue${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
+
   getQueueCount: () =>
-    apiFetch<ApiResponse<{ count: number }>>("/api/qc/queue/count"),
+    apiRequest<ApiResponse<{ count: number }>>({
+      url: "/api/qc/queue/count",
+      method: "GET",
+    }),
 };
 
 // ────────────────────────────────────────────────────────────
@@ -89,13 +142,16 @@ export const qcApi = {
 // ────────────────────────────────────────────────────────────
 export const lotApi = {
   getExpiring: (params?: string) =>
-    apiFetch<PaginatedResponse<ExpiringLot>>(
-      `/api/lots/expiring${params ? `?${params}` : ""}`,
-    ),
+    apiRequest<PaginatedResponse<ExpiringLot>>({
+      url: `/api/lots/expiring${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
+
   list: (params?: string) =>
-    apiFetch<PaginatedResponse<ExpiringLot>>(
-      `/api/lots${params ? `?${params}` : ""}`,
-    ),
+    apiRequest<PaginatedResponse<ExpiringLot>>({
+      url: `/api/lots${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
 };
 
 // ────────────────────────────────────────────────────────────
@@ -103,18 +159,25 @@ export const lotApi = {
 // ────────────────────────────────────────────────────────────
 export const productionApi = {
   getBatches: (params?: string) =>
-    apiFetch<PaginatedResponse<ProductionBatch>>(
-      `/api/production/batches${params ? `?${params}` : ""}`,
-    ),
+    apiRequest<PaginatedResponse<ProductionBatch>>({
+      url: `/api/production/batches${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
 };
 
 // ────────────────────────────────────────────────────────────
 // Reports
 // ────────────────────────────────────────────────────────────
 export const reportApi = {
-  exportReport: (body: { type: string; filters: Record<string, unknown> }) =>
-    apiFetch<Blob>("/api/reports/export", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
+  exportReport: async (body: {
+    type: string;
+    filters: Record<string, unknown>;
+  }) => {
+    const res = await api.post("/api/reports/export", body, {
+      responseType: "blob",
+    });
+    return res.data as Blob;
+  },
 };
+
+export default api;

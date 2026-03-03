@@ -164,10 +164,14 @@ export interface InventorySummary {
   by_status: {
     status: LotStatus;
     lot_count: number;
-    total_quantity: number;
+    quantities_by_unit?: {
+      unit_of_measure: string;
+      total_quantity: number;
+    }[];
   }[];
   by_material_type?: {
     material_type: string;
+    unit_of_measure: string;
     total_quantity: number;
   }[];
 }

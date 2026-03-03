@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import {
   adminApi,
   dashboardApi,
@@ -7,6 +8,14 @@ import {
   lotApi,
   productionApi,
 } from "../services/api";
+import type { InventorySummary, LotStatus } from "../types";
+import { formatQuantitiesByUnit } from "../pages/dashboard/utils/formatters";
+
+export interface StockByStatus {
+  status: LotStatus;
+  lotCount: number;
+  quantitiesFormatted: string | null;
+}
 
 // ── Admin ────────────────────────────────────────────────────────
 
@@ -96,4 +105,33 @@ export function useProductionBatches(
     queryFn: () => productionApi.getBatches(query),
     refetchInterval: 60_000,
   });
+}
+
+// ── Derived Data Helpers ─────────────────────────────────────────
+
+/**
+ * Extract and format stock information for a specific status from inventory summary.
+ * Returns lot count and formatted unit breakdown.
+ *
+ * @example
+ * const acceptedStock = useStockByStatus(invSummary, "Accepted");
+ * // { status: "Accepted", lotCount: 5240, quantitiesFormatted: "420 kg, 200 ea" }
+ */
+export function useStockByStatus(
+  invSummary: InventorySummary,
+  status: LotStatus,
+): StockByStatus | null {
+  return useMemo(() => {
+    const stockData = invSummary.by_status.find((s) => s.status === status);
+
+    if (!stockData) {
+      return null;
+    }
+
+    return {
+      status: stockData.status,
+      lotCount: stockData.lot_count,
+      quantitiesFormatted: formatQuantitiesByUnit(stockData.quantities_by_unit),
+    };
+  }, [invSummary, status]);
 }

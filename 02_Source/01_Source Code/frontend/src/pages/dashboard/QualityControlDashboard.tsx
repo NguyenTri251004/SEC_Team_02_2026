@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Row, Col, Tag } from "antd";
+import { Row, Col } from "antd";
 import {
   ExperimentOutlined,
   FileSearchOutlined,
@@ -26,7 +26,19 @@ import {
   DataTableCard,
   AlertPanel,
 } from "../../components/dashboard";
-import { TXN_TYPE_TAG, tokens, SECTION_GAP } from "../../constants/theme";
+import { tokens, SECTION_GAP } from "../../constants/theme";
+import {
+  createLotIdColumn,
+  createMaterialNameColumn,
+  createMaterialTypeColumn,
+  createSupplierNameColumn,
+  createReceivedDateColumn,
+  createExpirationDateColumn,
+  createWaitTimeColumn,
+  createTransactionTypeColumn,
+  createQuantityColumn,
+  createTransactionDateColumn,
+} from "../../components/tables/columnFactories";
 import {
   useQCStats,
   useQCQueue,
@@ -196,39 +208,10 @@ export default function QualityControlDashboard() {
 
   /* ── Column definitions ── */
   const queueColumns = [
-    {
-      title: "Lot ID",
-      dataIndex: "lot_id",
-      key: "lot",
-      sorter: (a: QCQueueItem, b: QCQueueItem) =>
-        a.lot_id.localeCompare(b.lot_id),
-    },
-    {
-      title: "Material",
-      dataIndex: "material_name",
-      key: "material",
-      sorter: (a: QCQueueItem, b: QCQueueItem) =>
-        a.material_name.localeCompare(b.material_name),
-    },
-    {
-      title: "Type",
-      dataIndex: "material_type",
-      key: "type",
-      filters: [
-        { text: "API", value: "API" },
-        { text: "Excipient", value: "Excipient" },
-        { text: "Container", value: "Container" },
-        { text: "Label", value: "Label" },
-      ],
-      onFilter: (value, record: QCQueueItem) => record.material_type === value,
-    },
-    {
-      title: "Supplier",
-      dataIndex: "supplier_name",
-      key: "supplier",
-      sorter: (a: QCQueueItem, b: QCQueueItem) =>
-        a.supplier_name.localeCompare(b.supplier_name),
-    },
+    createLotIdColumn<QCQueueItem>(),
+    createMaterialNameColumn<QCQueueItem>(),
+    createMaterialTypeColumn<QCQueueItem>(),
+    createSupplierNameColumn<QCQueueItem>(),
     {
       title: "Qty",
       key: "qty",
@@ -236,85 +219,17 @@ export default function QualityControlDashboard() {
       render: (_: unknown, r: QCQueueItem) =>
         `${r.quantity} ${r.unit_of_measure}`,
     },
-    {
-      title: "Received",
-      dataIndex: "received_date",
-      key: "received",
-      sorter: (a: QCQueueItem, b: QCQueueItem) =>
-        new Date(a.received_date).getTime() -
-        new Date(b.received_date).getTime(),
-    },
-    {
-      title: "Expiry",
-      dataIndex: "expiration_date",
-      key: "expiry",
-      sorter: (a: QCQueueItem, b: QCQueueItem) =>
-        new Date(a.expiration_date).getTime() -
-        new Date(b.expiration_date).getTime(),
-    },
-    {
-      title: "Wait",
-      dataIndex: "wait_time_hours",
-      key: "wait",
-      sorter: (a: QCQueueItem, b: QCQueueItem) =>
-        a.wait_time_hours - b.wait_time_hours,
-      defaultSortOrder: "descend" as const,
-      render: (v: number) => {
-        const days = Math.floor(v / 24);
-        return (
-          <Tag color={v >= 48 ? "red" : v >= 24 ? "orange" : "default"}>
-            {days}d {v % 24}h
-          </Tag>
-        );
-      },
-    },
+    createReceivedDateColumn<QCQueueItem>(),
+    createExpirationDateColumn<QCQueueItem>(),
+    createWaitTimeColumn<QCQueueItem>(),
   ];
 
   const txnColumns = [
-    {
-      title: "Type",
-      dataIndex: "transaction_type",
-      key: "type",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.transaction_type.localeCompare(b.transaction_type),
-      render: (v: string) => {
-        const cfg = TXN_TYPE_TAG[v];
-        return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : <Tag>{v}</Tag>;
-      },
-    },
-    {
-      title: "Lot",
-      dataIndex: "lot_id",
-      key: "lot",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.lot_id.localeCompare(b.lot_id),
-    },
-    {
-      title: "Material",
-      dataIndex: "material_name",
-      key: "material",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.material_name.localeCompare(b.material_name),
-    },
-    {
-      title: "Qty",
-      dataIndex: "quantity",
-      key: "qty",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.quantity - b.quantity,
-      render: (v: number, r: InventoryTransaction) =>
-        `${v > 0 ? "+" : ""}${v} ${r.unit_of_measure}`,
-    },
-    {
-      title: "Date",
-      dataIndex: "transaction_date",
-      key: "date",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        new Date(a.transaction_date).getTime() -
-        new Date(b.transaction_date).getTime(),
-      defaultSortOrder: "descend" as const,
-      render: (v: string) => new Date(v).toLocaleString(),
-    },
+    createTransactionTypeColumn<InventoryTransaction>(),
+    createLotIdColumn<InventoryTransaction>(),
+    createMaterialNameColumn<InventoryTransaction>(),
+    createQuantityColumn<InventoryTransaction>(),
+    createTransactionDateColumn<InventoryTransaction>(),
   ];
 
   const formatPercent = (v: number) => `${v.toFixed(1)}%`;
@@ -330,7 +245,7 @@ export default function QualityControlDashboard() {
       <Row gutter={[16, 16]}>
         <Col xs={12} sm={4}>
           <KpiCard
-            label="Pending QC Lots"
+            label="Pending Lots"
             value={stats.pending_qc_lots}
             icon={<ExperimentOutlined />}
             iconBg="rgba(250,173,20,0.08)"
@@ -351,7 +266,7 @@ export default function QualityControlDashboard() {
         </Col>
         <Col xs={12} sm={5}>
           <KpiCard
-            label="Unverified"
+            label="Tests Unverified"
             value={stats.tests_unverified}
             icon={<SafetyCertificateOutlined />}
             iconBg="rgba(114,46,209,0.08)"
@@ -395,6 +310,7 @@ export default function QualityControlDashboard() {
           dataSource={queue}
           rowKey="lot_id"
           loading={queueLoading}
+          pagination={{ pageSize: 10, showSizeChanger: true }}
           scroll={{ x: 700 }}
         />
       </div>
@@ -481,6 +397,7 @@ export default function QualityControlDashboard() {
           dataSource={transactions}
           rowKey="transaction_id"
           loading={txnLoading}
+          pagination={{ pageSize: 10, showSizeChanger: true }}
           scroll={{ x: 600 }}
         />
       </div>

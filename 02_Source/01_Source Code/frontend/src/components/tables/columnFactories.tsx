@@ -1,11 +1,12 @@
 import { Tag, Badge } from "antd";
+import type { Key } from "react";
 import {
   TXN_TYPE_TAG,
   LOT_STATUS_TAG,
   BATCH_STATUS_TAG,
-} from "../constants/theme";
-import { ROLE_TAG } from "../constants/roles";
-import type { UserRole } from "../types";
+} from "../../constants/theme";
+import { ROLE_TAG } from "../../constants/roles";
+import type { UserRole } from "../../types";
 
 /**
  * Reusable column factory functions for dashboard tables
@@ -69,13 +70,14 @@ export function createLotIdColumn<T extends { lot_id: string }>() {
 }
 
 export function createMaterialNameColumn<
-  T extends { material_name: string },
+  T extends { material_name?: string },
 >() {
   return {
     title: "Material",
     dataIndex: "material_name" as keyof T,
     key: "material",
-    sorter: (a: T, b: T) => a.material_name.localeCompare(b.material_name),
+    sorter: (a: T, b: T) =>
+      (a.material_name ?? "").localeCompare(b.material_name ?? ""),
   };
 }
 
@@ -93,8 +95,8 @@ export function createLotStatusColumn<T extends { status: string }>() {
       { text: "Quarantine", value: "Quarantine" },
       { text: "Rejected", value: "Rejected" },
     ],
-    onFilter: (value: string | number | boolean, record: T) =>
-      record.status === value,
+    onFilter: (value: boolean | Key, record: T) =>
+      record.status === String(value),
     render: (v: string) => {
       const cfg = LOT_STATUS_TAG[v];
       return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : <Tag>{v}</Tag>;
@@ -142,12 +144,13 @@ export function createBatchNumberColumn<T extends { batch_number: string }>() {
   };
 }
 
-export function createProductNameColumn<T extends { product_name: string }>() {
+export function createProductNameColumn<T extends { product_name?: string }>() {
   return {
     title: "Product",
     dataIndex: "product_name" as keyof T,
     key: "product",
-    sorter: (a: T, b: T) => a.product_name.localeCompare(b.product_name),
+    sorter: (a: T, b: T) =>
+      (a.product_name ?? "").localeCompare(b.product_name ?? ""),
   };
 }
 
@@ -162,8 +165,8 @@ export function createBatchStatusColumn<T extends { status: string }>() {
       { text: "Completed", value: "Completed" },
       { text: "Rejected", value: "Rejected" },
     ],
-    onFilter: (value: string | number | boolean, record: T) =>
-      record.status === value,
+    onFilter: (value: boolean | Key, record: T) =>
+      record.status === String(value),
     render: (v: string) => {
       const cfg = BATCH_STATUS_TAG[v];
       return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : <Tag>{v}</Tag>;
@@ -211,8 +214,8 @@ export function createUserRoleColumn<T extends { role: UserRole }>() {
       { text: "Production", value: "production" },
       { text: "Viewer", value: "viewer" },
     ],
-    onFilter: (value: string | number | boolean, record: T) =>
-      record.role === value,
+    onFilter: (value: boolean | Key, record: T) =>
+      record.role === String(value),
     render: (v: UserRole) => (
       <Tag color={ROLE_TAG[v].color}>{ROLE_TAG[v].label}</Tag>
     ),
@@ -248,8 +251,8 @@ export function createUserStatusColumn<T extends { is_active: boolean }>() {
       { text: "Active", value: true },
       { text: "Inactive", value: false },
     ],
-    onFilter: (value: string | number | boolean, record: T) =>
-      record.is_active === value,
+    onFilter: (value: boolean | Key, record: T) =>
+      record.is_active === (value === true || value === "true"),
     render: (v: boolean) =>
       v ? (
         <Badge status="success" text="Active" />
@@ -287,8 +290,8 @@ export function createMaterialTypeColumn<
       { text: "Container", value: "Container" },
       { text: "Label", value: "Label" },
     ],
-    onFilter: (value: string | number | boolean, record: T) =>
-      record.material_type === value,
+    onFilter: (value: boolean | Key, record: T) =>
+      record.material_type === String(value),
   };
 }
 

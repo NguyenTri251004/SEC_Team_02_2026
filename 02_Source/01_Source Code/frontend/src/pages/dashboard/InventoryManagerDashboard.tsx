@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Row, Col, Tag } from "antd";
+import { Row, Col } from "antd";
 import {
   CheckCircleOutlined,
   StopOutlined,
@@ -22,18 +22,26 @@ import {
   Legend,
 } from "recharts";
 import DashboardPage from "../../components/shared/DashboardPage";
+import { formatQuantitiesByUnit } from "./utils/formatters";
 import {
   KpiCard,
   ChartCard,
   DataTableCard,
   AlertPanel,
 } from "../../components/dashboard";
+import { tokens, SECTION_GAP } from "../../constants/theme";
 import {
-  LOT_STATUS_TAG,
-  TXN_TYPE_TAG,
-  tokens,
-  SECTION_GAP,
-} from "../../constants/theme";
+  createTransactionTypeColumn,
+  createLotIdColumn,
+  createMaterialNameColumn,
+  createQuantityColumn,
+  createPerformedByColumn,
+  createTransactionDateColumn,
+  createExpirationDateColumn,
+  createDaysToExpiryColumn,
+  createLotStatusColumn,
+  createStorageLocationColumn,
+} from "../../components/tables/columnFactories";
 import {
   useInventorySummary,
   useTransactionSummary,
@@ -51,16 +59,42 @@ import type {
 /* ── Mock data ── */
 const MOCK_INV: InventorySummary = {
   by_status: [
-    { status: "Accepted", lot_count: 5240, total_quantity: 1250 },
-    { status: "Quarantine", lot_count: 15, total_quantity: 82 },
-    { status: "Rejected", lot_count: 8, total_quantity: 12 },
-    { status: "Depleted", lot_count: 2978, total_quantity: 0 },
+    {
+      status: "Accepted",
+      lot_count: 5240,
+      quantities_by_unit: [
+        { unit_of_measure: "kg", total_quantity: 420 },
+        { unit_of_measure: "ea", total_quantity: 200 },
+      ],
+    },
+    {
+      status: "Quarantine",
+      lot_count: 15,
+      quantities_by_unit: [{ unit_of_measure: "kg", total_quantity: 82 }],
+    },
+    {
+      status: "Rejected",
+      lot_count: 8,
+      quantities_by_unit: [{ unit_of_measure: "kg", total_quantity: 12 }],
+    },
+    {
+      status: "Depleted",
+      lot_count: 2978,
+      quantities_by_unit: [{ unit_of_measure: "kg", total_quantity: 0 }],
+    },
   ],
   by_material_type: [
-    { material_type: "API", total_quantity: 420 },
-    { material_type: "Excipient", total_quantity: 340 },
-    { material_type: "Container", total_quantity: 200 },
-    { material_type: "Label", total_quantity: 90 },
+    { material_type: "API", unit_of_measure: "kg", total_quantity: 420 },
+    {
+      material_type: "Excipient",
+      unit_of_measure: "L",
+      total_quantity: 340,
+    },
+    {
+      material_type: "Container",
+      unit_of_measure: "ea",
+      total_quantity: 200,
+    },
   ],
 };
 
@@ -176,10 +210,13 @@ export default function InventoryManagerDashboard() {
   /* ── Memoised chart data: bar chart for stock by material type ── */
   const barData = useMemo(
     () =>
-      (invSummary.by_material_type ?? []).map((m) => ({
-        name: m.material_type,
-        quantity: m.total_quantity,
-      })),
+      (invSummary.by_material_type ?? [])
+        .filter((m) => (m.unit_of_measure ?? "").trim().length > 0)
+        .map((m) => ({
+          name: `${m.material_type} (${m.unit_of_measure})`,
+          unit: m.unit_of_measure ?? "",
+          quantity: m.total_quantity,
+        })),
     [invSummary.by_material_type],
   );
 
@@ -226,68 +263,17 @@ export default function InventoryManagerDashboard() {
 
   /* ── Column definitions ── */
   const txnColumns = [
-    {
-      title: "Type",
-      dataIndex: "transaction_type",
-      key: "type",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.transaction_type.localeCompare(b.transaction_type),
-      render: (v: string) => {
-        const cfg = TXN_TYPE_TAG[v];
-        return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : <Tag>{v}</Tag>;
-      },
-    },
-    {
-      title: "Lot",
-      dataIndex: "lot_id",
-      key: "lot",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.lot_id.localeCompare(b.lot_id),
-    },
-    {
-      title: "Material",
-      dataIndex: "material_name",
-      key: "material",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.material_name.localeCompare(b.material_name),
-    },
-    {
-      title: "Qty",
-      dataIndex: "quantity",
-      key: "qty",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.quantity - b.quantity,
-      render: (v: number, r: InventoryTransaction) =>
-        `${v > 0 ? "+" : ""}${v} ${r.unit_of_measure}`,
-    },
-    { title: "By", dataIndex: "performed_by", key: "by" },
-    {
-      title: "Date",
-      dataIndex: "transaction_date",
-      key: "date",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        new Date(a.transaction_date).getTime() -
-        new Date(b.transaction_date).getTime(),
-      defaultSortOrder: "descend" as const,
-      render: (v: string) => new Date(v).toLocaleString(),
-    },
+    createTransactionTypeColumn<InventoryTransaction>(),
+    createLotIdColumn<InventoryTransaction>(),
+    createMaterialNameColumn<InventoryTransaction>(),
+    createQuantityColumn<InventoryTransaction>(),
+    createPerformedByColumn<InventoryTransaction>(),
+    createTransactionDateColumn<InventoryTransaction>(),
   ];
 
   const expiringColumns = [
-    {
-      title: "Lot",
-      dataIndex: "lot_id",
-      key: "lot",
-      sorter: (a: ExpiringLot, b: ExpiringLot) =>
-        a.lot_id.localeCompare(b.lot_id),
-    },
-    {
-      title: "Material",
-      dataIndex: "material_name",
-      key: "material",
-      sorter: (a: ExpiringLot, b: ExpiringLot) =>
-        a.material_name.localeCompare(b.material_name),
-    },
+    createLotIdColumn<ExpiringLot>(),
+    createMaterialNameColumn<ExpiringLot>(),
     {
       title: "Qty",
       key: "qty",
@@ -296,39 +282,12 @@ export default function InventoryManagerDashboard() {
         `${r.quantity} ${r.unit_of_measure}`,
     },
     {
-      title: "Expiry",
-      dataIndex: "expiration_date",
-      key: "expiry",
-      sorter: (a: ExpiringLot, b: ExpiringLot) =>
-        new Date(a.expiration_date).getTime() -
-        new Date(b.expiration_date).getTime(),
+      ...createExpirationDateColumn<ExpiringLot>(),
       defaultSortOrder: "ascend" as const,
     },
-    {
-      title: "Days",
-      dataIndex: "days_to_expiry",
-      key: "days",
-      sorter: (a: ExpiringLot, b: ExpiringLot) =>
-        a.days_to_expiry - b.days_to_expiry,
-      render: (v: number) => (
-        <Tag color={v <= 7 ? "red" : v <= 30 ? "orange" : "default"}>{v}d</Tag>
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      filters: [
-        { text: "Accepted", value: "Accepted" },
-        { text: "Quarantine", value: "Quarantine" },
-      ],
-      onFilter: (value, record: ExpiringLot) => record.status === value,
-      render: (v: string) => {
-        const cfg = LOT_STATUS_TAG[v];
-        return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : <Tag>{v}</Tag>;
-      },
-    },
-    { title: "Location", dataIndex: "storage_location", key: "loc" },
+    createDaysToExpiryColumn<ExpiringLot>(),
+    createLotStatusColumn<ExpiringLot>(),
+    createStorageLocationColumn<ExpiringLot>(),
   ];
 
   /* ── Render (Ant Design Visualization spec:
@@ -348,7 +307,7 @@ export default function InventoryManagerDashboard() {
               icon={STATUS_ICON[s.status]}
               iconBg={`${STATUS_COLOR[s.status] ?? tokens.colorPrimary}14`}
               iconColor={STATUS_COLOR[s.status]}
-              delta={`${s.total_quantity} kg`}
+              delta={formatQuantitiesByUnit(s.quantities_by_unit) ?? undefined}
               loading={loading}
               valueStyle={{ color: STATUS_COLOR[s.status] }}
             />
@@ -416,10 +375,18 @@ export default function InventoryManagerDashboard() {
                 <YAxis
                   type="category"
                   dataKey="name"
-                  width={80}
+                  width={130}
                   tick={{ fontSize: 12 }}
                 />
-                <Tooltip formatter={(value) => [`${value} kg`, "Quantity"]} />
+                <Tooltip
+                  formatter={(value, _name, item) => {
+                    const row = item.payload as { unit?: string };
+                    if (row.unit) {
+                      return [`${value} ${row.unit}`, "Quantity"];
+                    }
+                    return [value, "Quantity"];
+                  }}
+                />
                 <Bar
                   dataKey="quantity"
                   fill={tokens.colorPrimary}

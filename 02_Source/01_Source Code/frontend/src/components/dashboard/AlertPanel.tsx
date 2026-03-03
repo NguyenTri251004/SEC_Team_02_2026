@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Card, List, Tag, Badge, Empty, Typography } from "antd";
+import { Card, Tag, Badge, Empty, Typography } from "antd";
 import { WarningOutlined, RightOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import type { AlertItem } from "../../types";
@@ -46,32 +46,40 @@ function AlertPanelInner({ alerts, loading = false }: AlertPanelProps) {
           description="No active alerts"
         />
       ) : (
-        <List
-          loading={loading}
-          size="small"
-          dataSource={visible}
-          renderItem={(item) => (
-            <List.Item
-              actions={[
-                <Link to={item.link} key="view" className={styles.alertLink}>
-                  View <RightOutlined />
-                </Link>,
-              ]}
+        <div>
+          {visible.map((item) => (
+            <div
+              key={item.id}
+              className={styles.alertItem}
+              style={{
+                padding: "8px 0",
+                borderBottom: "1px solid rgba(0,0,0,0.04)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
             >
-              <div className={styles.alertItem}>
+              <div>
                 <Tag color={SEVERITY_COLOR[item.severity] ?? "default"}>
                   {item.severity.toUpperCase()}
                 </Tag>
-                <Typography.Text>{item.message}</Typography.Text>
+                <Typography.Text style={{ marginLeft: 8 }}>
+                  {item.message}
+                </Typography.Text>
                 {item.count > 0 && (
-                  <Typography.Text type="secondary">
+                  <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
                     ({item.count})
                   </Typography.Text>
                 )}
               </div>
-            </List.Item>
-          )}
-        />
+              <div>
+                <Link to={item.link} className={styles.alertLink}>
+                  View <RightOutlined />
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
       {hasMore && (
         <div style={{ textAlign: "center", paddingTop: 8 }}>

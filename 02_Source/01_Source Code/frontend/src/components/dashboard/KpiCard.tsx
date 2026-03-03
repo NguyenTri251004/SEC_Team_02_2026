@@ -43,7 +43,6 @@ function KpiCardInner({
     <Card
       className={`${styles.kpiCard} ${onClick ? styles.kpiCardClickable : ""}`}
       size="small"
-      bordered
       onClick={onClick}
       styles={{ body: { padding: "20px 20px 16px" } }}
     >

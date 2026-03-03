@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Row, Col, Card, Tag, Button, Space } from "antd";
+import { Row, Col, Card, Button, Space } from "antd";
 import {
   CheckCircleOutlined,
   BuildOutlined,
@@ -13,18 +13,26 @@ import {
 import { useNavigate } from "react-router-dom";
 import DashboardPage from "../../components/shared/DashboardPage";
 import { KpiCard, DataTableCard, AlertPanel } from "../../components/dashboard";
+import { tokens, SECTION_GAP } from "../../constants/theme";
 import {
-  TXN_TYPE_TAG,
-  BATCH_STATUS_TAG,
-  tokens,
-  SECTION_GAP,
-} from "../../constants/theme";
+  createTransactionTypeColumn,
+  createLotIdColumn,
+  createMaterialNameColumn,
+  createQuantityColumn,
+  createTransactionDateColumn,
+  createBatchNumberColumn,
+  createProductNameColumn,
+  createBatchStatusColumn,
+  createManufactureDateColumn,
+  createExpirationDateColumn,
+} from "../../components/tables/columnFactories";
 import {
   useInventorySummary,
   useTransactionSummary,
   useRecentTransactions,
   useProductionBatches,
   useExpiringLots,
+  useStockByStatus,
 } from "../../hooks/useDashboardData";
 import type {
   InventorySummary,
@@ -36,7 +44,16 @@ import type {
 
 /* ── Mock data ── */
 const MOCK_INV: InventorySummary = {
-  by_status: [{ status: "Accepted", lot_count: 5240, total_quantity: 1250 }],
+  by_status: [
+    {
+      status: "Accepted",
+      lot_count: 5240,
+      quantities_by_unit: [
+        { unit_of_measure: "kg", total_quantity: 420 },
+        { unit_of_measure: "ea", total_quantity: 200 },
+      ],
+    },
+  ],
 };
 const MOCK_TXN_SUMMARY: TransactionSummary = {
   today_receipts: 12,
@@ -133,9 +150,7 @@ export default function ProductionDashboard() {
   const loading = invLoading || txnSumLoading;
 
   /* ── Derived data ── */
-  const acceptedStock = invSummary.by_status.find(
-    (s) => s.status === "Accepted",
-  );
+  const acceptedStock = useStockByStatus(invSummary, "Accepted");
 
   /* ── Alerts ── */
   const alerts = useMemo<AlertItem[]>(() => {
@@ -162,67 +177,16 @@ export default function ProductionDashboard() {
 
   /* ── Column definitions ── */
   const txnColumns = [
-    {
-      title: "Type",
-      dataIndex: "transaction_type",
-      key: "type",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.transaction_type.localeCompare(b.transaction_type),
-      render: (v: string) => {
-        const cfg = TXN_TYPE_TAG[v];
-        return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : <Tag>{v}</Tag>;
-      },
-    },
-    {
-      title: "Lot",
-      dataIndex: "lot_id",
-      key: "lot",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.lot_id.localeCompare(b.lot_id),
-    },
-    {
-      title: "Material",
-      dataIndex: "material_name",
-      key: "material",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.material_name.localeCompare(b.material_name),
-    },
-    {
-      title: "Qty",
-      dataIndex: "quantity",
-      key: "qty",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        a.quantity - b.quantity,
-      render: (v: number, r: InventoryTransaction) =>
-        `${v > 0 ? "+" : ""}${v} ${r.unit_of_measure}`,
-    },
-    {
-      title: "Date",
-      dataIndex: "transaction_date",
-      key: "date",
-      sorter: (a: InventoryTransaction, b: InventoryTransaction) =>
-        new Date(a.transaction_date).getTime() -
-        new Date(b.transaction_date).getTime(),
-      defaultSortOrder: "descend" as const,
-      render: (v: string) => new Date(v).toLocaleString(),
-    },
+    createTransactionTypeColumn<InventoryTransaction>(),
+    createLotIdColumn<InventoryTransaction>(),
+    createMaterialNameColumn<InventoryTransaction>(),
+    createQuantityColumn<InventoryTransaction>(),
+    createTransactionDateColumn<InventoryTransaction>(),
   ];
 
   const batchColumns = [
-    {
-      title: "Batch #",
-      dataIndex: "batch_number",
-      key: "batch",
-      sorter: (a: ProductionBatch, b: ProductionBatch) =>
-        a.batch_number.localeCompare(b.batch_number),
-    },
-    {
-      title: "Product",
-      dataIndex: "product_name",
-      key: "product",
-      sorter: (a: ProductionBatch, b: ProductionBatch) =>
-        a.product_name.localeCompare(b.product_name),
-    },
+    createBatchNumberColumn<ProductionBatch>(),
+    createProductNameColumn<ProductionBatch>(),
     {
       title: "Size",
       key: "size",
@@ -231,39 +195,9 @@ export default function ProductionDashboard() {
       render: (_: unknown, r: ProductionBatch) =>
         `${r.batch_size} ${r.unit_of_measure}`,
     },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      filters: [
-        { text: "Planned", value: "Planned" },
-        { text: "In Progress", value: "In Progress" },
-        { text: "Completed", value: "Completed" },
-        { text: "Rejected", value: "Rejected" },
-      ],
-      onFilter: (value, record: ProductionBatch) => record.status === value,
-      render: (v: string) => {
-        const cfg = BATCH_STATUS_TAG[v];
-        return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : <Tag>{v}</Tag>;
-      },
-    },
-    {
-      title: "Mfg Date",
-      dataIndex: "manufacture_date",
-      key: "mfg",
-      sorter: (a: ProductionBatch, b: ProductionBatch) =>
-        new Date(a.manufacture_date).getTime() -
-        new Date(b.manufacture_date).getTime(),
-      defaultSortOrder: "descend" as const,
-    },
-    {
-      title: "Expiry",
-      dataIndex: "expiration_date",
-      key: "expiry",
-      sorter: (a: ProductionBatch, b: ProductionBatch) =>
-        new Date(a.expiration_date).getTime() -
-        new Date(b.expiration_date).getTime(),
-    },
+    createBatchStatusColumn<ProductionBatch>(),
+    createManufactureDateColumn<ProductionBatch>(),
+    createExpirationDateColumn<ProductionBatch>(),
   ];
 
   /* ── Render (Ant Design Viz spec: KPIs → Quick Actions+Txn → Batches → Alerts) ── */
@@ -277,7 +211,8 @@ export default function ProductionDashboard() {
         <Col xs={12} sm={6}>
           <KpiCard
             label="Available Stock"
-            value={`${acceptedStock?.total_quantity ?? 0} kg`}
+            value={`${(acceptedStock?.lotCount ?? 0).toLocaleString()}`}
+            delta={acceptedStock?.quantitiesFormatted ?? undefined}
             icon={<CheckCircleOutlined />}
             iconBg="rgba(82,196,26,0.08)"
             iconColor={tokens.colorSuccess}
@@ -370,6 +305,7 @@ export default function ProductionDashboard() {
             dataSource={transactions}
             rowKey="transaction_id"
             loading={txnLoading}
+            pagination={{ pageSize: 10, showSizeChanger: true }}
             scroll={{ x: 500 }}
           />
         </Col>
@@ -383,6 +319,7 @@ export default function ProductionDashboard() {
           dataSource={batches}
           rowKey="batch_id"
           loading={batchLoading}
+          pagination={{ pageSize: 10, showSizeChanger: true }}
           scroll={{ x: 600 }}
         />
       </div>

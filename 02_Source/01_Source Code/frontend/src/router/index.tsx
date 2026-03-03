@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import AppLayout from "../components/layout/AppLayout";
 import DashboardRouter from "../pages/dashboard/DashboardRouter";
-//import MaterialsPage from "../pages/materials/MaterialsPage";
+import MaterialsPage from "../pages/materials/MaterialsPage";
 import NotFoundPage from "../pages/not-found/NotFoundPage";
 
 /**
@@ -25,7 +25,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: "dashboard", element: <DashboardRouter /> },
       { path: "lots", element: <NotFoundPage /> },
-      { path: "materials", element: <NotFoundPage /> },
+      { path: "materials", element: <MaterialsPage /> },
       { path: "transactions", element: <NotFoundPage /> },
       { path: "qc", element: <NotFoundPage /> },
       { path: "batches", element: <NotFoundPage /> },
