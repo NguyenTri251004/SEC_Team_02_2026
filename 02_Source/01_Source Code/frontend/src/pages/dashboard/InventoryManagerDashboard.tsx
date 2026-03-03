@@ -450,6 +450,7 @@ export default function InventoryManagerDashboard() {
           dataSource={transactions}
           rowKey="transaction_id"
           loading={txnLoading}
+          pagination={{ pageSize: 10 }}
           scroll={{ x: 600 }}
         />
       </div>
@@ -462,6 +463,7 @@ export default function InventoryManagerDashboard() {
           dataSource={expiring}
           rowKey="lot_id"
           loading={expLoading}
+          pagination={{ pageSize: 10 }}
           scroll={{ x: 700 }}
         />
       </div>

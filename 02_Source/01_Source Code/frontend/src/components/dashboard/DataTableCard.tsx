@@ -1,7 +1,7 @@
-import { memo } from "react";
+import { memo, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Card, Table } from "antd";
-import type { TableProps } from "antd";
+import type { TableProps, PaginationProps } from "antd";
 import styles from "./dashboard.module.css";
 
 export interface DataTableCardProps<T extends object> extends Pick<
@@ -39,6 +39,57 @@ function DataTableCardInner<T extends object>({
   onChange,
   rowSelection,
 }: DataTableCardProps<T>) {
+  // Extract initial pageSize from pagination prop, default to 10
+  const initialPageSize =
+    typeof pagination === "object" && pagination?.pageSize
+      ? pagination.pageSize
+      : 10;
+
+  const [current, setCurrent] = useState(1);
+  const [pageSize, setPageSize] = useState(initialPageSize);
+
+  // Merge pagination with global defaults
+  const paginationConfig = useMemo(() => {
+    if (pagination === false) {
+      return false;
+    }
+
+    const defaults: PaginationProps = {
+      current,
+      pageSize,
+      showSizeChanger: true,
+      pageSizeOptions: ["10", "20", "50", "100"],
+    };
+
+    if (typeof pagination !== "object") {
+      return defaults;
+    }
+
+    return {
+      ...defaults,
+      ...(pagination as object),
+      current,
+      pageSize,
+    };
+  }, [pagination, current, pageSize]);
+
+  // Handle pagination changes (page or size)
+  const handleTableChange: TableProps<T>["onChange"] = (
+    paginationObj,
+    filters,
+    sorter,
+    extra,
+  ) => {
+    if (paginationObj.current) {
+      setCurrent(paginationObj.current);
+    }
+    if (paginationObj.pageSize) {
+      setPageSize(paginationObj.pageSize);
+    }
+    // Call user's onChange if provided
+    onChange?.(paginationObj, filters, sorter, extra);
+  };
+
   return (
     <Card
       className={styles.tableCard}
@@ -54,11 +105,11 @@ function DataTableCardInner<T extends object>({
         columns={columns}
         dataSource={dataSource}
         rowKey={rowKey}
-        pagination={pagination}
+        pagination={paginationConfig}
         loading={loading}
         scroll={scroll}
         size={size}
-        onChange={onChange}
+        onChange={handleTableChange}
         rowSelection={rowSelection}
       />
     </Card>

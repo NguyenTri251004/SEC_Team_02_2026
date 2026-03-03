@@ -305,7 +305,10 @@ export default function ProductionDashboard() {
             dataSource={transactions}
             rowKey="transaction_id"
             loading={txnLoading}
-            pagination={{ pageSize: 10, showSizeChanger: true }}
+            pagination={{
+              pageSize: 5,
+              pageSizeOptions: ["5", "10", "15", "20"],
+            }}
             scroll={{ x: 500 }}
           />
         </Col>
@@ -319,7 +322,7 @@ export default function ProductionDashboard() {
           dataSource={batches}
           rowKey="batch_id"
           loading={batchLoading}
-          pagination={{ pageSize: 10, showSizeChanger: true }}
+          pagination={{ pageSize: 10 }}
           scroll={{ x: 600 }}
         />
       </div>

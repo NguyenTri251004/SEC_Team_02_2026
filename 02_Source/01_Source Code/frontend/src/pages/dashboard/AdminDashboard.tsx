@@ -296,7 +296,10 @@ export default function AdminDashboard() {
             dataSource={transactions}
             rowKey="transaction_id"
             loading={txnLoading}
-            pagination={{ pageSize: 10, showSizeChanger: true }}
+            pagination={{
+              pageSize: 5,
+              pageSizeOptions: ["5", "10", "15", "20"],
+            }}
             scroll={{ x: 600 }}
           />
         </Col>
@@ -311,7 +314,7 @@ export default function AdminDashboard() {
             dataSource={users}
             rowKey="user_id"
             loading={usersLoading}
-            pagination={{ pageSize: 10, showSizeChanger: true }}
+            pagination={{ pageSize: 10 }}
             scroll={{ x: 500 }}
           />
         </Col>

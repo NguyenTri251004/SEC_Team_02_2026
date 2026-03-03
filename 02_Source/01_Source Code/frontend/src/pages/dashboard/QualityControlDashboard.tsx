@@ -310,7 +310,7 @@ export default function QualityControlDashboard() {
           dataSource={queue}
           rowKey="lot_id"
           loading={queueLoading}
-          pagination={{ pageSize: 10, showSizeChanger: true }}
+          pagination={{ pageSize: 10 }}
           scroll={{ x: 700 }}
         />
       </div>
@@ -397,7 +397,7 @@ export default function QualityControlDashboard() {
           dataSource={transactions}
           rowKey="transaction_id"
           loading={txnLoading}
-          pagination={{ pageSize: 10, showSizeChanger: true }}
+          pagination={{ pageSize: 10 }}
           scroll={{ x: 600 }}
         />
       </div>
