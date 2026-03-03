@@ -1,0 +1,132 @@
+/* ── Enterprise Dashboard Design System ──
+   CSS Modules – scoped by default.
+   Uses 8-pt grid, Stripe/Linear inspired.
+ */
+
+/* ── KPI Card ── */
+.kpiCard {
+  border-radius: 8px;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+  height: 100%;
+}
+.kpiCard:hover {
+  box-shadow:
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+}
+.kpiCardClickable {
+  cursor: pointer;
+}
+.kpiCardClickable:hover {
+  transform: translateY(-1px);
+}
+.kpiHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.kpiIcon {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.kpiLabel {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.45);
+  line-height: 1.4;
+}
+.kpiValue {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0;
+}
+.kpiDelta {
+  font-size: 12px;
+  margin-top: 4px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* ── Chart Card ── */
+.chartCard {
+  border-radius: 8px;
+  height: 100%;
+}
+.chartCardTitle {
+  font-weight: 600;
+  font-size: 14px;
+}
+.chartBody {
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chartEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  color: rgba(0, 0, 0, 0.25);
+}
+
+/* ── Data Table Card ── */
+.tableCard {
+  border-radius: 8px;
+}
+.tableCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tableCardTitle {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ── Alert Panel ── */
+.alertPanel {
+  border-radius: 8px;
+}
+.alertPanelTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.alertItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.alertLink {
+  white-space: nowrap;
+}
+
+/* ── Skeleton placeholder for chart loading ── */
+.skeletonChart {
+  width: 100%;
+  min-height: 240px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 37%, #f0f0f0 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 4px;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
