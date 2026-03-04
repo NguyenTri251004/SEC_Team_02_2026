@@ -346,3 +346,68 @@ export function createStorageLocationColumn<
     key: "loc",
   };
 }
+
+// ============================================================
+// Materials Columns
+// ============================================================
+
+export function createMaterialIdColumn<T extends { material_id: string }>() {
+  return {
+    title: "ID",
+    dataIndex: "material_id" as keyof T,
+    key: "material_id",
+    sorter: (a: T, b: T) => a.material_id.localeCompare(b.material_id),
+    render: (v: string) => <span style={{ fontFamily: "monospace", fontSize: "12px" }}>{v}</span>,
+  };
+}
+
+export function createPartNumberColumn<T extends { part_number: string }>() {
+  return {
+    title: "Part Number",
+    dataIndex: "part_number" as keyof T,
+    key: "part_number",
+    sorter: (a: T, b: T) => a.part_number.localeCompare(b.part_number),
+    render: (v: string) => <strong>{v}</strong>,
+  };
+}
+
+export function createMasterMaterialTypeColumn<T extends { material_type: string }>() {
+  return {
+    title: "Type",
+    dataIndex: "material_type" as keyof T,
+    key: "material_type",
+    filters: [
+      { text: "RAW", value: "RAW" },
+      { text: "PACKAGING", value: "PACKAGING" },
+      { text: "CONSUMABLE", value: "CONSUMABLE" },
+      { text: "FINISHED", value: "FINISHED" },
+    ],
+    onFilter: (value: boolean | Key, record: T) => record.material_type === String(value),
+    render: (type: string) => {
+      let color = "default";
+      if (type === "RAW") color = "orange";
+      if (type === "PACKAGING") color = "blue";
+      if (type === "FINISHED") color = "green";
+      return <Tag color={color}>{type}</Tag>;
+    },
+  };
+}
+
+export function createStorageConditionsColumn<T extends { storage_conditions: string | null }>() {
+  return {
+    title: "Storage",
+    dataIndex: "storage_conditions" as keyof T,
+    key: "storage_conditions",
+    render: (v: string | null) => v ? v : <span style={{ color: "#999", fontStyle: "italic" }}>N/A</span>,
+  };
+}
+
+export function createCreatedDateColumn<T extends { created_date: string }>() {
+  return {
+    title: "Created",
+    dataIndex: "created_date" as keyof T,
+    key: "created_date",
+    sorter: (a: T, b: T) => new Date(a.created_date).getTime() - new Date(b.created_date).getTime(),
+    render: (v: string) => new Date(v).toLocaleDateString(),
+  };
+}
