@@ -1,10 +1,11 @@
-import { useMemo } from "react";
-import { Row, Col } from "antd";
+import { useMemo, useState } from "react";
+import { Row, Col, Segmented, Button, App } from "antd";
 import {
   CheckCircleOutlined,
   StopOutlined,
   CloseCircleOutlined,
   MinusCircleOutlined,
+  AppstoreOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
   WarningOutlined,
@@ -21,7 +22,7 @@ import {
   Line,
   Legend,
 } from "recharts";
-import DashboardPage from "../../components/shared/DashboardPage";
+import DashboardPage from "./DashboardPage";
 import { formatQuantitiesByUnit } from "./utils/formatters";
 import {
   KpiCard,
@@ -41,13 +42,15 @@ import {
   createDaysToExpiryColumn,
   createLotStatusColumn,
   createStorageLocationColumn,
-} from "../../components/tables/columnFactories";
+} from "../../components/common/tables/columnFactories";
 import {
   useInventorySummary,
   useTransactionSummary,
   useRecentTransactions,
   useExpiringLots,
+  useMaterials,
 } from "../../hooks/useDashboardData";
+import { reportApi } from "../../services/api";
 import type {
   InventorySummary,
   TransactionSummary,
@@ -182,53 +185,108 @@ const STATUS_COLOR: Record<string, string> = {
   Depleted: "rgba(0,0,0,0.25)",
 };
 
-/* ── Mock trend data for Receipt vs Usage line chart ── */
-const MOCK_TREND = [
-  { date: "Feb 01", receipts: 18, issues: 12 },
-  { date: "Feb 05", receipts: 22, issues: 15 },
-  { date: "Feb 10", receipts: 15, issues: 20 },
-  { date: "Feb 15", receipts: 28, issues: 22 },
-  { date: "Feb 20", receipts: 20, issues: 18 },
-  { date: "Feb 25", receipts: 24, issues: 16 },
-  { date: "Feb 28", receipts: 24, issues: 18 },
+interface TrendPoint {
+  date: string;
+  receipts: number;
+  issues: number;
+}
+
+/* ── Mock trend data for Receipt vs Usage line chart (30d) ── */
+const MOCK_TREND: TrendPoint[] = Array.from({ length: 30 }, (_, index) => {
+  const day = String(index + 1).padStart(2, "0");
+  const receipts = 16 + ((index * 7) % 13) + (index % 3);
+  const issues = 12 + ((index * 5) % 11) + (index % 2);
+
+  return {
+    date: `Feb ${day}`,
+    receipts,
+    issues,
+  };
+});
+
+type TrendRange = "7d" | "14d" | "30d";
+
+const TREND_RANGE_OPTIONS: { label: string; value: TrendRange }[] = [
+  { label: "7d", value: "7d" },
+  { label: "14d", value: "14d" },
+  { label: "30d", value: "30d" },
 ];
 
+function hasTrendData(
+  value: TransactionSummary,
+): value is TransactionSummary & {
+  trend: TrendPoint[];
+} {
+  return (
+    "trend" in value && Array.isArray((value as { trend?: unknown }).trend)
+  );
+}
+
+function applyRange<T>(rows: T[], range: TrendRange): T[] {
+  if (range === "7d") {
+    return rows.slice(-7);
+  }
+  if (range === "14d") {
+    return rows.slice(-14);
+  }
+  return rows.slice(-30);
+}
+
 export default function InventoryManagerDashboard() {
-  /* ── React Query hooks ── */
+  const { message } = App.useApp();
+  const [trendRange, setTrendRange] = useState<TrendRange>("30d");
+  const [preferredStockUnit, setPreferredStockUnit] = useState<string>("");
+  const [isExportingTxn, setIsExportingTxn] = useState(false);
+  const [isExportingExpiring, setIsExportingExpiring] = useState(false);
+
   const { data: invRes, isLoading: invLoading } = useInventorySummary();
   const { data: txnSumRes, isLoading: txnSumLoading } = useTransactionSummary();
   const { data: txnRes, isLoading: txnLoading } = useRecentTransactions();
   const { data: expRes, isLoading: expLoading } = useExpiringLots();
+  const { data: materialsRes, isLoading: materialsLoading } = useMaterials();
 
   const invSummary = invRes?.data ?? MOCK_INV;
   const txnSummary = txnSumRes?.data ?? MOCK_TXN_SUMMARY;
   const transactions = txnRes?.data ?? MOCK_TRANSACTIONS;
   const expiring = expRes?.data ?? MOCK_EXPIRING;
   const expiringCount = expRes?.total ?? 12;
+  const totalMaterials = materialsRes?.total ?? 0;
   const loading = invLoading;
 
-  /* ── Memoised chart data: bar chart for stock by material type ── */
-  const barData = useMemo(
+  const stockRows = useMemo(
     () =>
       (invSummary.by_material_type ?? [])
         .filter((m) => (m.unit_of_measure ?? "").trim().length > 0)
         .map((m) => ({
-          name: `${m.material_type} (${m.unit_of_measure})`,
+          key: `${m.material_type}-${m.unit_of_measure}`,
+          name: m.material_type,
           unit: m.unit_of_measure ?? "",
           quantity: m.total_quantity,
         })),
     [invSummary.by_material_type],
   );
-
-  /* ── Trend line data (use API data when available, else mock) ── */
-  const trendData = useMemo(
+  const stockUnitOptions = useMemo(
     () =>
-      ((invSummary as unknown as Record<string, unknown>)
-        .trend as typeof MOCK_TREND) ?? MOCK_TREND,
-    [invSummary],
+      Array.from(new Set(stockRows.map((row) => row.unit)))
+        .sort((a, b) => a.localeCompare(b))
+        .map((unit) => ({ label: unit, value: unit })),
+    [stockRows],
+  );
+  const selectedStockUnit =
+    preferredStockUnit.length > 0 &&
+    stockUnitOptions.some((option) => option.value === preferredStockUnit)
+      ? preferredStockUnit
+      : (stockUnitOptions[0]?.value ?? "");
+  const barData = useMemo(
+    () => stockRows.filter((row) => row.unit === selectedStockUnit),
+    [selectedStockUnit, stockRows],
   );
 
-  /* ── Alerts ── */
+  const trendData = useMemo(() => {
+    const source = hasTrendData(txnSummary) ? txnSummary.trend : MOCK_TREND;
+    return applyRange(source, trendRange);
+  }, [trendRange, txnSummary]);
+
   const alerts = useMemo<AlertItem[]>(() => {
     const a: AlertItem[] = [];
     const exp7 = expiring.filter((l) => l.days_to_expiry <= 7).length;
@@ -259,9 +317,8 @@ export default function InventoryManagerDashboard() {
         link: "/lots?status=Rejected",
       });
     return a;
-  }, [expiring, invSummary]);
+  }, [expiring, invSummary.by_status]);
 
-  /* ── Column definitions ── */
   const txnColumns = [
     createTransactionTypeColumn<InventoryTransaction>(),
     createLotIdColumn<InventoryTransaction>(),
@@ -290,8 +347,59 @@ export default function InventoryManagerDashboard() {
     createStorageLocationColumn<ExpiringLot>(),
   ];
 
-  /* ── Render (Ant Design Visualization spec:
-         KPI → Charts → Tables → Alerts) ── */
+  function downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleExportTransactions(): Promise<void> {
+    try {
+      setIsExportingTxn(true);
+      const file = await reportApi.exportReport({
+        type: "transactions",
+        filters: {
+          date_range: trendRange,
+        },
+      });
+      downloadBlob(
+        file,
+        `transactions-${new Date().toISOString().slice(0, 10)}.csv`,
+      );
+      message.success("Transactions report exported");
+    } catch {
+      message.error("Unable to export transactions report");
+    } finally {
+      setIsExportingTxn(false);
+    }
+  }
+
+  async function handleExportExpiringLots(): Promise<void> {
+    try {
+      setIsExportingExpiring(true);
+      const file = await reportApi.exportReport({
+        type: "expiring",
+        filters: {
+          days: 30,
+        },
+      });
+      downloadBlob(
+        file,
+        `expiring-lots-${new Date().toISOString().slice(0, 10)}.csv`,
+      );
+      message.success("Expiring lots report exported");
+    } catch {
+      message.error("Unable to export expiring lots report");
+    } finally {
+      setIsExportingExpiring(false);
+    }
+  }
+
   return (
     <DashboardPage
       title="Inventory Manager Dashboard"
@@ -317,7 +425,17 @@ export default function InventoryManagerDashboard() {
 
       {/* ── 2. Transaction KPI Cards ── */}
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col xs={12} sm={8}>
+        <Col xs={12} sm={6}>
+          <KpiCard
+            label="Total Materials"
+            value={totalMaterials.toLocaleString()}
+            icon={<AppstoreOutlined />}
+            iconBg="rgba(22,119,255,0.08)"
+            iconColor={tokens.colorPrimary}
+            loading={materialsLoading}
+          />
+        </Col>
+        <Col xs={12} sm={6}>
           <KpiCard
             label="Today's Receipts"
             value={txnSummary.today_receipts}
@@ -328,7 +446,7 @@ export default function InventoryManagerDashboard() {
             valueStyle={{ color: tokens.colorSuccess }}
           />
         </Col>
-        <Col xs={12} sm={8}>
+        <Col xs={12} sm={6}>
           <KpiCard
             label="Today's Issues"
             value={txnSummary.today_issues}
@@ -339,7 +457,7 @@ export default function InventoryManagerDashboard() {
             valueStyle={{ color: tokens.colorError }}
           />
         </Col>
-        <Col xs={12} sm={8}>
+        <Col xs={12} sm={6}>
           <KpiCard
             label="Expiring (30 days)"
             value={expiringCount}
@@ -356,10 +474,20 @@ export default function InventoryManagerDashboard() {
       <Row gutter={[16, 16]} style={{ marginTop: SECTION_GAP }}>
         <Col xs={24} lg={12}>
           <ChartCard
-            title="Stock by Material Type"
+            title={`Stock by Material Type${selectedStockUnit ? ` (${selectedStockUnit})` : ""}`}
             loading={loading}
             empty={barData.length === 0}
             height={280}
+            extra={
+              stockUnitOptions.length > 0 ? (
+                <Segmented<string>
+                  size="small"
+                  options={stockUnitOptions}
+                  value={selectedStockUnit}
+                  onChange={(value) => setPreferredStockUnit(value)}
+                />
+              ) : undefined
+            }
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -399,10 +527,18 @@ export default function InventoryManagerDashboard() {
         </Col>
         <Col xs={24} lg={12}>
           <ChartCard
-            title="Receipt vs Usage Trend (30d)"
+            title={`Receipt vs Usage Trend (${trendRange})`}
             loading={loading}
             empty={trendData.length === 0}
             height={280}
+            extra={
+              <Segmented<TrendRange>
+                size="small"
+                options={TREND_RANGE_OPTIONS}
+                value={trendRange}
+                onChange={(value) => setTrendRange(value)}
+              />
+            }
           >
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
@@ -446,6 +582,15 @@ export default function InventoryManagerDashboard() {
       <div style={{ marginTop: SECTION_GAP }}>
         <DataTableCard<InventoryTransaction>
           title="Recent Transactions"
+          extra={
+            <Button
+              size="small"
+              loading={isExportingTxn}
+              onClick={handleExportTransactions}
+            >
+              Export
+            </Button>
+          }
           columns={txnColumns}
           dataSource={transactions}
           rowKey="transaction_id"
@@ -459,6 +604,15 @@ export default function InventoryManagerDashboard() {
       <div style={{ marginTop: SECTION_GAP }}>
         <DataTableCard<ExpiringLot>
           title="Expiring Lots (next 30 days)"
+          extra={
+            <Button
+              size="small"
+              loading={isExportingExpiring}
+              onClick={handleExportExpiringLots}
+            >
+              Export
+            </Button>
+          }
           columns={expiringColumns}
           dataSource={expiring}
           rowKey="lot_id"

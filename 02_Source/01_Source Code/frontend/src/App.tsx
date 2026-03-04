@@ -1,5 +1,5 @@
 import { RouterProvider } from "react-router-dom";
-import { ConfigProvider } from "antd";
+import { ConfigProvider, App as AntdApp } from "antd";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { AuthProvider } from "./auth/AuthProvider";
@@ -17,9 +17,11 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ConfigProvider theme={antTheme}>
-        <AuthProvider>
-          <RouterProvider router={router} />
-        </AuthProvider>
+        <AntdApp>
+          <AuthProvider>
+            <RouterProvider router={router} />
+          </AuthProvider>
+        </AntdApp>
       </ConfigProvider>
     </QueryClientProvider>
   );

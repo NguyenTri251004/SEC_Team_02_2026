@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Row, Col } from "antd";
+import { useMemo, useState } from "react";
+import { Row, Col, Segmented } from "antd";
 import {
   ExperimentOutlined,
   FileSearchOutlined,
@@ -19,7 +19,7 @@ import {
   Line,
   Legend,
 } from "recharts";
-import DashboardPage from "../../components/shared/DashboardPage";
+import DashboardPage from "./DashboardPage";
 import {
   KpiCard,
   ChartCard,
@@ -38,7 +38,7 @@ import {
   createTransactionTypeColumn,
   createQuantityColumn,
   createTransactionDateColumn,
-} from "../../components/tables/columnFactories";
+} from "../../components/common/tables/columnFactories";
 import {
   useQCStats,
   useQCQueue,
@@ -142,24 +142,59 @@ const MOCK_TXN: InventoryTransaction[] = [
   },
 ];
 
-/* ── Mock activity trend data for line chart ── */
-const MOCK_ACTIVITY_TREND = [
-  { date: "Feb 22", tests: 12 },
-  { date: "Feb 23", tests: 15 },
-  { date: "Feb 24", tests: 10 },
-  { date: "Feb 25", tests: 18 },
-  { date: "Feb 26", tests: 22 },
-  { date: "Feb 27", tests: 14 },
-  { date: "Feb 28", tests: 20 },
+/* ── Mock activity trend data for line chart (30d) ── */
+const MOCK_ACTIVITY_TREND = Array.from({ length: 30 }, (_, index) => {
+  const day = String(index + 1).padStart(2, "0");
+  const tests = 9 + ((index * 6) % 14) + (index % 4);
+
+  return { date: `Feb ${day}`, tests };
+});
+
+type ActivityRange = "7d" | "14d" | "30d";
+
+const ACTIVITY_RANGE_OPTIONS: { label: string; value: ActivityRange }[] = [
+  { label: "7d", value: "7d" },
+  { label: "14d", value: "14d" },
+  { label: "30d", value: "30d" },
 ];
 
+interface ActivityPoint {
+  date: string;
+  test_count: number;
+}
+
+function hasActivityTrendData(value: QCStats): value is QCStats & {
+  activity_trend: ActivityPoint[];
+} {
+  return (
+    "activity_trend" in value &&
+    Array.isArray((value as { activity_trend?: unknown }).activity_trend)
+  );
+}
+
+function applyRange<T>(rows: T[], range: ActivityRange): T[] {
+  if (range === "7d") {
+    return rows.slice(-7);
+  }
+  if (range === "14d") {
+    return rows.slice(-14);
+  }
+  return rows.slice(-30);
+}
+
 export default function QualityControlDashboard() {
+  const [activityRange, setActivityRange] = useState<ActivityRange>("7d");
+
   /* ── React Query hooks ── */
   const { data: statsRes, isLoading: statsLoading } = useQCStats();
+  const { data: activityStatsRes } = useQCStats(
+    `period=${activityRange}&groupBy=day`,
+  );
   const { data: queueRes, isLoading: queueLoading } = useQCQueue();
   const { data: txnRes, isLoading: txnLoading } = useRecentTransactions();
 
   const stats = statsRes?.data ?? MOCK_STATS;
+  const activityStats = activityStatsRes?.data ?? stats;
   const queue = queueRes?.data ?? MOCK_QUEUE;
   const transactions = txnRes?.data ?? MOCK_TXN;
   const loading = statsLoading;
@@ -176,12 +211,15 @@ export default function QualityControlDashboard() {
   );
 
   /* ── Activity trend (use API data when available, else mock) ── */
-  const activityTrend = useMemo(
-    () =>
-      ((stats as unknown as Record<string, unknown>)
-        .activity_trend as typeof MOCK_ACTIVITY_TREND) ?? MOCK_ACTIVITY_TREND,
-    [stats],
-  );
+  const activityTrend = useMemo(() => {
+    const source = hasActivityTrendData(activityStats)
+      ? activityStats.activity_trend.map((point) => ({
+          date: point.date,
+          tests: point.test_count,
+        }))
+      : MOCK_ACTIVITY_TREND;
+    return applyRange(source, activityRange);
+  }, [activityRange, activityStats]);
 
   /* ── Alerts ── */
   const alerts = useMemo<AlertItem[]>(() => {
@@ -357,10 +395,18 @@ export default function QualityControlDashboard() {
         </Col>
         <Col xs={24} lg={12}>
           <ChartCard
-            title="QC Activity (7d)"
+            title={`QC Activity (${activityRange})`}
             loading={loading}
             empty={activityTrend.length === 0}
             height={280}
+            extra={
+              <Segmented<ActivityRange>
+                size="small"
+                options={ACTIVITY_RANGE_OPTIONS}
+                value={activityRange}
+                onChange={(value) => setActivityRange(value)}
+              />
+            }
           >
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
@@ -392,7 +438,7 @@ export default function QualityControlDashboard() {
       {/* ── 4. Recent Transactions ── */}
       <div style={{ marginTop: SECTION_GAP }}>
         <DataTableCard<InventoryTransaction>
-          title="Recent Transactions"
+          title="My Recent Transactions"
           columns={txnColumns}
           dataSource={transactions}
           rowKey="transaction_id"

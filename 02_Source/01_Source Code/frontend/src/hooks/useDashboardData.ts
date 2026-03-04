@@ -4,6 +4,7 @@ import {
   adminApi,
   dashboardApi,
   transactionApi,
+  materialApi,
   qcApi,
   lotApi,
   productionApi,
@@ -65,12 +66,20 @@ export function useRecentTransactions(
   });
 }
 
+export function useMaterials(query = "page=1&limit=1") {
+  return useQuery({
+    queryKey: ["materials", query],
+    queryFn: () => materialApi.list(query),
+    refetchInterval: 60_000,
+  });
+}
+
 // ── QC ───────────────────────────────────────────────────────────
 
-export function useQCStats() {
+export function useQCStats(query = "") {
   return useQuery({
-    queryKey: ["qc", "stats"],
-    queryFn: () => qcApi.getStats(),
+    queryKey: ["qc", "stats", query],
+    queryFn: () => qcApi.getStats(query.length > 0 ? query : undefined),
     refetchInterval: 30_000,
   });
 }
@@ -91,6 +100,16 @@ export function useExpiringLots(
   return useQuery({
     queryKey: ["lots", "expiring", query],
     queryFn: () => lotApi.getExpiring(query),
+    refetchInterval: 60_000,
+  });
+}
+
+export function useLots(
+  query = "status=Accepted,Quarantine&sort=expiration_date:asc&limit=100",
+) {
+  return useQuery({
+    queryKey: ["lots", query],
+    queryFn: () => lotApi.list(query),
     refetchInterval: 60_000,
   });
 }

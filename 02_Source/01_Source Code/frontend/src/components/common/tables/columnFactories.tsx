@@ -4,9 +4,9 @@ import {
   TXN_TYPE_TAG,
   LOT_STATUS_TAG,
   BATCH_STATUS_TAG,
-} from "../../constants/theme";
-import { ROLE_TAG } from "../../constants/roles";
-import type { UserRole } from "../../types";
+} from "../../../constants/theme";
+import { ROLE_TAG } from "../../../constants/roles";
+import type { UserRole } from "../../../types";
 
 /**
  * Reusable column factory functions for dashboard tables

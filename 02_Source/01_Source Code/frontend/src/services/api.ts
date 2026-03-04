@@ -3,11 +3,13 @@ import keycloak from "../auth/keycloak";
 
 import type {
   AdminStats,
+  Material,
   InventorySummary,
   TransactionSummary,
   QCStats,
   QCQueueItem,
   ExpiringLot,
+  InventoryLot,
   InventoryTransaction,
   ProductionBatch,
   User,
@@ -115,6 +117,17 @@ export const transactionApi = {
 };
 
 // ────────────────────────────────────────────────────────────
+// Materials
+// ────────────────────────────────────────────────────────────
+export const materialApi = {
+  list: (params?: string) =>
+    apiRequest<PaginatedResponse<Material>>({
+      url: `/materials${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
+};
+
+// ────────────────────────────────────────────────────────────
 // QC
 // ────────────────────────────────────────────────────────────
 export const qcApi = {
@@ -148,7 +161,7 @@ export const lotApi = {
     }),
 
   list: (params?: string) =>
-    apiRequest<PaginatedResponse<ExpiringLot>>({
+    apiRequest<PaginatedResponse<InventoryLot>>({
       url: `/api/lots${params ? `?${params}` : ""}`,
       method: "GET",
     }),

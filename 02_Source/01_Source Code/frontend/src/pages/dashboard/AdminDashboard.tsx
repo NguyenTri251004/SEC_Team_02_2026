@@ -4,7 +4,7 @@ import {
   UserOutlined,
   SwapOutlined,
   InboxOutlined,
-  WarningOutlined,
+  StopOutlined,
 } from "@ant-design/icons";
 import {
   PieChart,
@@ -14,13 +14,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import DashboardPage from "../../components/shared/DashboardPage";
-import {
-  KpiCard,
-  ChartCard,
-  DataTableCard,
-  AlertPanel,
-} from "../../components/dashboard";
+import DashboardPage from "./DashboardPage";
+import { KpiCard, ChartCard, DataTableCard } from "../../components/dashboard";
 import { tokens, SECTION_GAP } from "../../constants/theme";
 import {
   useAdminStats,
@@ -38,13 +33,8 @@ import {
   createUserRoleColumn,
   createLastLoginColumn,
   createUserStatusColumn,
-} from "../../components/tables/columnFactories";
-import type {
-  AdminStats,
-  InventoryTransaction,
-  User,
-  AlertItem,
-} from "../../types";
+} from "../../components/common/tables/columnFactories";
+import type { AdminStats, InventoryTransaction, User } from "../../types";
 
 /* ── Mock data (removed when backend is live) ── */
 const MOCK_STATS: AdminStats = {
@@ -166,20 +156,6 @@ export default function AdminDashboard() {
     [stats.users_by_role],
   );
 
-  /* ── Alerts (computed from stats) ── */
-  const alerts = useMemo<AlertItem[]>(() => {
-    const a: AlertItem[] = [];
-    if (stats.lots_in_quarantine > 0)
-      a.push({
-        id: "alt-quarantine",
-        severity: "warning",
-        message: "Lots currently in quarantine",
-        count: stats.lots_in_quarantine,
-        link: "/lots?status=Quarantine",
-      });
-    return a;
-  }, [stats.lots_in_quarantine]);
-
   /* ── Column definitions ── */
   const txnColumns = [
     createTransactionTypeColumn<InventoryTransaction>(),
@@ -238,15 +214,15 @@ export default function AdminDashboard() {
         </Col>
         <Col xs={12} sm={6}>
           <KpiCard
-            label="Quarantine"
+            label="Quarantine Lots"
             value={stats.lots_in_quarantine.toLocaleString()}
-            icon={<WarningOutlined />}
-            iconBg="rgba(255,77,79,0.08)"
-            iconColor={tokens.colorError}
+            icon={<StopOutlined />}
+            iconBg="rgba(250,173,20,0.10)"
+            iconColor={tokens.colorWarning}
             loading={loading}
             valueStyle={
               stats.lots_in_quarantine > 0
-                ? { color: tokens.colorError }
+                ? { color: tokens.colorWarning }
                 : undefined
             }
           />
@@ -319,11 +295,6 @@ export default function AdminDashboard() {
           />
         </Col>
       </Row>
-
-      {/* ── 4. Alerts (bottom – secondary information) ── */}
-      <div style={{ marginTop: SECTION_GAP }}>
-        <AlertPanel alerts={alerts} loading={loading} />
-      </div>
     </DashboardPage>
   );
 }
