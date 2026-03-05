@@ -125,20 +125,22 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
-      target: base
+      dockerfile: Dockerfile.dev
     container_name: ims-backend
     restart: unless-stopped
     environment:
       - NODE_ENV=development
       - PORT=3000
       - DATABASE_URL=postgresql://${POSTGRES_USER:-myuser}:${POSTGRES_PASSWORD:-mypassword}@postgres:5432/${POSTGRES_DB:-mydatabase}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redispassword}@redis:6379
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redispassword}
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - KEYCLOAK_URL=http://keycloak:8080
       - AI_SERVICE_URL=http://ai-service:8000
+      - BYPASS_AUTH=true
+      - JWT_SECRET=dev-secret-key-for-testing
     ports:
       - "${BACKEND_PORT:-3000}:3000"
     volumes:

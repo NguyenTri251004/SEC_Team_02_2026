@@ -1,6 +1,7 @@
 import pool from "../../shared/db/pool";
 import redisClient, { CACHE_TTL } from "../../shared/cache/redis";
 import { Material, CreateMaterialDto, UpdateMaterialDto } from "./material.types";
+import * as searchService from "../search/search.service";
 
 const CACHE_KEY = "materials:all";
 
@@ -63,7 +64,16 @@ export const createMaterial = async (dto: CreateMaterialDto): Promise<Material> 
     ]
   );
   await invalidateCache();
-  return result.rows[0];
+  
+  // Index vào Elasticsearch
+  const material = result.rows[0];
+  try {
+    await searchService.indexMaterial(material);
+  } catch (error) {
+    console.warn("Không thể index material vào Elasticsearch:", error);
+  }
+  
+  return material;
 };
 
 export const updateMaterial = async (
@@ -91,7 +101,16 @@ export const updateMaterial = async (
   );
   if (result.rows.length === 0) return null;
   await invalidateCache();
-  return result.rows[0];
+  
+  // Update trong Elasticsearch
+  const material = result.rows[0];
+  try {
+    await searchService.indexMaterial(material);
+  } catch (error) {
+    console.warn("Không thể update material trong Elasticsearch:", error);
+  }
+  
+  return material;
 };
 
 export const deleteMaterial = async (id: string): Promise<boolean> => {
@@ -101,5 +120,13 @@ export const deleteMaterial = async (id: string): Promise<boolean> => {
   );
   if ((result.rowCount ?? 0) === 0) return false;
   await invalidateCache();
+  
+  // Xóa khỏi Elasticsearch
+  try {
+    await searchService.deleteMaterialIndex(id);
+  } catch (error) {
+    console.warn("Không thể xóa material khỏi Elasticsearch:", error);
+  }
+  
   return true;
 };

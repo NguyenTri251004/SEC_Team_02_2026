@@ -2,8 +2,10 @@ import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import pool from "./shared/db/pool";
 import { connectRedis } from "./shared/cache/redis";
+import esClient from "./shared/elasticsearch/client";
 import materialRoutes from "./modules/materials/material.routes";
 import transactionRoutes from "./modules/transactions/transaction.routes";
+import searchRoutes from "./modules/search/search.routes";
 
 dotenv.config();
 
@@ -38,6 +40,7 @@ app.get("/health", (_req: Request, res: Response) => {
 // Module routes
 app.use("/api/materials", materialRoutes);
 app.use("/api/transactions", transactionRoutes);
+app.use("/api/search", searchRoutes);
 
 // Khởi động server
 const start = async (): Promise<void> => {
@@ -54,12 +57,21 @@ const start = async (): Promise<void> => {
   // Kết nối Redis (không bắt buộc — app vẫn chạy nếu Redis không có)
   await connectRedis();
 
+  // Test Elasticsearch connection (không bắt buộc)
+  try {
+    await esClient.ping();
+  } catch (error) {
+    // Đã log warning trong client.ts
+  }
+
   app.listen(PORT, () => {
     console.log(`✓ Server đang chạy tại http://localhost:${PORT}`);
     console.log(`  GET  /api/materials`);
     console.log(`  POST /api/materials`);
     console.log(`  GET  /api/transactions`);
     console.log(`  POST /api/transactions`);
+    console.log(`  GET  /api/search?q=keyword`);
+    console.log(`  POST /api/search/index (Index all materials)`);
   });
 };
 
