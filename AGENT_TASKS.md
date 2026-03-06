@@ -6,7 +6,7 @@
 
 ---
 
-## Task 1: Database Schema Migration
+## Task 1: Database Schema Migration ✅ DONE
 
 ```
 You are working on the IMS (Inventory Management System) project. Your task is to update the database schema file.
@@ -54,7 +54,7 @@ You are working on the IMS (Inventory Management System) project. Your task is t
 
 ---
 
-## Task 2: Backend Lots Module
+## Task 2: Backend Lots Module ✅ DONE
 
 ```
 You are working on the IMS project backend (Express.js + TypeScript).
@@ -74,13 +74,13 @@ You are working on the IMS project backend (Express.js + TypeScript).
 1. **`lot.types.ts`** - TypeScript interfaces for InventoryLot, CreateLotInput, UpdateLotInput
 
 2. **`lot.service.ts`** - Database service with functions:
-   - `getAllLots(filters?)` - list lots with optional filters (status, material_id, expiring_before), JOIN with materials for material_name/type
-   - `getLotById(id)` - get single lot with material info
-   - `createLot(input)` - create new lot, auto-set status='Quarantine'
-   - `updateLot(id, input)` - update editable fields (storage_location, notes, etc.), NOT status
-   - `updateLotStatus(id, status, reason)` - separate function for status changes
-   - `getExpiringLots(days)` - lots expiring within N days
-   - `getLotsByMaterial(materialId)` - lots for a specific material
+   - getAllLots(filters?) - list lots with optional filters (status, material_id, expiring_before), JOIN with materials for material_name/type
+   - getLotById(id) - get single lot with material info
+   - createLot(input) - create new lot, auto-set status='Quarantine'
+   - updateLot(id, input) - update editable fields (storage_location, notes, etc.), NOT status
+   - updateLotStatus(id, status, reason) - separate function for status changes
+   - getExpiringLots(days) - lots expiring within N days
+   - getLotsByMaterial(materialId) - lots for a specific material
 
 3. **`lot.routes.ts`** - Express routes:
    - GET /api/lots - list with filters
@@ -91,18 +91,14 @@ You are working on the IMS project backend (Express.js + TypeScript).
    - GET /api/lots/expiring - expiring lots
    - GET /api/lots/by-material/:materialId
 
-**Then update `backend/src/server.ts`** to import and mount: `app.use("/api/lots", lotRoutes);`
+**Then update backend/src/server.ts** to import and mount: app.use("/api/lots", lotRoutes);
 
-**Add RBAC permissions** in `backend/src/security/rbac.ts`:
-```typescript
-lots: {
-  read: [ADMIN, INVENTORY_MANAGER, QUALITY_CONTROL, PRODUCTION, VIEWER],
-  create: [ADMIN, INVENTORY_MANAGER],
-  update: [ADMIN, INVENTORY_MANAGER],
-  updateStatus: [ADMIN, INVENTORY_MANAGER, QUALITY_CONTROL],
-  delete: [ADMIN],
-},
-```
+**Add RBAC permissions** in backend/src/security/rbac.ts - lots block with:
+- read: [ADMIN, INVENTORY_MANAGER, QUALITY_CONTROL, PRODUCTION, VIEWER]
+- create: [ADMIN, INVENTORY_MANAGER]
+- update: [ADMIN, INVENTORY_MANAGER]
+- updateStatus: [ADMIN, INVENTORY_MANAGER, QUALITY_CONTROL]
+- delete: [ADMIN]
 
 **Business rules:**
 - New lots MUST start with status='Quarantine'
@@ -114,7 +110,7 @@ lots: {
 
 ## Task 3: Backend QC Module
 
-```
+````
 You are working on the IMS project backend (Express.js + TypeScript).
 
 **Your task:** Create the QC Tests backend module at `02_Source/01_Source Code/backend/src/modules/qc/`
@@ -131,16 +127,16 @@ You are working on the IMS project backend (Express.js + TypeScript).
 1. **`qc.types.ts`** - Interfaces: QCTest, CreateQCTestInput, UpdateQCTestInput, QCStats
 
 2. **`qc.service.ts`** - Service functions:
-   - `getAllTests(filters?)` - list tests, JOIN with inventory_lots for lot info
-   - `getTestById(id)` - single test detail
-   - `getTestsByLot(lotId)` - all tests for a lot
-   - `createTest(input)` - create QC test (result_status defaults to 'Pending')
-   - `updateTestResult(id, result, status, verifiedBy)` - update test result
-   - `getPendingTests()` - tests with status='Pending'
-   - `getQCStats()` - aggregate stats: pending count, pass rate (30d), tests by type
-   - `getQCQueue()` - lots in Quarantine awaiting QC, JOIN with materials
-   - `approveLot(lotId, userId)` - check all tests Pass -> set lot status='Accepted'
-   - `rejectLot(lotId, userId, reason)` - set lot status='Rejected'
+   - getAllTests(filters?) - list tests, JOIN with inventory_lots for lot info
+   - getTestById(id) - single test detail
+   - getTestsByLot(lotId) - all tests for a lot
+   - createTest(input) - create QC test (result_status defaults to 'Pending')
+   - updateTestResult(id, result, status, verifiedBy) - update test result
+   - getPendingTests() - tests with status='Pending'
+   - getQCStats() - aggregate stats: pending count, pass rate (30d), tests by type
+   - getQCQueue() - lots in Quarantine awaiting QC, JOIN with materials
+   - approveLot(lotId, userId) - check all tests Pass -> set lot status='Accepted'
+   - rejectLot(lotId, userId, reason) - set lot status='Rejected'
 
 3. **`qc.routes.ts`** - Express routes:
    - GET /api/qc/tests - list all tests
@@ -154,30 +150,26 @@ You are working on the IMS project backend (Express.js + TypeScript).
    - POST /api/qc/reject/:lotId - reject lot
    - GET /api/qc/lot/:lotId/history - test history for lot
 
-**Then update `backend/src/server.ts`:** `app.use("/api/qc", qcRoutes);`
+**Then update backend/src/server.ts:** app.use("/api/qc", qcRoutes);
 
-**Add RBAC permissions** in rbac.ts:
-```typescript
-qc: {
-  read: [ADMIN, INVENTORY_MANAGER, QUALITY_CONTROL, VIEWER],
-  create: [ADMIN, QUALITY_CONTROL],
-  update: [ADMIN, QUALITY_CONTROL],
-  approve: [ADMIN, QUALITY_CONTROL],
-  reject: [ADMIN, QUALITY_CONTROL],
-},
-```
+**Add RBAC permissions** in rbac.ts - qc block with:
+- read: [ADMIN, INVENTORY_MANAGER, QUALITY_CONTROL, VIEWER]
+- create: [ADMIN, QUALITY_CONTROL]
+- update: [ADMIN, QUALITY_CONTROL]
+- approve: [ADMIN, QUALITY_CONTROL]
+- reject: [ADMIN, QUALITY_CONTROL]
 
 **Business rules:**
 - approveLot: ALL tests for that lot must be 'Pass'. If any is 'Pending' or 'Fail', reject the approval.
 - rejectLot: Set lot status to 'Rejected' immediately, reason is required.
 - QC test result_status: only 'Pass', 'Fail', 'Pending'
-```
+````
 
 ---
 
 ## Task 4: Backend Production Module
 
-```
+````
 You are working on the IMS project backend (Express.js + TypeScript).
 
 **Your task:** Create the Production Batches module at `02_Source/01_Source Code/backend/src/modules/production/`
@@ -194,14 +186,14 @@ You are working on the IMS project backend (Express.js + TypeScript).
 1. **`production.types.ts`** - Interfaces: ProductionBatch, BatchComponent, CreateBatchInput, AddComponentInput
 
 2. **`production.service.ts`** - Service functions:
-   - `getAllBatches(filters?)` - list batches, JOIN with materials for product_name
-   - `getBatchById(id)` - batch detail with components
-   - `createBatch(input)` - create batch (status='Planned')
-   - `updateBatchStatus(id, status)` - update status with validation
-   - `addComponent(batchId, input)` - add lot component to batch, verify lot is Accepted and not expired
-   - `getComponents(batchId)` - list components for a batch
-   - `consumeMaterial(batchId, componentId, actualQuantity)` - record actual usage, create inventory_transaction type='Usage', decrease lot quantity
-   - `getTraceability(batchId)` - trace all materials used in batch
+   - getAllBatches(filters?) - list batches, JOIN with materials for product_name
+   - getBatchById(id) - batch detail with components
+   - createBatch(input) - create batch (status='Planned')
+   - updateBatchStatus(id, status) - update status with validation
+   - addComponent(batchId, input) - add lot component to batch, verify lot is Accepted and not expired
+   - getComponents(batchId) - list components for a batch
+   - consumeMaterial(batchId, componentId, actualQuantity) - record actual usage, create inventory_transaction type='Usage', decrease lot quantity
+   - getTraceability(batchId) - trace all materials used in batch
 
 3. **`production.routes.ts`** - Express routes:
    - GET /api/production/batches - list batches
@@ -213,30 +205,26 @@ You are working on the IMS project backend (Express.js + TypeScript).
    - POST /api/production/consume - consume materials
    - GET /api/production/traceability/:batchId - traceability
 
-**Then update `backend/src/server.ts`:** `app.use("/api/production", productionRoutes);`
+**Then update backend/src/server.ts:** app.use("/api/production", productionRoutes);
 
-**Add RBAC permissions** in rbac.ts:
-```typescript
-production: {
-  read: [ADMIN, INVENTORY_MANAGER, PRODUCTION, VIEWER],
-  create: [ADMIN, PRODUCTION],
-  update: [ADMIN, PRODUCTION],
-  consume: [ADMIN, PRODUCTION],
-},
-```
+**Add RBAC permissions** in rbac.ts - production block with:
+- read: [ADMIN, INVENTORY_MANAGER, PRODUCTION, VIEWER]
+- create: [ADMIN, PRODUCTION]
+- update: [ADMIN, PRODUCTION]
+- consume: [ADMIN, PRODUCTION]
 
 **Business rules:**
 - Only lots with status='Accepted' and not expired can be added as components
 - Consuming material creates an inventory_transaction type='Usage' and decreases lot quantity
 - If lot quantity reaches 0, auto-set lot status='Depleted'
 - Batch status flow: Planned -> In Progress -> Complete or Rejected
-```
+````
 
 ---
 
 ## Task 5: Backend Labels Module
 
-```
+````
 You are working on the IMS project backend (Express.js + TypeScript).
 
 **Your task:** Create the Labels module at `02_Source/01_Source Code/backend/src/modules/labels/`
@@ -253,12 +241,12 @@ You are working on the IMS project backend (Express.js + TypeScript).
 1. **`label.types.ts`** - Interfaces: LabelTemplate, CreateTemplateInput, UpdateTemplateInput, GenerateLabelInput, GeneratedLabel
 
 2. **`label.service.ts`** - Service functions:
-   - `getAllTemplates()` - list all templates
-   - `getTemplateById(id)` - single template
-   - `createTemplate(input)` - create template
-   - `updateTemplate(id, input)` - update template
-   - `deleteTemplate(id)` - delete template
-   - `generateLabel(input)` - generate label data for a lot or batch: look up the lot/batch, combine with template, return JSON with all field values filled in
+   - getAllTemplates() - list all templates
+   - getTemplateById(id) - single template
+   - createTemplate(input) - create template
+   - updateTemplate(id, input) - update template
+   - deleteTemplate(id) - delete template
+   - generateLabel(input) - generate label data for a lot or batch: look up the lot/batch, combine with template, return JSON with all field values filled in
 
 3. **`label.routes.ts`** - Express routes:
    - GET /api/labels/templates - list templates
@@ -268,25 +256,21 @@ You are working on the IMS project backend (Express.js + TypeScript).
    - DELETE /api/labels/templates/:id - delete template
    - POST /api/labels/generate - generate label data for a lot
 
-**Then update `backend/src/server.ts`:** `app.use("/api/labels", labelRoutes);`
+**Then update backend/src/server.ts:** app.use("/api/labels", labelRoutes);
 
-**Add RBAC permissions** in rbac.ts:
-```typescript
-labels: {
-  read: [ADMIN, INVENTORY_MANAGER, QUALITY_CONTROL, PRODUCTION, VIEWER],
-  create: [ADMIN, INVENTORY_MANAGER],
-  update: [ADMIN, INVENTORY_MANAGER],
-  delete: [ADMIN],
-  generate: [ADMIN, INVENTORY_MANAGER, QUALITY_CONTROL, PRODUCTION],
-},
-```
-```
+**Add RBAC permissions** in rbac.ts - labels block with:
+- read: [ADMIN, INVENTORY_MANAGER, QUALITY_CONTROL, PRODUCTION, VIEWER]
+- create: [ADMIN, INVENTORY_MANAGER]
+- update: [ADMIN, INVENTORY_MANAGER]
+- delete: [ADMIN]
+- generate: [ADMIN, INVENTORY_MANAGER, QUALITY_CONTROL, PRODUCTION]
+````
 
 ---
 
 ## Task 6: Backend Users/Admin Module
 
-```
+````
 You are working on the IMS project backend (Express.js + TypeScript).
 
 **Your task:** Create the Users/Admin module at `02_Source/01_Source Code/backend/src/modules/admin/`
@@ -303,13 +287,13 @@ You are working on the IMS project backend (Express.js + TypeScript).
 1. **`admin.types.ts`** - Interfaces: User (without password), CreateUserInput, UpdateUserInput, AdminStats
 
 2. **`admin.service.ts`** - Service functions:
-   - `getAllUsers(filters?)` - list users (never return password), filter by role/status
-   - `getUserById(id)` - single user
-   - `createUser(input)` - create user (hash password with bcrypt or simple hash for now)
-   - `updateUser(id, input)` - update user info (name, role), NOT password
-   - `toggleUserActive(id)` - lock/unlock user account
-   - `resetPassword(id, newPassword)` - admin reset password
-   - `getAdminStats()` - total users, active users, users by role, today's transactions count, total lots, lots in quarantine
+   - getAllUsers(filters?) - list users (never return password), filter by role/status
+   - getUserById(id) - single user
+   - createUser(input) - create user (hash password with bcrypt or simple hash for now)
+   - updateUser(id, input) - update user info (name, role), NOT password
+   - toggleUserActive(id) - lock/unlock user account
+   - resetPassword(id, newPassword) - admin reset password
+   - getAdminStats() - total users, active users, users by role, today's transactions count, total lots, lots in quarantine
 
 3. **`admin.routes.ts`** - Express routes:
    - GET /api/admin/users - list users
@@ -320,16 +304,16 @@ You are working on the IMS project backend (Express.js + TypeScript).
    - POST /api/admin/users/:id/reset-password - reset password
    - GET /api/admin/stats - admin dashboard stats
 
-**Then update `backend/src/server.ts`:** `app.use("/api/admin", adminRoutes);`
+**Then update backend/src/server.ts:** app.use("/api/admin", adminRoutes);
 
-All routes should use `adminOnly` middleware from rbac.ts (only Admin role).
-```
+All routes should use adminOnly middleware from rbac.ts (only Admin role).
+````
 
 ---
 
 ## Task 7: Backend Dashboard + Reports API
 
-```
+````
 You are working on the IMS project backend (Express.js + TypeScript).
 
 **Your task:** Create Dashboard and Reports API modules.
@@ -343,45 +327,43 @@ You are working on the IMS project backend (Express.js + TypeScript).
 
 **Create 2 modules:**
 
-### Module 1: `backend/src/modules/dashboard/`
+### Module 1: backend/src/modules/dashboard/
 
-1. **`dashboard.types.ts`** - InventorySummary, TransactionSummary response types
-2. **`dashboard.service.ts`**:
-   - `getInventorySummary()` - aggregate lots by status (count + quantity), by material_type
-   - `getTransactionSummary()` - today's receipts/issues count, 7-day trend
-3. **`dashboard.routes.ts`**:
+1. **dashboard.types.ts** - InventorySummary, TransactionSummary response types
+2. **dashboard.service.ts**:
+   - getInventorySummary() - aggregate lots by status (count + quantity), by material_type
+   - getTransactionSummary() - today's receipts/issues count, 7-day trend
+3. **dashboard.routes.ts**:
    - GET /api/dashboard/inventory-summary
    - GET /api/dashboard/transaction-summary
 
-### Module 2: `backend/src/modules/reports/`
+### Module 2: backend/src/modules/reports/
 
-1. **`reports.types.ts`** - ReportExportInput, ReportType
-2. **`reports.service.ts`**:
-   - `getInventoryReport(filters)` - detailed lot data with material info
-   - `getTransactionReport(filters)` - transaction history with filters
-   - `getAuditLog(filters)` - combined log of status changes and transactions
-   - `exportToCSV(data, columns)` - convert array to CSV string
-3. **`reports.routes.ts`**:
+1. **reports.types.ts** - ReportExportInput, ReportType
+2. **reports.service.ts**:
+   - getInventoryReport(filters) - detailed lot data with material info
+   - getTransactionReport(filters) - transaction history with filters
+   - getAuditLog(filters) - combined log of status changes and transactions
+   - exportToCSV(data, columns) - convert array to CSV string
+3. **reports.routes.ts**:
    - GET /api/reports/inventory - inventory report data
    - GET /api/reports/transactions - transaction report data
    - GET /api/reports/audit-log - audit log
    - POST /api/reports/export - export data as CSV (return as file download)
 
-**Then update `backend/src/server.ts`:**
-```typescript
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/reports", reportRoutes);
-```
+**Then update backend/src/server.ts:**
+- app.use("/api/dashboard", dashboardRoutes);
+- app.use("/api/reports", reportRoutes);
 
 Dashboard routes: all authenticated users can read.
-Report routes: use existing `reports` permissions from rbac.ts.
-```
+Report routes: use existing reports permissions from rbac.ts.
+````
 
 ---
 
 ## Task 8: Frontend - Lots + Transactions CRUD Forms
 
-```
+````
 You are working on the IMS project frontend (React 19 + TypeScript + Ant Design).
 
 **Your task:** Add create/edit modals for Lots and Transactions pages.
@@ -396,43 +378,43 @@ You are working on the IMS project frontend (React 19 + TypeScript + Ant Design)
 
 **What to create:**
 
-### 1. `frontend/src/components/lots/LotFormModal.tsx`
+### 1. frontend/src/components/lots/LotFormModal.tsx
 - Ant Design Modal with Form for creating/receiving a new lot
 - Fields: material_id (Select from materials list), manufacturer_name, manufacturer_lot, supplier_name, received_date (DatePicker), expiration_date (DatePicker), quantity, unit_of_measure (Select: kg, L, each, units), storage_location, po_number, is_sample (Switch)
 - On create: POST to /api/lots (or add to mock if backend unavailable)
 - On edit: PUT to /api/lots/:id
 - Validation: required fields, quantity > 0, expiration_date > received_date
 
-### 2. `frontend/src/components/lots/LotDetailDrawer.tsx`
+### 2. frontend/src/components/lots/LotDetailDrawer.tsx
 - Ant Design Drawer showing lot details
 - Display all lot fields, status tag, transaction history for this lot
 - Action buttons: Update Status (dropdown: Accepted/Rejected with reason input)
 
-### 3. Update `frontend/src/hooks/useLotsData.ts`
-- Add `useSaveLot()` mutation (create/update)
-- Add `useUpdateLotStatus()` mutation
+### 3. Update frontend/src/hooks/useLotsData.ts
+- Add useSaveLot() mutation (create/update)
+- Add useUpdateLotStatus() mutation
 
-### 4. `frontend/src/components/transactions/TransactionFormModal.tsx`
+### 4. frontend/src/components/transactions/TransactionFormModal.tsx
 - Modal with Form for recording a new transaction
 - Fields: transaction_type (Select: Receipt/Usage/Split/Transfer/Adjustment/Disposal), lot_id (Select from lots), quantity, unit_of_measure, reference_id, notes
 - Different form behavior based on transaction_type (e.g., Transfer shows destination field)
 - Validation: quantity > 0
 
-### 5. Update `frontend/src/hooks/useTransactionsData.ts`
-- Add `useRecordTransaction()` mutation
+### 5. Update frontend/src/hooks/useTransactionsData.ts
+- Add useRecordTransaction() mutation
 
 ### 6. Update both pages to integrate the new modals:
 - LotsPage: wire "Receive New Lot" button to LotFormModal, add row click for LotDetailDrawer, add Edit button
 - TransactionsPage: wire "Record Transaction" button to TransactionFormModal
 
-Use the `@/` path alias for imports. Follow existing code patterns.
-```
+Use the @/ path alias for imports. Follow existing code patterns.
+````
 
 ---
 
 ## Task 9: Frontend - QC + Batches CRUD Forms
 
-```
+````
 You are working on the IMS project frontend (React 19 + TypeScript + Ant Design).
 
 **Your task:** Add create/edit functionality for QC and Batches pages.
@@ -447,38 +429,38 @@ You are working on the IMS project frontend (React 19 + TypeScript + Ant Design)
 
 **What to create:**
 
-### 1. `frontend/src/components/qc/QCTestFormModal.tsx`
+### 1. frontend/src/components/qc/QCTestFormModal.tsx
 - Modal with Form for creating a new QC test
 - Fields: lot_id (Select from quarantine lots), test_type (Select: Identity/Potency/Microbial/Growth Promotion/Physical/Chemical), test_method, test_date (DatePicker, default today), acceptance_criteria
 - performed_by auto-filled from current user
 
-### 2. `frontend/src/components/qc/QCResultModal.tsx`
+### 2. frontend/src/components/qc/QCResultModal.tsx
 - Modal for recording QC test result
 - Fields: test_result (input), result_status (Select: Pass/Fail), verified_by
 - Show lot info and test info as read-only header
 
-### 3. `frontend/src/components/qc/QCApproveRejectButtons.tsx`
+### 3. frontend/src/components/qc/QCApproveRejectButtons.tsx
 - Component with Approve (green) and Reject (red) buttons for a lot
 - Approve: confirm dialog, calls approve API
 - Reject: modal with required reason textarea, calls reject API
 
-### 4. Update `frontend/src/hooks/useQCData.ts`
-- Add `useCreateQCTest()` mutation
-- Add `useUpdateTestResult()` mutation
-- Add `useApproveLot()` and `useRejectLot()` mutations
+### 4. Update frontend/src/hooks/useQCData.ts
+- Add useCreateQCTest() mutation
+- Add useUpdateTestResult() mutation
+- Add useApproveLot() and useRejectLot() mutations
 
-### 5. `frontend/src/components/batches/BatchFormModal.tsx`
+### 5. frontend/src/components/batches/BatchFormModal.tsx
 - Modal for creating a new production batch
 - Fields: product_id (Select from materials), batch_number, batch_size, unit_of_measure, manufacture_date, expiration_date
 
-### 6. `frontend/src/components/batches/BatchComponentsDrawer.tsx`
+### 6. frontend/src/components/batches/BatchComponentsDrawer.tsx
 - Drawer showing batch components (lots used)
 - Button to add component: select lot (only Accepted), planned_quantity
 - Table of current components
 
-### 7. Update `frontend/src/hooks/useBatchesData.ts`
-- Add `useCreateBatch()` mutation
-- Add `useAddComponent()` mutation
+### 7. Update frontend/src/hooks/useBatchesData.ts
+- Add useCreateBatch() mutation
+- Add useAddComponent() mutation
 
 ### 8. Update QCPage.tsx:
 - Wire "Create QC Test" button to QCTestFormModal
@@ -489,14 +471,14 @@ You are working on the IMS project frontend (React 19 + TypeScript + Ant Design)
 - Wire "Create Batch" button to BatchFormModal
 - Add row click to open BatchComponentsDrawer
 
-Use the `@/` path alias for imports. Follow existing code patterns.
-```
+Use the @/ path alias for imports. Follow existing code patterns.
+````
 
 ---
 
 ## Task 10: Frontend - Users + Labels + Reports Enhancement
 
-```
+````
 You are working on the IMS project frontend (React 19 + TypeScript + Ant Design).
 
 **Your task:** Add CRUD forms for Users, Labels, and enhance Reports with real export.
@@ -512,34 +494,34 @@ You are working on the IMS project frontend (React 19 + TypeScript + Ant Design)
 
 **What to create:**
 
-### 1. `frontend/src/components/users/UserFormModal.tsx`
+### 1. frontend/src/components/users/UserFormModal.tsx
 - Modal for creating/editing a user
 - Create mode: username, email, password, role (Select from ROLE_TAG), is_active (Switch)
 - Edit mode: username (disabled), email, role, is_active (no password field)
 - Validation: email format, required fields
 
-### 2. Update `frontend/src/hooks/useUsersData.ts`
-- Add `useSaveUser()` mutation (create/update)
-- Add `useToggleUserActive()` mutation
+### 2. Update frontend/src/hooks/useUsersData.ts
+- Add useSaveUser() mutation (create/update)
+- Add useToggleUserActive() mutation
 
 ### 3. Update UsersPage.tsx:
 - Wire "Add User" button to UserFormModal (create mode)
 - Add Edit button per row to open UserFormModal (edit mode)
 - Add Lock/Unlock toggle button per row
 
-### 4. `frontend/src/components/labels/LabelTemplateFormModal.tsx`
+### 4. frontend/src/components/labels/LabelTemplateFormModal.tsx
 - Modal for creating/editing label templates
 - Fields: template_name, label_type (Select: Raw Material/API/Sample/Intermediate/Finished Product/Status), width, height, template_content (JSON editor or multi-select of fields)
 
-### 5. Update `frontend/src/hooks/useLabelsData.ts`
-- Add `useSaveTemplate()` mutation
+### 5. Update frontend/src/hooks/useLabelsData.ts
+- Add useSaveTemplate() mutation
 
 ### 6. Update LabelsPage.tsx:
 - Wire "Create Template" button to LabelTemplateFormModal
 - Add Edit/Delete action buttons per row
 
-### 7. `frontend/src/lib/exportUtils.ts`
-- Helper function `exportToCSV(data, columns, filename)` that:
+### 7. frontend/src/lib/exportUtils.ts
+- Helper function exportToCSV(data, columns, filename) that:
   - Takes array of objects, column definitions [{key, title}], and filename
   - Generates CSV content with headers
   - Creates Blob and triggers download
@@ -550,8 +532,8 @@ You are working on the IMS project frontend (React 19 + TypeScript + Ant Design)
 - Add date range filter (DatePicker.RangePicker) to filter report data
 - Add report type selector that changes the displayed data table
 
-Use the `@/` path alias for imports. Follow existing code patterns.
-```
+Use the @/ path alias for imports. Follow existing code patterns.
+````
 
 ---
 
