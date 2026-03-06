@@ -8,6 +8,8 @@ import transactionRoutes from "./modules/transactions/transaction.routes";
 import searchRoutes from "./modules/search/search.routes";
 import lotRoutes from "./modules/lots/lot.routes";
 import qcRoutes from "./modules/qc/qc.routes";
+import dashboardRoutes from "./modules/dashboard/dashboard.routes";
+import reportRoutes from "./modules/reports/reports.routes";
 
 dotenv.config();
 
@@ -45,6 +47,8 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/lots", lotRoutes);
 app.use("/api/qc", qcRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/reports", reportRoutes);
 
 // Khởi động server
 const start = async (): Promise<void> => {
