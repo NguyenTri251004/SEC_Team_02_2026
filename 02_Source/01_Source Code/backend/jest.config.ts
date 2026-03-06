@@ -8,8 +8,11 @@ const config: Config = {
   moduleFileExtensions: ["ts", "js", "json"],
   clearMocks: true,
   collectCoverageFrom: [
-    "src/modules/lots/**/*.ts",
-    "!src/modules/lots/**/*.types.ts",
+    "src/modules/**/*.ts",
+    "src/security/**/*.ts",
+    "!src/modules/**/*.types.ts",
+    "!src/modules/**/*.routes.ts",
+    "!src/**/__tests__/**",
   ],
 };
 

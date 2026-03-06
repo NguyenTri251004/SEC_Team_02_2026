@@ -1,5 +1,3 @@
-import assert from "node:assert/strict";
-import test from "node:test";
 import { PoolClient, QueryResult, QueryResultRow } from "pg";
 import pool from "../../../shared/db/pool";
 import * as productionService from "../production.service";
@@ -13,7 +11,10 @@ interface QueryCall {
 interface MockPoolClient {
   calls: QueryCall[];
   released: boolean;
-  query: (text: string, values?: readonly unknown[]) => Promise<QueryResult<QueryResultRow>>;
+  query: (
+    text: string,
+    values?: readonly unknown[],
+  ) => Promise<QueryResult<QueryResultRow>>;
   release: () => void;
 }
 
@@ -36,28 +37,32 @@ const toQueryResult = <T extends QueryResultRow>(rows: T[]): QueryResult<T> => {
 const setPoolQuery = (
   implementation: (
     text: string,
-    values?: readonly unknown[]
-  ) => Promise<QueryResult<QueryResultRow>>
+    values?: readonly unknown[],
+  ) => Promise<QueryResult<QueryResultRow>>,
 ): void => {
   pool.query = implementation as unknown as PoolQuery;
 };
 
 const setPoolConnect = (client: MockPoolClient): void => {
-  pool.connect = (async () => client as unknown as PoolClient) as unknown as PoolConnect;
+  pool.connect = (async () =>
+    client as unknown as PoolClient) as unknown as PoolConnect;
 };
 
 const createMockClient = (
   implementation: (
     text: string,
-    values?: readonly unknown[]
-  ) => Promise<QueryResult<QueryResultRow>>
+    values?: readonly unknown[],
+  ) => Promise<QueryResult<QueryResultRow>>,
 ): MockPoolClient => {
   const calls: QueryCall[] = [];
 
   return {
     calls,
     released: false,
-    async query(text: string, values?: readonly unknown[]): Promise<QueryResult<QueryResultRow>> {
+    async query(
+      text: string,
+      values?: readonly unknown[],
+    ): Promise<QueryResult<QueryResultRow>> {
       calls.push({ text, values });
       return implementation(text, values);
     },
@@ -67,12 +72,12 @@ const createMockClient = (
   };
 };
 
-test.afterEach(() => {
+afterEach(() => {
   pool.query = originalQuery;
   pool.connect = originalConnect;
 });
 
-test("createBatch inserts Planned status and returns hydrated batch details", async () => {
+it("createBatch inserts Planned status and returns hydrated batch details", async () => {
   const calls: QueryCall[] = [];
   const insertedBatch: ProductionBatch = {
     batch_id: "batch-001",
@@ -114,7 +119,10 @@ test("createBatch inserts Planned status and returns hydrated batch details", as
       return toQueryResult([{ ...insertedBatch }]);
     }
 
-    if (text.includes("FROM production_batches pb") && text.includes("WHERE pb.batch_id = $1")) {
+    if (
+      text.includes("FROM production_batches pb") &&
+      text.includes("WHERE pb.batch_id = $1")
+    ) {
       return toQueryResult([{ ...insertedBatch }]);
     }
 
@@ -135,9 +143,9 @@ test("createBatch inserts Planned status and returns hydrated batch details", as
     expiration_date: "2027-03-06",
   });
 
-  assert.equal(calls.length, 3);
-  assert.match(calls[0].text, /INSERT INTO production_batches/);
-  assert.deepEqual(calls[0].values, [
+  expect(calls.length).toBe(3);
+  expect(calls[0].text).toMatch(/INSERT INTO production_batches/);
+  expect(calls[0].values).toEqual([
     "batch-001",
     "MAT001",
     "B-2026-010",
@@ -146,12 +154,12 @@ test("createBatch inserts Planned status and returns hydrated batch details", as
     "2026-03-06",
     "2027-03-06",
   ]);
-  assert.equal(result.status, "Planned");
-  assert.equal(result.product_name, "Paracetamol Tablets");
-  assert.equal(result.components?.length, 1);
+  expect(result.status).toBe("Planned");
+  expect(result.product_name).toBe("Paracetamol Tablets");
+  expect(result.components?.length).toBe(1);
 });
 
-test("addComponent rejects expired lots before inserting", async () => {
+it("addComponent rejects expired lots before inserting", async () => {
   setPoolQuery(async (text) => {
     if (text === "SELECT * FROM production_batches WHERE batch_id = $1") {
       return toQueryResult([
@@ -189,25 +197,27 @@ test("addComponent rejects expired lots before inserting", async () => {
     throw new Error(`Unexpected query: ${text}`);
   });
 
-  await assert.rejects(
-    () =>
-      productionService.addComponent("batch-002", {
-        lot_id: "lot-001",
-        planned_quantity: 10,
-        unit_of_measure: "kg",
-        added_by: "USR-001",
-      }),
-    /Cannot add an expired lot as a batch component/
-  );
+  await expect(
+    productionService.addComponent("batch-002", {
+      lot_id: "lot-001",
+      planned_quantity: 10,
+      unit_of_measure: "kg",
+      added_by: "USR-001",
+    }),
+  ).rejects.toThrow(/Cannot add an expired lot as a batch component/);
 });
 
-test("consumeMaterial creates Usage transaction and depletes the lot when quantity reaches zero", async () => {
+it("consumeMaterial creates Usage transaction and depletes the lot when quantity reaches zero", async () => {
   const client = createMockClient(async (text) => {
     if (text === "BEGIN" || text === "COMMIT") {
       return toQueryResult([]);
     }
 
-    if (text.includes("SELECT * FROM production_batches WHERE batch_id = $1 FOR UPDATE")) {
+    if (
+      text.includes(
+        "SELECT * FROM production_batches WHERE batch_id = $1 FOR UPDATE",
+      )
+    ) {
       return toQueryResult([
         {
           batch_id: "batch-003",
@@ -224,7 +234,10 @@ test("consumeMaterial creates Usage transaction and depletes the lot when quanti
       ]);
     }
 
-    if (text.includes("FROM batch_components bc") && text.includes("FOR UPDATE")) {
+    if (
+      text.includes("FROM batch_components bc") &&
+      text.includes("FOR UPDATE")
+    ) {
       return toQueryResult([
         {
           component_id: "comp-003",
@@ -303,24 +316,32 @@ test("consumeMaterial creates Usage transaction and depletes the lot when quanti
     throw new Error(`Unexpected pool query after commit: ${text}`);
   });
 
-  const result = await productionService.consumeMaterial("batch-003", "comp-003", 10);
-
-  const lotUpdateCall = client.calls.find((call) => call.text.includes("UPDATE inventory_lots"));
-  const transactionCall = client.calls.find((call) =>
-    call.text.includes("INSERT INTO inventory_transactions")
+  const result = await productionService.consumeMaterial(
+    "batch-003",
+    "comp-003",
+    10,
   );
 
-  assert.ok(lotUpdateCall);
-  assert.deepEqual(lotUpdateCall.values, [0, "Depleted", "lot-003"]);
-  assert.ok(transactionCall);
-  assert.equal(transactionCall.values?.[1], "lot-003");
-  assert.equal(transactionCall.values?.[2], -10);
-  assert.equal(transactionCall.values?.[3], "kg");
-  assert.equal(transactionCall.values?.[4], "batch-003");
-  assert.equal(transactionCall.values?.[5], "Consumed for production batch B-2026-012");
-  assert.equal(transactionCall.values?.[6], "USR-004");
-  assert.match(String(transactionCall.values?.[0]), /.+/);
-  assert.equal(client.released, true);
-  assert.equal(result.actual_quantity, 10);
-  assert.equal(result.lot_status, "Depleted");
+  const lotUpdateCall = client.calls.find((call) =>
+    call.text.includes("UPDATE inventory_lots"),
+  );
+  const transactionCall = client.calls.find((call) =>
+    call.text.includes("INSERT INTO inventory_transactions"),
+  );
+
+  expect(lotUpdateCall).toBeTruthy();
+  expect(lotUpdateCall?.values).toEqual([0, "Depleted", "lot-003"]);
+  expect(transactionCall).toBeTruthy();
+  expect(transactionCall?.values?.[1]).toBe("lot-003");
+  expect(transactionCall?.values?.[2]).toBe(-10);
+  expect(transactionCall?.values?.[3]).toBe("kg");
+  expect(transactionCall?.values?.[4]).toBe("batch-003");
+  expect(transactionCall?.values?.[5]).toBe(
+    "Consumed for production batch B-2026-012",
+  );
+  expect(transactionCall?.values?.[6]).toBe("USR-004");
+  expect(String(transactionCall?.values?.[0])).toMatch(/.+/);
+  expect(client.released).toBe(true);
+  expect(result.actual_quantity).toBe(10);
+  expect(result.lot_status).toBe("Depleted");
 });
