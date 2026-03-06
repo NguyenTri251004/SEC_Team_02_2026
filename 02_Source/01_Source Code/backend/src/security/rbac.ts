@@ -23,6 +23,19 @@ export const PERMISSIONS = {
     update: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER],
     delete: [UserRole.ADMIN],
   },
+  lots: {
+    read: [
+      UserRole.ADMIN,
+      UserRole.INVENTORY_MANAGER,
+      UserRole.QUALITY_CONTROL,
+      UserRole.PRODUCTION,
+      UserRole.VIEWER,
+    ],
+    create: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER],
+    update: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER],
+    updateStatus: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER, UserRole.QUALITY_CONTROL],
+    delete: [UserRole.ADMIN],
+  },
   transactions: {
     read: [
       UserRole.ADMIN,

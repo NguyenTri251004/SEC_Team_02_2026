@@ -6,6 +6,7 @@ import esClient from "./shared/elasticsearch/client";
 import materialRoutes from "./modules/materials/material.routes";
 import transactionRoutes from "./modules/transactions/transaction.routes";
 import searchRoutes from "./modules/search/search.routes";
+import lotRoutes from "./modules/lots/lot.routes";
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.get("/health", (_req: Request, res: Response) => {
 app.use("/api/materials", materialRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/lots", lotRoutes);
 
 // Khởi động server
 const start = async (): Promise<void> => {
@@ -70,6 +72,8 @@ const start = async (): Promise<void> => {
     console.log(`  POST /api/materials`);
     console.log(`  GET  /api/transactions`);
     console.log(`  POST /api/transactions`);
+    console.log(`  GET  /api/lots`);
+    console.log(`  POST /api/lots`);
     console.log(`  GET  /api/search?q=keyword`);
     console.log(`  POST /api/search/index (Index all materials)`);
   });
