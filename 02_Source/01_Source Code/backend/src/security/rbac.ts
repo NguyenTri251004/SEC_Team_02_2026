@@ -102,6 +102,24 @@ export const PERMISSIONS = {
     update: [UserRole.ADMIN, UserRole.PRODUCTION],
     consume: [UserRole.ADMIN, UserRole.PRODUCTION],
   },
+  labels: {
+    read: [
+      UserRole.ADMIN,
+      UserRole.INVENTORY_MANAGER,
+      UserRole.QUALITY_CONTROL,
+      UserRole.PRODUCTION,
+      UserRole.VIEWER,
+    ],
+    create: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER],
+    update: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER],
+    delete: [UserRole.ADMIN],
+    generate: [
+      UserRole.ADMIN,
+      UserRole.INVENTORY_MANAGER,
+      UserRole.QUALITY_CONTROL,
+      UserRole.PRODUCTION,
+    ],
+  },
   config: {
     read: [UserRole.ADMIN],
     update: [UserRole.ADMIN],
