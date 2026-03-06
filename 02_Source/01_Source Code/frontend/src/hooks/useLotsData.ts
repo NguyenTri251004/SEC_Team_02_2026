@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
-import type { InventoryLot } from "../types";
+import type { InventoryLot, LotStatus } from "../types";
 
 const mockData: InventoryLot[] = [
   {
@@ -83,6 +83,35 @@ export const useLots = () => {
       } catch {
         return mockData;
       }
+    },
+  });
+};
+
+export const useSaveLot = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ isEditing, data }: { isEditing: boolean; data: Partial<InventoryLot> }) => {
+      if (isEditing) {
+        return api.put(`/api/lots/${data.lot_id}`, data);
+      }
+      return api.post("/api/lots", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lots"] });
+    },
+  });
+};
+
+export const useUpdateLotStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ lotId, status, reason }: { lotId: string; status: LotStatus; reason?: string }) => {
+      return api.patch(`/api/lots/${lotId}/status`, { status, reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lots"] });
     },
   });
 };

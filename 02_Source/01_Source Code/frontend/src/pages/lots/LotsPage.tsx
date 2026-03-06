@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Button, Input, Tag } from "antd";
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { Button, Input, Tag, Space } from "antd";
+import { PlusOutlined, SearchOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
 import DashboardPage from "../dashboard/DashboardPage";
 import { DataTableCard } from "../../components/dashboard";
+import { LotFormModal } from "../../components/lots/LotFormModal";
+import { LotDetailDrawer } from "../../components/lots/LotDetailDrawer";
 import { useLots } from "../../hooks/useLotsData";
 import { SECTION_GAP, LOT_STATUS_TAG } from "../../constants/theme";
 import type { InventoryLot } from "../../types";
@@ -14,12 +16,26 @@ export default function LotsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: lots = [], isLoading } = useLots();
 
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingLot, setEditingLot] = useState<InventoryLot | null>(null);
+  const [detailLot, setDetailLot] = useState<InventoryLot | null>(null);
+
   const filteredData = lots.filter(
     (lot) =>
       lot.lot_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (lot.material_name ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       lot.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  const handleCreate = () => {
+    setEditingLot(null);
+    setFormOpen(true);
+  };
+
+  const handleEdit = (lot: InventoryLot) => {
+    setEditingLot(lot);
+    setFormOpen(true);
+  };
 
   const columns: ColumnsType<InventoryLot> = [
     {
@@ -107,6 +123,28 @@ export default function LotsPage() {
       width: 80,
       render: (v: boolean) => (v ? <Tag color="purple">Sample</Tag> : null),
     },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 100,
+      fixed: "right",
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="text"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => setDetailLot(record)}
+          />
+          <Button
+            type="text"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          />
+        </Space>
+      ),
+    },
   ];
 
   return (
@@ -114,7 +152,7 @@ export default function LotsPage() {
       title="Inventory Lots"
       subtitle="Track lot lifecycle, expiry dates, and quality status"
       actions={
-        <Button type="primary" icon={<PlusOutlined />}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           Receive New Lot
         </Button>
       }
@@ -137,9 +175,20 @@ export default function LotsPage() {
           rowKey="lot_id"
           loading={isLoading}
           pagination={{ pageSize: 10 }}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1300 }}
         />
       </div>
+
+      <LotFormModal
+        isOpen={formOpen}
+        onClose={() => setFormOpen(false)}
+        initialData={editingLot}
+      />
+
+      <LotDetailDrawer
+        lot={detailLot}
+        onClose={() => setDetailLot(null)}
+      />
     </DashboardPage>
   );
 }
