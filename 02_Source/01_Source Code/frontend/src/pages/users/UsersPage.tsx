@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Button, Input, Tag, Badge } from "antd";
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { Button, Input, Tag, Badge, Space, message } from "antd";
+import { PlusOutlined, SearchOutlined, EditOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
 import DashboardPage from "../dashboard/DashboardPage";
 import { DataTableCard } from "../../components/dashboard";
-import { useUsers } from "../../hooks/useUsersData";
+import { UserFormModal } from "../../components/users/UserFormModal";
+import { useUsers, useToggleUserActive } from "../../hooks/useUsersData";
 import { SECTION_GAP } from "../../constants/theme";
 import { ROLE_TAG } from "../../constants/roles";
 import type { User, UserRole } from "../../types";
@@ -14,6 +15,29 @@ import type { User, UserRole } from "../../types";
 export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: users = [], isLoading } = useUsers();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const { mutateAsync: toggleActive } = useToggleUserActive();
+
+  const handleCreate = () => {
+    setEditingUser(null);
+    setFormOpen(true);
+  };
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
+    setFormOpen(true);
+  };
+
+  const handleToggleActive = async (user: User) => {
+    try {
+      await toggleActive(user.user_id);
+      message.success(`User ${user.is_active ? "locked" : "unlocked"} successfully!`);
+    } catch {
+      message.error("Failed to toggle user status.");
+    }
+  };
 
   const filteredData = users.filter(
     (u) =>
@@ -88,6 +112,28 @@ export default function UsersPage() {
       render: (v: string) => dayjs(v).format("YYYY-MM-DD"),
       sorter: (a, b) => dayjs(a.created_at).unix() - dayjs(b.created_at).unix(),
     },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 100,
+      fixed: "right",
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="text"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          />
+          <Button
+            type="text"
+            size="small"
+            icon={record.is_active ? <LockOutlined /> : <UnlockOutlined />}
+            onClick={() => handleToggleActive(record)}
+          />
+        </Space>
+      ),
+    },
   ];
 
   return (
@@ -95,7 +141,7 @@ export default function UsersPage() {
       title="User Management"
       subtitle="Manage system users and role assignments"
       actions={
-        <Button type="primary" icon={<PlusOutlined />}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           Add User
         </Button>
       }
@@ -118,9 +164,15 @@ export default function UsersPage() {
           rowKey="user_id"
           loading={isLoading}
           pagination={{ pageSize: 10 }}
-          scroll={{ x: 900 }}
+          scroll={{ x: 1000 }}
         />
       </div>
+
+      <UserFormModal
+        isOpen={formOpen}
+        onClose={() => setFormOpen(false)}
+        initialData={editingUser}
+      />
     </DashboardPage>
   );
 }

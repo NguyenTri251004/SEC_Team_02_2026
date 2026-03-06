@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
 import type { User } from "../types";
 
@@ -72,6 +72,35 @@ export const useUsers = () => {
       } catch {
         return mockData;
       }
+    },
+  });
+};
+
+export const useSaveUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ isEditing, data }: { isEditing: boolean; data: Partial<User> & { password?: string } }) => {
+      if (isEditing) {
+        return api.put(`/api/admin/users/${data.user_id}`, data);
+      }
+      return api.post("/api/admin/users", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+};
+
+export const useToggleUserActive = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      return api.patch(`/api/admin/users/${userId}/toggle-active`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 };

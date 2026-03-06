@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Button, Input, Tag } from "antd";
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { Button, Input, Tag, Space, Popconfirm, message } from "antd";
+import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
 import DashboardPage from "../dashboard/DashboardPage";
 import { DataTableCard } from "../../components/dashboard";
-import { useLabelTemplates } from "../../hooks/useLabelsData";
+import { LabelTemplateFormModal } from "../../components/labels/LabelTemplateFormModal";
+import { useLabelTemplates, useDeleteTemplate } from "../../hooks/useLabelsData";
 import { SECTION_GAP } from "../../constants/theme";
 import type { LabelTemplate } from "../../types";
 
@@ -18,6 +19,29 @@ const LABEL_TYPE_COLOR: Record<string, string> = {
 export default function LabelsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: templates = [], isLoading } = useLabelTemplates();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<LabelTemplate | null>(null);
+  const { mutateAsync: deleteTemplate } = useDeleteTemplate();
+
+  const handleCreate = () => {
+    setEditingTemplate(null);
+    setFormOpen(true);
+  };
+
+  const handleEdit = (template: LabelTemplate) => {
+    setEditingTemplate(template);
+    setFormOpen(true);
+  };
+
+  const handleDelete = async (templateId: string) => {
+    try {
+      await deleteTemplate(templateId);
+      message.success("Template deleted successfully!");
+    } catch {
+      message.error("Failed to delete template.");
+    }
+  };
 
   const filteredData = templates.filter(
     (t) =>
@@ -84,6 +108,37 @@ export default function LabelsPage() {
       render: (v: string) => dayjs(v).format("YYYY-MM-DD"),
       sorter: (a, b) => dayjs(a.modified_date).unix() - dayjs(b.modified_date).unix(),
     },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 100,
+      fixed: "right",
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="text"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          />
+          <Popconfirm
+            title="Delete this template?"
+            description="This action cannot be undone."
+            onConfirm={() => handleDelete(record.template_id)}
+            okText="Delete"
+            cancelText="Cancel"
+            okButtonProps={{ danger: true }}
+          >
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
   ];
 
   return (
@@ -91,7 +146,7 @@ export default function LabelsPage() {
       title="Label Templates"
       subtitle="Manage QR code and barcode label templates for lot identification"
       actions={
-        <Button type="primary" icon={<PlusOutlined />}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           Create Template
         </Button>
       }
@@ -114,9 +169,15 @@ export default function LabelsPage() {
           rowKey="template_id"
           loading={isLoading}
           pagination={{ pageSize: 10 }}
-          scroll={{ x: 900 }}
+          scroll={{ x: 1000 }}
         />
       </div>
+
+      <LabelTemplateFormModal
+        isOpen={formOpen}
+        onClose={() => setFormOpen(false)}
+        initialData={editingTemplate}
+      />
     </DashboardPage>
   );
 }

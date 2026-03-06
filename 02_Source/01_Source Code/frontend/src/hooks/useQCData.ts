@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
 import type { QCTest } from "../types";
 
@@ -73,6 +73,66 @@ export const useQCTests = () => {
       } catch {
         return mockData;
       }
+    },
+  });
+};
+
+export const useCreateQCTest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: Partial<QCTest>) => {
+      return api.post("/api/qc/tests", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
+    },
+  });
+};
+
+export const useUpdateTestResult = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      testId,
+      data,
+    }: {
+      testId: string;
+      data: { test_result: string; result_status: string; verified_by: string | null };
+    }) => {
+      return api.put(`/api/qc/tests/${testId}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
+    },
+  });
+};
+
+export const useApproveLot = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ lotId }: { lotId: string }) => {
+      return api.post(`/api/qc/approve/${lotId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
+      queryClient.invalidateQueries({ queryKey: ["lots"] });
+    },
+  });
+};
+
+export const useRejectLot = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ lotId, reason }: { lotId: string; reason: string }) => {
+      return api.post(`/api/qc/reject/${lotId}`, { reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
+      queryClient.invalidateQueries({ queryKey: ["lots"] });
     },
   });
 };

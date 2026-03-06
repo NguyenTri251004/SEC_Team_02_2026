@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Row, Col, Select, Button, Space, Statistic, Table, Tag } from "antd";
+import { Card, Row, Col, Select, Button, Space, Statistic, Table, Tag, DatePicker, message } from "antd";
 import {
   DownloadOutlined,
   FileExcelOutlined,
@@ -10,9 +10,11 @@ import {
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
+import type { Dayjs } from "dayjs";
 
 import DashboardPage from "../dashboard/DashboardPage";
 import { SECTION_GAP, CARD_GAP, LOT_STATUS_TAG, TXN_TYPE_TAG } from "../../constants/theme";
+import { exportToCSV } from "../../lib/exportUtils";
 
 interface ReportSummaryItem {
   key: string;
@@ -71,6 +73,38 @@ const activityColumns: ColumnsType<(typeof recentActivity)[0]> = [
 
 export default function ReportsPage() {
   const [reportType, setReportType] = useState("inventory");
+  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+
+  const handleExportCSV = () => {
+    if (reportType === "inventory") {
+      exportToCSV(
+        inventorySummary as unknown as Record<string, unknown>[],
+        [
+          { key: "category", title: "Category" },
+          { key: "count", title: "Quantity (units)" },
+          { key: "status", title: "Status" },
+        ],
+        "inventory-report",
+      );
+      message.success("Inventory report exported!");
+    } else {
+      exportToCSV(
+        recentActivity as unknown as Record<string, unknown>[],
+        [
+          { key: "date", title: "Date" },
+          { key: "type", title: "Type" },
+          { key: "count", title: "Count" },
+          { key: "material", title: "Material" },
+        ],
+        `${reportType}-report`,
+      );
+      message.success("Report exported!");
+    }
+  };
+
+  const handleExportPDF = () => {
+    message.info("PDF export coming soon");
+  };
 
   return (
     <DashboardPage
@@ -89,8 +123,13 @@ export default function ReportsPage() {
               { value: "qc", label: "QC Summary" },
             ]}
           />
-          <Button icon={<FileExcelOutlined />}>Export Excel</Button>
-          <Button icon={<FilePdfOutlined />}>Export PDF</Button>
+          <DatePicker.RangePicker
+            value={dateRange}
+            onChange={(dates) => setDateRange(dates)}
+            style={{ width: 260 }}
+          />
+          <Button icon={<FileExcelOutlined />} onClick={handleExportCSV}>Export Excel</Button>
+          <Button icon={<FilePdfOutlined />} onClick={handleExportPDF}>Export PDF</Button>
         </Space>
       }
     >
@@ -137,34 +176,37 @@ export default function ReportsPage() {
       </Row>
 
       <Row gutter={CARD_GAP} style={{ marginTop: SECTION_GAP }}>
-        <Col xs={24} lg={12}>
-          <Card title="Inventory Summary by Category" size="small">
-            <Table
-              columns={summaryColumns}
-              dataSource={inventorySummary}
-              pagination={false}
+        {reportType === "inventory" ? (
+          <Col xs={24}>
+            <Card title="Inventory Summary by Category" size="small">
+              <Table
+                columns={summaryColumns}
+                dataSource={inventorySummary}
+                pagination={false}
+                size="small"
+              />
+            </Card>
+          </Col>
+        ) : (
+          <Col xs={24}>
+            <Card
+              title="Recent Activity"
               size="small"
-            />
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card
-            title="Recent Activity"
-            size="small"
-            extra={
-              <Button type="link" icon={<DownloadOutlined />} size="small">
-                Download
-              </Button>
-            }
-          >
-            <Table
-              columns={activityColumns}
-              dataSource={recentActivity}
-              pagination={false}
-              size="small"
-            />
-          </Card>
-        </Col>
+              extra={
+                <Button type="link" icon={<DownloadOutlined />} size="small" onClick={handleExportCSV}>
+                  Download
+                </Button>
+              }
+            >
+              <Table
+                columns={activityColumns}
+                dataSource={recentActivity}
+                pagination={false}
+                size="small"
+              />
+            </Card>
+          </Col>
+        )}
       </Row>
     </DashboardPage>
   );
