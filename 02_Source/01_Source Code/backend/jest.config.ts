@@ -10,6 +10,8 @@ const config: Config = {
   collectCoverageFrom: [
     "src/modules/lots/**/*.ts",
     "!src/modules/lots/**/*.types.ts",
+    "src/modules/qc/**/*.ts",
+    "!src/modules/qc/**/*.types.ts",
   ],
 };
 
