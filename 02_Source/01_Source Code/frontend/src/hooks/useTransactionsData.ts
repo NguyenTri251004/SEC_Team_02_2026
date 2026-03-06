@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
 import type { InventoryTransaction } from "../types";
 
@@ -87,6 +87,20 @@ export const useTransactions = () => {
       } catch {
         return mockData;
       }
+    },
+  });
+};
+
+export const useRecordTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: Partial<InventoryTransaction>) => {
+      return api.post("/api/transactions", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["lots"] });
     },
   });
 };

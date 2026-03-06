@@ -35,7 +35,11 @@ export const PERMISSIONS = {
     ],
     create: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER],
     update: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER],
-    updateStatus: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER, UserRole.QUALITY_CONTROL],
+    updateStatus: [
+      UserRole.ADMIN,
+      UserRole.INVENTORY_MANAGER,
+      UserRole.QUALITY_CONTROL,
+    ],
     delete: [UserRole.ADMIN],
   },
   transactions: {
@@ -46,11 +50,7 @@ export const PERMISSIONS = {
       UserRole.PRODUCTION,
       UserRole.VIEWER,
     ],
-    create: [
-      UserRole.ADMIN,
-      UserRole.INVENTORY_MANAGER,
-      UserRole.PRODUCTION,
-    ],
+    create: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER, UserRole.PRODUCTION],
     update: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER],
     delete: [UserRole.ADMIN],
   },
@@ -79,6 +79,18 @@ export const PERMISSIONS = {
     update: [UserRole.ADMIN],
     delete: [UserRole.ADMIN],
   },
+  qc: {
+    read: [
+      UserRole.ADMIN,
+      UserRole.INVENTORY_MANAGER,
+      UserRole.QUALITY_CONTROL,
+      UserRole.VIEWER,
+    ],
+    create: [UserRole.ADMIN, UserRole.QUALITY_CONTROL],
+    update: [UserRole.ADMIN, UserRole.QUALITY_CONTROL],
+    approve: [UserRole.ADMIN, UserRole.QUALITY_CONTROL],
+    reject: [UserRole.ADMIN, UserRole.QUALITY_CONTROL],
+  },
   production: {
     read: [
       UserRole.ADMIN,
@@ -104,7 +116,7 @@ type PermissionAction<R extends PermissionResource> = Extract<
 
 const getAllowedRoles = (
   resource: PermissionResource,
-  action: string
+  action: string,
 ): UserRole[] => {
   const resourcePermissions = PERMISSIONS[resource] as PermissionActions;
   return resourcePermissions[action] ?? [];
@@ -115,7 +127,7 @@ const getAllowedRoles = (
  */
 export const hasRole = (
   userRoles: string[],
-  requiredRole: UserRole
+  requiredRole: UserRole,
 ): boolean => {
   return userRoles.includes(requiredRole);
 };
@@ -125,7 +137,7 @@ export const hasRole = (
  */
 export const hasAnyRole = (
   userRoles: string[],
-  requiredRoles: UserRole[]
+  requiredRoles: UserRole[],
 ): boolean => {
   return requiredRoles.some((role) => userRoles.includes(role));
 };
@@ -135,7 +147,7 @@ export const hasAnyRole = (
  */
 export const hasAllRoles = (
   userRoles: string[],
-  requiredRoles: UserRole[]
+  requiredRoles: UserRole[],
 ): boolean => {
   return requiredRoles.every((role) => userRoles.includes(role));
 };
@@ -174,7 +186,7 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
  */
 export const requirePermission = <R extends PermissionResource>(
   resource: R,
-  action: PermissionAction<R>
+  action: PermissionAction<R>,
 ) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -212,7 +224,7 @@ export const adminOnly = requireRole(UserRole.ADMIN);
  */
 export const inventoryManagerOrAdmin = requireRole(
   UserRole.ADMIN,
-  UserRole.INVENTORY_MANAGER
+  UserRole.INVENTORY_MANAGER,
 );
 
 /**
@@ -221,7 +233,7 @@ export const inventoryManagerOrAdmin = requireRole(
 export const checkPermission = <R extends PermissionResource>(
   userRoles: string[],
   resource: R,
-  action: PermissionAction<R>
+  action: PermissionAction<R>,
 ): boolean => {
   const allowedRoles = getAllowedRoles(resource, String(action));
   return hasAnyRole(userRoles, allowedRoles);

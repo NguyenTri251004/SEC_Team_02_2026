@@ -7,6 +7,9 @@ import materialRoutes from "./modules/materials/material.routes";
 import transactionRoutes from "./modules/transactions/transaction.routes";
 import searchRoutes from "./modules/search/search.routes";
 import lotRoutes from "./modules/lots/lot.routes";
+import qcRoutes from "./modules/qc/qc.routes";
+import dashboardRoutes from "./modules/dashboard/dashboard.routes";
+import reportRoutes from "./modules/reports/reports.routes";
 import productionRoutes from "./modules/production/production.routes";
 
 dotenv.config();
@@ -20,7 +23,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization",
   );
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   if (req.method === "OPTIONS") {
@@ -44,6 +47,9 @@ app.use("/api/materials", materialRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/lots", lotRoutes);
+app.use("/api/qc", qcRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/reports", reportRoutes);
 app.use("/api/production", productionRoutes);
 
 // Khởi động server
@@ -76,6 +82,12 @@ const start = async (): Promise<void> => {
     console.log(`  POST /api/transactions`);
     console.log(`  GET  /api/lots`);
     console.log(`  POST /api/lots`);
+    console.log(`  GET  /api/qc/tests`);
+    console.log(`  POST /api/qc/tests`);
+    console.log(`  GET  /api/qc/queue`);
+    console.log(`  GET  /api/qc/stats`);
+    console.log(`  POST /api/qc/approve/:lotId`);
+    console.log(`  POST /api/qc/reject/:lotId`);
     console.log(`  GET  /api/production/batches`);
     console.log(`  POST /api/production/batches`);
     console.log(`  GET  /api/search?q=keyword`);
