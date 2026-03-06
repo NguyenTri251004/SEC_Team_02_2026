@@ -77,6 +77,18 @@ export const PERMISSIONS = {
     update: [UserRole.ADMIN],
     delete: [UserRole.ADMIN],
   },
+  qc: {
+    read: [
+      UserRole.ADMIN,
+      UserRole.INVENTORY_MANAGER,
+      UserRole.QUALITY_CONTROL,
+      UserRole.VIEWER,
+    ],
+    create: [UserRole.ADMIN, UserRole.QUALITY_CONTROL],
+    update: [UserRole.ADMIN, UserRole.QUALITY_CONTROL],
+    approve: [UserRole.ADMIN, UserRole.QUALITY_CONTROL],
+    reject: [UserRole.ADMIN, UserRole.QUALITY_CONTROL],
+  },
   config: {
     read: [UserRole.ADMIN],
     update: [UserRole.ADMIN],
