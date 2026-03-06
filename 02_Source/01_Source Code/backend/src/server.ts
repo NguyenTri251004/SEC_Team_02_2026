@@ -11,6 +11,7 @@ import qcRoutes from "./modules/qc/qc.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import reportRoutes from "./modules/reports/reports.routes";
 import productionRoutes from "./modules/production/production.routes";
+import adminRoutes from "./modules/admin/admin.routes";
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use("/api/qc", qcRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/production", productionRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Khởi động server
 const start = async (): Promise<void> => {
@@ -92,6 +94,8 @@ const start = async (): Promise<void> => {
     console.log(`  POST /api/production/batches`);
     console.log(`  GET  /api/search?q=keyword`);
     console.log(`  POST /api/search/index (Index all materials)`);
+    console.log(`  GET  /api/admin/users (Admin only)`);
+    console.log(`  GET  /api/admin/stats (Admin only)`);
   });
 };
 
