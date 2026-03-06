@@ -9,6 +9,8 @@ export enum UserRole {
   VIEWER = "viewer",
 }
 
+type PermissionActions = Record<string, UserRole[]>;
+
 // Permission matrix - Định nghĩa quyền truy cập cho từng resource
 export const PERMISSIONS = {
   materials: {
@@ -77,10 +79,35 @@ export const PERMISSIONS = {
     update: [UserRole.ADMIN],
     delete: [UserRole.ADMIN],
   },
+  production: {
+    read: [
+      UserRole.ADMIN,
+      UserRole.INVENTORY_MANAGER,
+      UserRole.PRODUCTION,
+      UserRole.VIEWER,
+    ],
+    create: [UserRole.ADMIN, UserRole.PRODUCTION],
+    update: [UserRole.ADMIN, UserRole.PRODUCTION],
+    consume: [UserRole.ADMIN, UserRole.PRODUCTION],
+  },
   config: {
     read: [UserRole.ADMIN],
     update: [UserRole.ADMIN],
   },
+} satisfies Record<string, PermissionActions>;
+
+type PermissionResource = keyof typeof PERMISSIONS;
+type PermissionAction<R extends PermissionResource> = Extract<
+  keyof (typeof PERMISSIONS)[R],
+  string
+>;
+
+const getAllowedRoles = (
+  resource: PermissionResource,
+  action: string
+): UserRole[] => {
+  const resourcePermissions = PERMISSIONS[resource] as PermissionActions;
+  return resourcePermissions[action] ?? [];
 };
 
 /**
@@ -145,9 +172,9 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
 /**
  * Middleware kiểm tra quyền truy cập resource
  */
-export const requirePermission = (
-  resource: keyof typeof PERMISSIONS,
-  action: string
+export const requirePermission = <R extends PermissionResource>(
+  resource: R,
+  action: PermissionAction<R>
 ) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -159,12 +186,12 @@ export const requirePermission = (
     }
 
     const userRoles = req.user.roles || [];
-    const allowedRoles = (PERMISSIONS[resource] as any)[action] || [];
+    const allowedRoles = getAllowedRoles(resource, String(action));
 
     if (!hasAnyRole(userRoles, allowedRoles)) {
       res.status(403).json({
         success: false,
-        error: `Forbidden - No permission to ${action} ${resource}`,
+        error: `Forbidden - No permission to ${String(action)} ${String(resource)}`,
         required_roles: allowedRoles,
         user_roles: userRoles,
       });
@@ -191,11 +218,11 @@ export const inventoryManagerOrAdmin = requireRole(
 /**
  * Helper function: Kiểm tra user có permission không (không phải middleware)
  */
-export const checkPermission = (
+export const checkPermission = <R extends PermissionResource>(
   userRoles: string[],
-  resource: keyof typeof PERMISSIONS,
-  action: string
+  resource: R,
+  action: PermissionAction<R>
 ): boolean => {
-  const allowedRoles = (PERMISSIONS[resource] as any)[action] || [];
+  const allowedRoles = getAllowedRoles(resource, String(action));
   return hasAnyRole(userRoles, allowedRoles);
 };

@@ -7,6 +7,7 @@ import materialRoutes from "./modules/materials/material.routes";
 import transactionRoutes from "./modules/transactions/transaction.routes";
 import searchRoutes from "./modules/search/search.routes";
 import lotRoutes from "./modules/lots/lot.routes";
+import productionRoutes from "./modules/production/production.routes";
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.use("/api/materials", materialRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/lots", lotRoutes);
+app.use("/api/production", productionRoutes);
 
 // Khởi động server
 const start = async (): Promise<void> => {
@@ -74,6 +76,8 @@ const start = async (): Promise<void> => {
     console.log(`  POST /api/transactions`);
     console.log(`  GET  /api/lots`);
     console.log(`  POST /api/lots`);
+    console.log(`  GET  /api/production/batches`);
+    console.log(`  POST /api/production/batches`);
     console.log(`  GET  /api/search?q=keyword`);
     console.log(`  POST /api/search/index (Index all materials)`);
   });
