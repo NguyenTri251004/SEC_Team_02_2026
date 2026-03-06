@@ -54,7 +54,9 @@ describe("RBAC - Lots Permissions", () => {
     // UPDATE STATUS: admin + inventory_manager + quality_control
     it("updateStatus should be allowed for admin, inventory_manager, and quality_control", () => {
       expect(PERMISSIONS.lots.updateStatus).toContain(UserRole.ADMIN);
-      expect(PERMISSIONS.lots.updateStatus).toContain(UserRole.INVENTORY_MANAGER);
+      expect(PERMISSIONS.lots.updateStatus).toContain(
+        UserRole.INVENTORY_MANAGER,
+      );
       expect(PERMISSIONS.lots.updateStatus).toContain(UserRole.QUALITY_CONTROL);
       expect(PERMISSIONS.lots.updateStatus).not.toContain(UserRole.PRODUCTION);
       expect(PERMISSIONS.lots.updateStatus).not.toContain(UserRole.VIEWER);
@@ -89,11 +91,15 @@ describe("RBAC - Lots Permissions", () => {
 
   describe("hasAnyRole", () => {
     it("should return true if user has at least one required role", () => {
-      expect(hasAnyRole(["viewer"], [UserRole.VIEWER, UserRole.ADMIN])).toBe(true);
+      expect(hasAnyRole(["viewer"], [UserRole.VIEWER, UserRole.ADMIN])).toBe(
+        true,
+      );
     });
 
     it("should return false if user has none of the required roles", () => {
-      expect(hasAnyRole(["viewer"], [UserRole.ADMIN, UserRole.INVENTORY_MANAGER])).toBe(false);
+      expect(
+        hasAnyRole(["viewer"], [UserRole.ADMIN, UserRole.INVENTORY_MANAGER]),
+      ).toBe(false);
     });
 
     it("should return false for empty user roles", () => {
@@ -104,12 +110,17 @@ describe("RBAC - Lots Permissions", () => {
   describe("hasAllRoles", () => {
     it("should return true if user has all required roles", () => {
       expect(
-        hasAllRoles(["admin", "inventory_manager"], [UserRole.ADMIN, UserRole.INVENTORY_MANAGER])
+        hasAllRoles(
+          ["admin", "inventory_manager"],
+          [UserRole.ADMIN, UserRole.INVENTORY_MANAGER],
+        ),
       ).toBe(true);
     });
 
     it("should return false if user is missing a required role", () => {
-      expect(hasAllRoles(["admin"], [UserRole.ADMIN, UserRole.INVENTORY_MANAGER])).toBe(false);
+      expect(
+        hasAllRoles(["admin"], [UserRole.ADMIN, UserRole.INVENTORY_MANAGER]),
+      ).toBe(false);
     });
   });
 
@@ -127,15 +138,21 @@ describe("RBAC - Lots Permissions", () => {
     });
 
     it("inventory_manager should have lots:create permission", () => {
-      expect(checkPermission(["inventory_manager"], "lots", "create")).toBe(true);
+      expect(checkPermission(["inventory_manager"], "lots", "create")).toBe(
+        true,
+      );
     });
 
     it("quality_control should have lots:updateStatus permission", () => {
-      expect(checkPermission(["quality_control"], "lots", "updateStatus")).toBe(true);
+      expect(checkPermission(["quality_control"], "lots", "updateStatus")).toBe(
+        true,
+      );
     });
 
     it("production should NOT have lots:updateStatus permission", () => {
-      expect(checkPermission(["production"], "lots", "updateStatus")).toBe(false);
+      expect(checkPermission(["production"], "lots", "updateStatus")).toBe(
+        false,
+      );
     });
 
     it("production should NOT have lots:delete permission", () => {
@@ -147,7 +164,9 @@ describe("RBAC - Lots Permissions", () => {
     });
 
     it("should return false for non-existent action", () => {
-      expect(checkPermission(["admin"], "lots", "nonexistent")).toBe(false);
+      expect(checkPermission(["admin"], "lots", "nonexistent" as any)).toBe(
+        false,
+      );
     });
   });
 });

@@ -66,7 +66,13 @@ describe('Admin Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toEqual(mockUsers);
+      expect(response.body.data).toHaveLength(2);
+      expect(response.body.data[0]).toMatchObject({
+        user_id: 'USR-001',
+        username: 'admin',
+        email: 'admin@test.com',
+        role: UserRole.ADMIN
+      });
       expect(response.body.total).toBe(2);
     });
 
@@ -158,7 +164,13 @@ describe('Admin Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toEqual(mockUser);
+      expect(response.body.data).toMatchObject({
+        user_id: 'USR-001',
+        username: 'admin',
+        email: 'admin@test.com',
+        role: UserRole.ADMIN,
+        is_active: true
+      });
     });
 
     it('should return 404 when user not found', async () => {

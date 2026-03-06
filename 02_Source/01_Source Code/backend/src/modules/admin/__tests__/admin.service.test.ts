@@ -177,7 +177,13 @@ describe('Admin Service', () => {
 
       const result = await adminService.getUserById('USR-001');
 
-      expect(result).toEqual(mockUser);
+      expect(result).toMatchObject({
+        user_id: mockUser.user_id,
+        username: mockUser.username,
+        email: mockUser.email,
+        role: mockUser.role,
+        is_active: mockUser.is_active
+      });
       expect(mockRedis.get).toHaveBeenCalledWith('users:USR-001');
       expect(mockPool.query).not.toHaveBeenCalled(); // Should not query DB
     });

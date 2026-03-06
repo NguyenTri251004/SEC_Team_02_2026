@@ -1,5 +1,3 @@
-import assert from "node:assert/strict";
-import test from "node:test";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import router from "../production.routes";
 
@@ -22,7 +20,8 @@ type Mutable<T> = {
 
 type ProductionServiceModule = Mutable<typeof import("../production.service")>;
 
-const serviceModule = require("../production.service") as ProductionServiceModule;
+const serviceModule =
+  require("../production.service") as ProductionServiceModule;
 
 const originalCreateBatch = serviceModule.createBatch;
 const originalUpdateBatchStatus = serviceModule.updateBatchStatus;
@@ -57,12 +56,12 @@ const createResponse = (): MockResponse => {
 
 const noopNext: NextFunction = () => undefined;
 
-test.afterEach(() => {
+afterEach(() => {
   serviceModule.createBatch = originalCreateBatch;
   serviceModule.updateBatchStatus = originalUpdateBatchStatus;
 });
 
-test("PATCH /batches/:id/status returns 400 for invalid status values", async () => {
+it("PATCH /batches/:id/status returns 400 for invalid status values", async () => {
   const handler = getRouteHandler("patch", "/batches/:id/status");
   const req = {
     params: { id: "batch-100" },
@@ -72,13 +71,15 @@ test("PATCH /batches/:id/status returns 400 for invalid status values", async ()
 
   await handler(req, res as Response, noopNext);
 
-  assert.equal(res.statusCode, 400);
-  assert.deepEqual(res.body, { success: false, error: "Status khong hop le" });
+  expect(res.statusCode).toBe(400);
+  expect(res.body).toEqual({ success: false, error: "Status khong hop le" });
 });
 
 test("POST /batches maps duplicate key errors to 409", async () => {
   const handler = getRouteHandler("post", "/batches");
-  const duplicateError = Object.assign(new Error("duplicate key"), { code: "23505" });
+  const duplicateError = Object.assign(new Error("duplicate key"), {
+    code: "23505",
+  });
 
   serviceModule.createBatch = async () => {
     throw duplicateError;
@@ -99,8 +100,8 @@ test("POST /batches maps duplicate key errors to 409", async () => {
 
   await handler(req, res as Response, noopNext);
 
-  assert.equal(res.statusCode, 409);
-  assert.deepEqual(res.body, {
+  expect(res.statusCode).toBe(409);
+  expect(res.body).toEqual({
     success: false,
     error: "batch_id hoac batch_number da ton tai",
   });
