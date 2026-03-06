@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
 import type { LabelTemplate } from "../types";
 
@@ -47,6 +47,35 @@ export const useLabelTemplates = () => {
       } catch {
         return mockData;
       }
+    },
+  });
+};
+
+export const useSaveTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ isEditing, data }: { isEditing: boolean; data: Partial<LabelTemplate> }) => {
+      if (isEditing) {
+        return api.put(`/api/labels/templates/${data.template_id}`, data);
+      }
+      return api.post("/api/labels/templates", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["label-templates"] });
+    },
+  });
+};
+
+export const useDeleteTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (templateId: string) => {
+      return api.delete(`/api/labels/templates/${templateId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["label-templates"] });
     },
   });
 };

@@ -11,6 +11,8 @@ const config: Config = {
     "src/modules/**/*.ts",
     "src/security/**/*.ts",
     "!src/modules/**/*.types.ts",
+    "src/modules/qc/**/*.ts",
+    "!src/modules/qc/**/*.types.ts",
     "!src/modules/**/*.routes.ts",
     "!src/**/__tests__/**",
   ],

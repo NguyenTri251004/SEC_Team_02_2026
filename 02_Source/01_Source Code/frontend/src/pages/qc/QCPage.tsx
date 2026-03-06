@@ -1,18 +1,26 @@
 import { useState } from "react";
 import { Button, Input, Tag, Space } from "antd";
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { PlusOutlined, SearchOutlined, ExperimentOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
 import DashboardPage from "../dashboard/DashboardPage";
 import { DataTableCard } from "../../components/dashboard";
+import { QCTestFormModal } from "../../components/qc/QCTestFormModal";
+import { QCResultModal } from "../../components/qc/QCResultModal";
+import { QCApproveRejectButtons } from "../../components/qc/QCApproveRejectButtons";
 import { useQCTests } from "../../hooks/useQCData";
+import { useLots } from "../../hooks/useLotsData";
 import { SECTION_GAP, QC_STATUS_TAG } from "../../constants/theme";
 import type { QCTest } from "../../types";
 
 export default function QCPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: tests = [], isLoading } = useQCTests();
+  const { data: lots = [] } = useLots();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [resultTest, setResultTest] = useState<QCTest | null>(null);
 
   const filteredData = tests.filter(
     (t) =>
@@ -22,6 +30,11 @@ export default function QCPage() {
   );
 
   const pendingCount = tests.filter((t) => t.result_status === "Pending").length;
+
+  // Collect unique quarantine lot IDs from tests for showing approve/reject
+  const quarantineLotIds = new Set(
+    lots.filter((l) => l.status === "Quarantine").map((l) => l.lot_id),
+  );
 
   const columns: ColumnsType<QCTest> = [
     {
@@ -100,6 +113,29 @@ export default function QCPage() {
       sorter: (a, b) => dayjs(a.test_date).unix() - dayjs(b.test_date).unix(),
       defaultSortOrder: "descend",
     },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 140,
+      fixed: "right",
+      render: (_, record) => (
+        <Space size="small">
+          {record.result_status === "Pending" && (
+            <Button
+              type="text"
+              size="small"
+              icon={<ExperimentOutlined />}
+              onClick={() => setResultTest(record)}
+            >
+              Record
+            </Button>
+          )}
+          {quarantineLotIds.has(record.lot_id) && (
+            <QCApproveRejectButtons lotId={record.lot_id} />
+          )}
+        </Space>
+      ),
+    },
   ];
 
   return (
@@ -113,7 +149,7 @@ export default function QCPage() {
               {pendingCount} Pending
             </Tag>
           )}
-          <Button type="primary" icon={<PlusOutlined />}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
             Create QC Test
           </Button>
         </Space>
@@ -137,9 +173,20 @@ export default function QCPage() {
           rowKey="test_id"
           loading={isLoading}
           pagination={{ pageSize: 10 }}
-          scroll={{ x: 1300 }}
+          scroll={{ x: 1500 }}
         />
       </div>
+
+      <QCTestFormModal
+        isOpen={formOpen}
+        onClose={() => setFormOpen(false)}
+      />
+
+      <QCResultModal
+        isOpen={!!resultTest}
+        onClose={() => setResultTest(null)}
+        test={resultTest}
+      />
     </DashboardPage>
   );
 }

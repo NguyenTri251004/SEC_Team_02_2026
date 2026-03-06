@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Button, Input, Tag } from "antd";
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { Button, Input, Tag, Space } from "antd";
+import { PlusOutlined, SearchOutlined, EyeOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
 import DashboardPage from "../dashboard/DashboardPage";
 import { DataTableCard } from "../../components/dashboard";
+import { BatchFormModal } from "../../components/batches/BatchFormModal";
+import { BatchComponentsDrawer } from "../../components/batches/BatchComponentsDrawer";
 import { useBatches } from "../../hooks/useBatchesData";
 import { SECTION_GAP, BATCH_STATUS_TAG } from "../../constants/theme";
 import type { ProductionBatch } from "../../types";
@@ -13,6 +15,9 @@ import type { ProductionBatch } from "../../types";
 export default function BatchesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: batches = [], isLoading } = useBatches();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [detailBatch, setDetailBatch] = useState<ProductionBatch | null>(null);
 
   const filteredData = batches.filter(
     (b) =>
@@ -86,6 +91,20 @@ export default function BatchesPage() {
       render: (v: string) => dayjs(v).format("YYYY-MM-DD"),
       sorter: (a, b) => dayjs(a.expiration_date).unix() - dayjs(b.expiration_date).unix(),
     },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 80,
+      fixed: "right",
+      render: (_, record) => (
+        <Button
+          type="text"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => setDetailBatch(record)}
+        />
+      ),
+    },
   ];
 
   return (
@@ -93,7 +112,7 @@ export default function BatchesPage() {
       title="Production Batches"
       subtitle="Track manufacturing batches and their component materials"
       actions={
-        <Button type="primary" icon={<PlusOutlined />}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
           Create Batch
         </Button>
       }
@@ -116,9 +135,19 @@ export default function BatchesPage() {
           rowKey="batch_id"
           loading={isLoading}
           pagination={{ pageSize: 10 }}
-          scroll={{ x: 1100 }}
+          scroll={{ x: 1200 }}
         />
       </div>
+
+      <BatchFormModal
+        isOpen={formOpen}
+        onClose={() => setFormOpen(false)}
+      />
+
+      <BatchComponentsDrawer
+        batch={detailBatch}
+        onClose={() => setDetailBatch(null)}
+      />
     </DashboardPage>
   );
 }
