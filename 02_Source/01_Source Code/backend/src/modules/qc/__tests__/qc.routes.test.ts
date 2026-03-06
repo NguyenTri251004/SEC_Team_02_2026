@@ -7,9 +7,16 @@ import request from "supertest";
 import express, { Request, Response, NextFunction } from "express";
 
 // ─── Mock Auth & RBAC BEFORE importing the router ───────────────────────────
-jest.mock("../security/auth", () => ({
+jest.mock("../../../security/auth", () => ({
   authenticateJWT: (req: Request, _res: Response, next: NextFunction) => {
-    (req as any).user = {
+    (req as Request & {
+      user?: {
+        user_id: string;
+        username: string;
+        roles: string[];
+        sub: string;
+      };
+    }).user = {
       user_id: "user-qc-01",
       username: "test_qc",
       roles: ["admin", "quality_control"],
@@ -19,7 +26,7 @@ jest.mock("../security/auth", () => ({
   },
 }));
 
-jest.mock("../security/rbac", () => ({
+jest.mock("../../../security/rbac", () => ({
   requirePermission: () => (_req: Request, _res: Response, next: NextFunction) => next(),
   UserRole: {
     ADMIN: "admin",
@@ -32,12 +39,12 @@ jest.mock("../security/rbac", () => ({
 }));
 
 // ─── Mock QC Service ─────────────────────────────────────────────────────────
-jest.mock("../modules/qc/qc.service");
-import * as qcService from "../modules/qc/qc.service";
+jest.mock("../qc.service");
+import * as qcService from "../qc.service";
 const mockService = qcService as jest.Mocked<typeof qcService>;
 
 // ─── Import router AFTER mocks ───────────────────────────────────────────────
-import qcRouter from "../modules/qc/qc.routes";
+import qcRouter from "../qc.routes";
 
 // ─── Build minimal Express app ───────────────────────────────────────────────
 const app = express();
@@ -80,7 +87,7 @@ const sampleStats = {
 // ═════════════════════════════════════════════════════════════════════════════
 describe("GET /api/qc/tests", () => {
   it("returns 200 with list of tests", async () => {
-    mockService.getAllTests.mockResolvedValue([sampleTest] as any);
+    mockService.getAllTests.mockResolvedValue([sampleTest]);
 
     const res = await request(app).get("/api/qc/tests");
 
@@ -113,7 +120,7 @@ describe("GET /api/qc/tests", () => {
 // ═════════════════════════════════════════════════════════════════════════════
 describe("GET /api/qc/tests/:id", () => {
   it("returns 200 with test data when found", async () => {
-    mockService.getTestById.mockResolvedValue(sampleTest as any);
+    mockService.getTestById.mockResolvedValue(sampleTest);
 
     const res = await request(app).get("/api/qc/tests/test-001");
 
@@ -149,7 +156,7 @@ describe("POST /api/qc/tests", () => {
   };
 
   it("returns 201 when test is created successfully", async () => {
-    mockService.createTest.mockResolvedValue(sampleTest as any);
+    mockService.createTest.mockResolvedValue(sampleTest);
 
     const res = await request(app).post("/api/qc/tests").send(validBody);
 
@@ -205,7 +212,7 @@ describe("PUT /api/qc/tests/:id", () => {
 
   it("returns 200 when result is updated", async () => {
     const updated = { ...sampleTest, result_status: "Pass" };
-    mockService.updateTestResult.mockResolvedValue(updated as any);
+    mockService.updateTestResult.mockResolvedValue(updated);
 
     const res = await request(app).put("/api/qc/tests/test-001").send(validBody);
 
@@ -242,7 +249,7 @@ describe("PUT /api/qc/tests/:id", () => {
 // ═════════════════════════════════════════════════════════════════════════════
 describe("GET /api/qc/queue", () => {
   it("returns 200 with quarantine queue", async () => {
-    mockService.getQCQueue.mockResolvedValue([sampleQueueItem] as any);
+    mockService.getQCQueue.mockResolvedValue([sampleQueueItem]);
 
     const res = await request(app).get("/api/qc/queue");
 
@@ -264,7 +271,7 @@ describe("GET /api/qc/queue", () => {
 // ═════════════════════════════════════════════════════════════════════════════
 describe("GET /api/qc/queue/count", () => {
   it("returns count of items in queue", async () => {
-    mockService.getQCQueue.mockResolvedValue([sampleQueueItem, sampleQueueItem] as any);
+    mockService.getQCQueue.mockResolvedValue([sampleQueueItem, sampleQueueItem]);
 
     const res = await request(app).get("/api/qc/queue/count");
 
@@ -276,7 +283,7 @@ describe("GET /api/qc/queue/count", () => {
 // ═════════════════════════════════════════════════════════════════════════════
 describe("GET /api/qc/stats", () => {
   it("returns 200 with stats", async () => {
-    mockService.getQCStats.mockResolvedValue(sampleStats as any);
+    mockService.getQCStats.mockResolvedValue(sampleStats);
 
     const res = await request(app).get("/api/qc/stats");
 
@@ -378,7 +385,7 @@ describe("POST /api/qc/reject/:lotId", () => {
 // ═════════════════════════════════════════════════════════════════════════════
 describe("GET /api/qc/lot/:lotId/history", () => {
   it("returns 200 with test history for a lot", async () => {
-    mockService.getTestsByLot.mockResolvedValue([sampleTest] as any);
+    mockService.getTestsByLot.mockResolvedValue([sampleTest]);
 
     const res = await request(app).get("/api/qc/lot/lot-001/history");
 
