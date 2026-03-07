@@ -33,8 +33,8 @@ router.get(
       const batches = await productionService.getAllBatches(filters);
       res.json({ success: true, data: batches, total: batches.length });
     } catch (error) {
-      console.error("Loi lay danh sach production batches:", error);
-      res.status(500).json({ success: false, error: "Khong the lay danh sach production batches" });
+      console.error("Error fetching production batches:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch production batches" });
     }
   }
 );
@@ -47,14 +47,14 @@ router.get(
     try {
       const batch = await productionService.getBatchById(req.params.id);
       if (!batch) {
-        res.status(404).json({ success: false, error: "Khong tim thay production batch" });
+        res.status(404).json({ success: false, error: "Production batch not found" });
         return;
       }
 
       res.json({ success: true, data: batch });
     } catch (error) {
-      console.error("Loi lay chi tiet production batch:", error);
-      res.status(500).json({ success: false, error: "Khong the lay chi tiet production batch" });
+      console.error("Error fetching production batch details:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch production batch details" });
     }
   }
 );
@@ -86,7 +86,7 @@ router.post(
         res.status(400).json({
           success: false,
           error:
-            "Thieu thong tin bat buoc: product_id, batch_number, batch_size, unit_of_measure, manufacture_date, expiration_date",
+            "Missing required fields: product_id, batch_number, batch_size, unit_of_measure, manufacture_date, expiration_date",
         });
         return;
       }
@@ -103,14 +103,14 @@ router.post(
 
       res.status(201).json({ success: true, data: batch });
     } catch (error: unknown) {
-      console.error("Loi tao production batch:", error);
+      console.error("Error creating production batch:", error);
       if (
         typeof error === "object" &&
         error !== null &&
         "code" in error &&
         error.code === "23505"
       ) {
-        res.status(409).json({ success: false, error: "batch_id hoac batch_number da ton tai" });
+        res.status(409).json({ success: false, error: "batch_id or batch_number already exists" });
         return;
       }
 
@@ -119,7 +119,7 @@ router.post(
         return;
       }
 
-      res.status(500).json({ success: false, error: "Khong the tao production batch" });
+      res.status(500).json({ success: false, error: "Failed to create production batch" });
     }
   }
 );
@@ -132,25 +132,25 @@ router.patch(
     try {
       const { status } = req.body;
       if (!isBatchStatus(status)) {
-        res.status(400).json({ success: false, error: "Status khong hop le" });
+        res.status(400).json({ success: false, error: "Invalid status value" });
         return;
       }
 
       const batch = await productionService.updateBatchStatus(req.params.id, status);
       if (!batch) {
-        res.status(404).json({ success: false, error: "Khong tim thay production batch" });
+        res.status(404).json({ success: false, error: "Production batch not found" });
         return;
       }
 
       res.json({ success: true, data: batch });
     } catch (error) {
-      console.error("Loi cap nhat status production batch:", error);
+      console.error("Error updating production batch status:", error);
       if (error instanceof Error) {
         res.status(400).json({ success: false, error: error.message });
         return;
       }
 
-      res.status(500).json({ success: false, error: "Khong the cap nhat status production batch" });
+      res.status(500).json({ success: false, error: "Failed to update production batch status" });
     }
   }
 );
@@ -165,7 +165,7 @@ router.post(
       if (!lot_id || planned_quantity === undefined || !unit_of_measure) {
         res.status(400).json({
           success: false,
-          error: "Thieu thong tin bat buoc: lot_id, planned_quantity, unit_of_measure",
+          error: "Missing required fields: lot_id, planned_quantity, unit_of_measure",
         });
         return;
       }
@@ -180,14 +180,14 @@ router.post(
 
       res.status(201).json({ success: true, data: component });
     } catch (error) {
-      console.error("Loi them batch component:", error);
+      console.error("Error adding batch component:", error);
       if (error instanceof Error) {
         const statusCode = error.message === "Production batch not found" ? 404 : 400;
         res.status(statusCode).json({ success: false, error: error.message });
         return;
       }
 
-      res.status(500).json({ success: false, error: "Khong the them batch component" });
+      res.status(500).json({ success: false, error: "Failed to add batch component" });
     }
   }
 );
@@ -200,15 +200,15 @@ router.get(
     try {
       const batch = await productionService.getBatchById(req.params.id);
       if (!batch) {
-        res.status(404).json({ success: false, error: "Khong tim thay production batch" });
+        res.status(404).json({ success: false, error: "Production batch not found" });
         return;
       }
 
       const components = await productionService.getComponents(req.params.id);
       res.json({ success: true, data: components, total: components.length });
     } catch (error) {
-      console.error("Loi lay batch components:", error);
-      res.status(500).json({ success: false, error: "Khong the lay batch components" });
+      console.error("Error fetching batch components:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch batch components" });
     }
   }
 );
@@ -223,7 +223,7 @@ router.post(
       if (!batchId || !componentId || actualQuantity === undefined) {
         res.status(400).json({
           success: false,
-          error: "Thieu thong tin bat buoc: batchId, componentId, actualQuantity",
+          error: "Missing required fields: batchId, componentId, actualQuantity",
         });
         return;
       }
@@ -236,7 +236,7 @@ router.post(
 
       res.json({ success: true, data: component });
     } catch (error) {
-      console.error("Loi consume material:", error);
+      console.error("Error consuming material:", error);
       if (error instanceof Error) {
         const notFoundErrors = new Set([
           "Production batch not found",
@@ -250,7 +250,7 @@ router.post(
         return;
       }
 
-      res.status(500).json({ success: false, error: "Khong the consume material" });
+      res.status(500).json({ success: false, error: "Failed to consume material" });
     }
   }
 );
@@ -263,15 +263,15 @@ router.get(
     try {
       const batch = await productionService.getBatchById(req.params.batchId);
       if (!batch) {
-        res.status(404).json({ success: false, error: "Khong tim thay production batch" });
+        res.status(404).json({ success: false, error: "Production batch not found" });
         return;
       }
 
       const traceability = await productionService.getTraceability(req.params.batchId);
       res.json({ success: true, data: traceability, total: traceability.length });
     } catch (error) {
-      console.error("Loi lay traceability:", error);
-      res.status(500).json({ success: false, error: "Khong the lay traceability" });
+      console.error("Error fetching traceability:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch traceability" });
     }
   }
 );
