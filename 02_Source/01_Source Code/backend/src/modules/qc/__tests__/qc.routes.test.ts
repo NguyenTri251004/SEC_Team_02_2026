@@ -5,6 +5,7 @@
  */
 import request from "supertest";
 import express, { Request, Response, NextFunction } from "express";
+import type { QCTest, QCQueueItem, QCStats } from "../qc.types";
 
 // ─── Mock Auth & RBAC BEFORE importing the router ───────────────────────────
 jest.mock("../../../security/auth", () => ({
@@ -52,32 +53,34 @@ app.use(express.json());
 app.use("/api/qc", qcRouter);
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
-const sampleTest = {
+const sampleTest: QCTest = {
   test_id: "test-001",
   lot_id: "lot-001",
   test_type: "Identity",
   result_status: "Pending",
   performed_by: "user-qc",
-  test_date: "2026-03-01T00:00:00.000Z",
-  created_date: "2026-03-01T00:00:00.000Z",
-  modified_date: "2026-03-01T00:00:00.000Z",
+  test_date: new Date("2026-03-01T00:00:00.000Z"),
+  created_date: new Date("2026-03-01T00:00:00.000Z"),
+  modified_date: new Date("2026-03-01T00:00:00.000Z"),
   manufacturer_lot: "MFG-001",
   material_name: "Aspirin API",
   material_type: "API",
 };
 
-const sampleQueueItem = {
+const sampleQueueItem: QCQueueItem = {
   lot_id: "lot-001",
   lot_number: "L-001",
   manufacturer_lot: "MFG-001",
+  material_id: "MAT001",
   material_name: "Aspirin API",
   material_type: "API",
+  received_date: new Date("2026-02-15"),
   quantity: 50,
   pending_tests: 2,
   total_tests: 3,
 };
 
-const sampleStats = {
+const sampleStats: QCStats = {
   pending_count: 5,
   pass_rate_30d: 80,
   total_tests_30d: 20,
@@ -211,7 +214,7 @@ describe("PUT /api/qc/tests/:id", () => {
   };
 
   it("returns 200 when result is updated", async () => {
-    const updated = { ...sampleTest, result_status: "Pass" };
+    const updated: QCTest = { ...sampleTest, result_status: "Pass" };
     mockService.updateTestResult.mockResolvedValue(updated);
 
     const res = await request(app).put("/api/qc/tests/test-001").send(validBody);

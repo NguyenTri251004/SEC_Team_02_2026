@@ -1,14 +1,21 @@
 import * as adminService from '../admin.service';
 import pool from '../../../shared/db/pool';
 import redisClient from '../../../shared/cache/redis';
-import { CreateUserInput, UpdateUserInput, UserRole } from '../admin.types';
+import { CreateUserInput, UpdateUserInput, UserRole, DB_ROLE_TO_API } from '../admin.types';
 
 // Mock dependencies
 jest.mock('../../../shared/db/pool');
 jest.mock('../../../shared/cache/redis');
 
-const mockPool = pool as jest.Mocked<typeof pool>;
-const mockRedis = redisClient as jest.Mocked<typeof redisClient>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockPool = pool as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockRedis = redisClient as any;
+
+/** Helper: create expected output with normalized (snake_case) role */
+function withNormalizedRole<T extends { role: UserRole }>(user: T): T {
+  return { ...user, role: (DB_ROLE_TO_API[user.role] ?? user.role) as UserRole };
+}
 
 describe('Admin Service', () => {
   beforeEach(() => {
@@ -55,10 +62,10 @@ describe('Admin Service', () => {
 
       const result = await adminService.getAllUsers();
 
-      expect(result).toEqual(mockUsers);
+      expect(result).toEqual(mockUsers.map(withNormalizedRole));
       expect(result).toHaveLength(2);
       expect(mockPool.query).toHaveBeenCalledTimes(1);
-      
+
       // Verify no password field is included
       result.forEach(user => {
         expect(user).not.toHaveProperty('password');
@@ -89,7 +96,7 @@ describe('Admin Service', () => {
 
       const result = await adminService.getAllUsers({ role: UserRole.ADMIN });
 
-      expect(result).toEqual(mockUsers);
+      expect(result).toEqual(mockUsers.map(withNormalizedRole));
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining('AND role = $1'),
         [UserRole.ADMIN]
@@ -155,7 +162,7 @@ describe('Admin Service', () => {
 
       const result = await adminService.getUserById('USR-001');
 
-      expect(result).toEqual(mockUser);
+      expect(result).toEqual(withNormalizedRole(mockUser));
       expect(mockRedis.get).toHaveBeenCalledWith('users:USR-001');
       expect(mockPool.query).toHaveBeenCalledTimes(1);
       expect(mockRedis.setEx).toHaveBeenCalled(); // Cache should be set
@@ -226,7 +233,7 @@ describe('Admin Service', () => {
 
       const result = await adminService.getUserById('USR-001');
 
-      expect(result).toEqual(mockUser);
+      expect(result).toEqual(withNormalizedRole(mockUser));
       expect(mockPool.query).toHaveBeenCalled(); // Should fallback to DB
     });
   });
@@ -263,7 +270,7 @@ describe('Admin Service', () => {
 
       const result = await adminService.createUser(input);
 
-      expect(result).toEqual(mockCreatedUser);
+      expect(result).toEqual(withNormalizedRole(mockCreatedUser));
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO users'),
         expect.arrayContaining([
@@ -375,7 +382,12 @@ describe('Admin Service', () => {
 
       const result = await adminService.updateUser(userId, updateInput);
 
-      expect(result).toMatchObject(updateInput);
+      // Result has normalized roles (snake_case)
+      expect(result).toMatchObject({
+        username: updateInput.username,
+        email: updateInput.email,
+        role: DB_ROLE_TO_API[updateInput.role!] ?? updateInput.role,
+      });
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE users'),
         expect.arrayContaining([updateInput.username, updateInput.email, updateInput.role, userId])
@@ -420,7 +432,7 @@ describe('Admin Service', () => {
 
       const result = await adminService.updateUser('USR-001', {});
 
-      expect(result).toEqual(existingUser);
+      expect(result).toEqual(withNormalizedRole(existingUser));
       // Should only call getUserById, not UPDATE
       expect(mockPool.query).toHaveBeenCalledTimes(1);
     });
@@ -484,7 +496,7 @@ describe('Admin Service', () => {
 
       const result = await adminService.toggleUserActive('USR-001');
 
-      expect(result).toEqual(mockUser);
+      expect(result).toEqual(withNormalizedRole(mockUser));
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining('SET is_active = NOT is_active'),
         ['USR-001']

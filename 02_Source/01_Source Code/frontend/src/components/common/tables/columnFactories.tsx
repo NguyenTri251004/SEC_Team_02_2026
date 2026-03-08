@@ -216,9 +216,10 @@ export function createUserRoleColumn<T extends { role: UserRole }>() {
     ],
     onFilter: (value: boolean | Key, record: T) =>
       record.role === String(value),
-    render: (v: UserRole) => (
-      <Tag color={ROLE_TAG[v].color}>{ROLE_TAG[v].label}</Tag>
-    ),
+    render: (v: UserRole) => {
+      const cfg = ROLE_TAG[v];
+      return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : <Tag>{v}</Tag>;
+    },
   };
 }
 
@@ -377,18 +378,26 @@ export function createMasterMaterialTypeColumn<T extends { material_type: string
     dataIndex: "material_type" as keyof T,
     key: "material_type",
     filters: [
-      { text: "RAW", value: "RAW" },
-      { text: "PACKAGING", value: "PACKAGING" },
-      { text: "CONSUMABLE", value: "CONSUMABLE" },
-      { text: "FINISHED", value: "FINISHED" },
+      { text: "API", value: "API" },
+      { text: "Excipient", value: "Excipient" },
+      { text: "Dietary Supplement", value: "Dietary Supplement" },
+      { text: "Container", value: "Container" },
+      { text: "Closure", value: "Closure" },
+      { text: "Process Chemical", value: "Process Chemical" },
+      { text: "Testing Material", value: "Testing Material" },
     ],
     onFilter: (value: boolean | Key, record: T) => record.material_type === String(value),
     render: (type: string) => {
-      let color = "default";
-      if (type === "RAW") color = "orange";
-      if (type === "PACKAGING") color = "blue";
-      if (type === "FINISHED") color = "green";
-      return <Tag color={color}>{type}</Tag>;
+      const colorMap: Record<string, string> = {
+        "API": "red",
+        "Excipient": "blue",
+        "Dietary Supplement": "green",
+        "Container": "orange",
+        "Closure": "purple",
+        "Process Chemical": "cyan",
+        "Testing Material": "magenta",
+      };
+      return <Tag color={colorMap[type] ?? "default"}>{type}</Tag>;
     },
   };
 }

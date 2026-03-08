@@ -1,14 +1,26 @@
 import pool from "../../shared/db/pool";
 import redisClient, { CACHE_TTL } from "../../shared/cache/redis";
-import { 
-  User, 
-  CreateUserInput, 
-  UpdateUserInput, 
-  AdminStats, 
+import {
+  User,
+  CreateUserInput,
+  UpdateUserInput,
+  AdminStats,
   GetUsersFilters,
-  UserRole 
+  UserRole,
+  DB_ROLE_TO_API,
+  API_ROLE_TO_DB,
 } from "./admin.types";
 import crypto from "crypto";
+
+/**
+ * Normalize a user's role from DB format (PascalCase) to API format (snake_case)
+ */
+function normalizeUserRole<T extends { role: UserRole }>(user: T): T {
+  return {
+    ...user,
+    role: (DB_ROLE_TO_API[user.role] ?? user.role) as UserRole,
+  };
+}
 
 const CACHE_KEY_PREFIX = "users:";
 const CACHE_KEY_ALL = "users:all";
@@ -77,7 +89,7 @@ export const getAllUsers = async (
   query += " ORDER BY created_date DESC";
 
   const result = await pool.query<User>(query, params);
-  return result.rows;
+  return result.rows.map(normalizeUserRole);
 };
 
 /**
@@ -104,7 +116,7 @@ export const getUserById = async (id: string): Promise<User | null> => {
     [id]
   );
 
-  const user = result.rows[0] || null;
+  const user = result.rows[0] ? normalizeUserRole(result.rows[0]) : null;
 
   // Cache result
   if (user) {
@@ -139,7 +151,7 @@ export const createUser = async (input: CreateUserInput): Promise<User> => {
   );
 
   await invalidateCache();
-  return result.rows[0];
+  return normalizeUserRole(result.rows[0]);
 };
 
 /**
@@ -188,7 +200,7 @@ export const updateUser = async (
   );
 
   await invalidateCache();
-  return result.rows[0];
+  return normalizeUserRole(result.rows[0]);
 };
 
 /**
@@ -209,7 +221,7 @@ export const toggleUserActive = async (id: string): Promise<User | null> => {
   }
 
   await invalidateCache();
-  return result.rows[0];
+  return normalizeUserRole(result.rows[0]);
 };
 
 /**
@@ -282,7 +294,7 @@ export const getAdminStats = async (): Promise<AdminStats> => {
      FROM inventory_lots`
   );
 
-  // Build stats object
+  // Build stats object with normalized role names for frontend compatibility
   const usersByRole: AdminStats["usersByRole"] = {
     Admin: 0,
     InventoryManager: 0,
@@ -296,10 +308,19 @@ export const getAdminStats = async (): Promise<AdminStats> => {
     usersByRole[role] = parseInt(row.count);
   });
 
+  // Convert usersByRole object to array format with normalized role names
+  const users_by_role = Object.entries(usersByRole)
+    .filter(([, count]) => count > 0)
+    .map(([role, count]) => ({
+      role: DB_ROLE_TO_API[role] ?? role,
+      count,
+    }));
+
   const stats: AdminStats = {
     totalUsers: parseInt(usersResult.rows[0].total_users),
     activeUsers: parseInt(usersResult.rows[0].active_users),
     usersByRole,
+    users_by_role,
     todayTransactions: parseInt(transactionsResult.rows[0]?.count || "0"),
     totalLots: parseInt(lotsResult.rows[0]?.total_lots || "0"),
     quarantineLots: parseInt(lotsResult.rows[0]?.quarantine_lots || "0"),

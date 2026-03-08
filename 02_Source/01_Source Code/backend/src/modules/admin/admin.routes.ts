@@ -1,10 +1,19 @@
 import { Router, Request, Response } from "express";
 import * as adminService from "./admin.service";
-import { CreateUserInput, UpdateUserInput, GetUsersFilters } from "./admin.types";
+import crypto from "crypto";
+import { CreateUserInput, UpdateUserInput, GetUsersFilters, API_ROLE_TO_DB, UserRole } from "./admin.types";
 import { authenticateJWT } from "../../security/auth";
 import { adminOnly } from "../../security/rbac";
 
 const router = Router();
+
+/**
+ * Convert API role (snake_case) to DB role (PascalCase) if needed.
+ * Accepts both formats so callers don't break.
+ */
+function normalizeRoleForDB(role: string): UserRole {
+  return (API_ROLE_TO_DB[role] ?? role) as UserRole;
+}
 
 // All routes require Admin role
 router.use(authenticateJWT, adminOnly);
@@ -16,7 +25,7 @@ router.use(authenticateJWT, adminOnly);
 router.get("/users", async (req: Request, res: Response) => {
   try {
     const filters: GetUsersFilters = {
-      role: req.query.role as any,
+      role: req.query.role ? normalizeRoleForDB(req.query.role as string) : undefined,
       is_active: req.query.is_active === "true" ? true : req.query.is_active === "false" ? false : undefined,
       search: req.query.search as string,
     };
@@ -72,12 +81,16 @@ router.get("/users/:id", async (req: Request, res: Response) => {
 router.post("/users", async (req: Request, res: Response) => {
   try {
     const input: CreateUserInput = req.body;
+    // Auto-generate user_id if not provided
+    if (!input.user_id) {
+      input.user_id = crypto.randomUUID();
+    }
 
     // Validation
-    if (!input.user_id || !input.username || !input.email || !input.password || !input.role) {
+    if (!input.username || !input.email || !input.password || !input.role) {
       res.status(400).json({
         success: false,
-        error: "Thiếu thông tin bắt buộc: user_id, username, email, password, role",
+        error: "Thiếu thông tin bắt buộc: username, email, password, role",
       });
       return;
     }
@@ -90,6 +103,11 @@ router.post("/users", async (req: Request, res: Response) => {
         error: "Email không hợp lệ",
       });
       return;
+    }
+
+    // Normalize role from API format (snake_case) to DB format (PascalCase)
+    if (input.role) {
+      input.role = normalizeRoleForDB(input.role);
     }
 
     const user = await adminService.createUser(input);
@@ -135,6 +153,11 @@ router.put("/users/:id", async (req: Request, res: Response) => {
         });
         return;
       }
+    }
+
+    // Normalize role from API format (snake_case) to DB format (PascalCase)
+    if (input.role) {
+      input.role = normalizeRoleForDB(input.role);
     }
 
     const user = await adminService.updateUser(req.params.id, input);

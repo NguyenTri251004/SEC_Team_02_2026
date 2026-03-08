@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import pool from "../../shared/db/pool";
 import {
   QCTest,
+  QCTestType,
   CreateQCTestInput,
   UpdateQCTestInput,
   QCStats,
@@ -58,7 +59,7 @@ export const getAllTests = async (filters: QCTestFilters = {}): Promise<QCTest[]
     SELECT
       qt.*,
       il.manufacturer_lot,
-      il.lot_number,
+      il.lot_id AS lot_number,
       m.material_name,
       m.material_type
     FROM qc_tests qt
@@ -80,7 +81,7 @@ export const getTestById = async (id: string): Promise<QCTest | null> => {
     SELECT
       qt.*,
       il.manufacturer_lot,
-      il.lot_number,
+      il.lot_id AS lot_number,
       il.expiration_date,
       m.material_name,
       m.material_type
@@ -101,7 +102,7 @@ export const getTestsByLot = async (lotId: string): Promise<QCTest[]> => {
     SELECT
       qt.*,
       il.manufacturer_lot,
-      il.lot_number,
+      il.lot_id AS lot_number,
       m.material_name,
       m.material_type
     FROM qc_tests qt
@@ -180,7 +181,7 @@ export const getPendingTests = async (): Promise<QCTest[]> => {
     SELECT
       qt.*,
       il.manufacturer_lot,
-      il.lot_number,
+      il.lot_id AS lot_number,
       m.material_name,
       m.material_type
     FROM qc_tests qt
@@ -234,7 +235,7 @@ export const getQCStats = async (): Promise<QCStats> => {
     pass_rate_30d: passRate,
     total_tests_30d: total30d,
     tests_by_type: byTypeResult.rows.map((r) => ({
-      test_type: r.test_type as any,
+      test_type: r.test_type as QCTestType,
       count: parseInt(r.count, 10),
       pass_count: parseInt(r.pass_count, 10),
     })),
@@ -248,7 +249,7 @@ export const getQCQueue = async (): Promise<QCQueueItem[]> => {
   const sql = `
     SELECT
       il.lot_id,
-      il.lot_number,
+      il.lot_id AS lot_number,
       il.manufacturer_lot,
       il.manufacturer_name,
       il.material_id,
@@ -266,7 +267,7 @@ export const getQCQueue = async (): Promise<QCQueueItem[]> => {
     LEFT JOIN qc_tests qt ON il.lot_id = qt.lot_id
     WHERE il.status = 'Quarantine'
     GROUP BY
-      il.lot_id, il.lot_number, il.manufacturer_lot, il.manufacturer_name,
+      il.lot_id, il.manufacturer_lot, il.manufacturer_name,
       il.material_id, m.material_name, m.material_type,
       il.received_date, il.expiration_date, il.quantity,
       il.unit_of_measure, il.storage_location
@@ -399,14 +400,13 @@ export const rejectLot = async (
       return { success: false, message: `Lô hàng đang ở trạng thái '${currentStatus}', không thể từ chối` };
     }
 
-    // Cập nhật status và lưu lý do vào notes
+    // Cập nhật status
     await client.query(
       `UPDATE inventory_lots
        SET status = 'Rejected',
-           notes = $1,
            modified_date = CURRENT_TIMESTAMP
-       WHERE lot_id = $2`,
-      [`[Từ chối bởi ${userId}]: ${reason}`, lotId]
+       WHERE lot_id = $1`,
+      [lotId]
     );
 
     console.log(`[QC] Lot ${lotId} rejected by user ${userId}. Reason: ${reason}`);

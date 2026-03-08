@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { Router, Request, Response } from "express";
 import * as labelService from "./label.service";
 import { authenticateJWT } from "../../security/auth";
@@ -48,17 +49,19 @@ router.post(
   requirePermission("labels", "create"),
   async (req: Request, res: Response) => {
     try {
-      const { template_id, template_name, label_type, template_content, width, height } = req.body;
+      const { template_name, label_type, template_content, width, height } = req.body;
+      // Auto-generate template_id if not provided
+      const template_id = req.body.template_id || crypto.randomUUID();
 
-      if (!template_id || !template_name || !label_type || !template_content || width === undefined || height === undefined) {
+      if (!template_name || !label_type || !template_content || width === undefined || height === undefined) {
         res.status(400).json({
           success: false,
-          error: "Missing required fields: template_id, template_name, label_type, template_content, width, height",
+          error: "Missing required fields: template_name, label_type, template_content, width, height",
         });
         return;
       }
 
-      const template = await labelService.createTemplate(req.body);
+      const template = await labelService.createTemplate({ ...req.body, template_id });
       res.status(201).json({ success: true, data: template });
     } catch (error: unknown) {
       console.error("Error creating template:", error);

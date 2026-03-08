@@ -14,7 +14,7 @@ services:
       - ./db_schema/db-init.sql:/docker-entrypoint-initdb.d/db_init.sql
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-myuser}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-myuser} -d ${POSTGRES_DB:-mydatabase}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,7 +32,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-redispassword} ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -67,7 +67,9 @@ services:
     image: quay.io/keycloak/keycloak:23.0
     container_name: ims-keycloak
     restart: unless-stopped
-    command: start-dev
+    command: start-dev --import-realm
+    volumes:
+      - ./keycloak/inventory-realm.json:/opt/keycloak/data/import/inventory-realm.json:ro
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
@@ -89,7 +91,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 120s
     networks:
       - ims-network
 

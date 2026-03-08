@@ -17,7 +17,7 @@ import type {
   ApiResponse,
 } from "../types";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -122,7 +122,7 @@ export const transactionApi = {
 export const materialApi = {
   list: (params?: string) =>
     apiRequest<PaginatedResponse<Material>>({
-      url: `/materials${params ? `?${params}` : ""}`,
+      url: `/api/materials${params ? `?${params}` : ""}`,
       method: "GET",
     }),
 };

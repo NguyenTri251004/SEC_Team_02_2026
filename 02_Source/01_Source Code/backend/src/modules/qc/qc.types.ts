@@ -3,7 +3,7 @@ export type QCTestType =
   | "Identity"
   | "Potency"
   | "Microbial"
-  | "GrowthPromotion"
+  | "Growth Promotion"
   | "Physical"
   | "Chemical";
 

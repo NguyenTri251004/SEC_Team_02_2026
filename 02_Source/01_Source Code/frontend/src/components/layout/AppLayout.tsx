@@ -26,6 +26,7 @@ import {
 } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../auth/context";
+import { BYPASS_KEYCLOAK } from "../../auth/AuthProvider";
 import type { UserRole } from "../../types";
 import { ROLE_TAG } from "../../constants/roles";
 
@@ -84,7 +85,7 @@ function getSidebarItems(role: UserRole) {
 }
 
 export default function AppLayout() {
-  const { user, switchRole } = useAuth();
+  const { user, switchRole, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -192,20 +193,29 @@ export default function AppLayout() {
           </Space>
 
           <Space size="middle">
-            <Select
-              value={role}
-              onChange={(v) => switchRole(v as UserRole)}
-              style={{ width: 180 }}
-              options={Object.entries(ROLE_TAG).map(([value, { label }]) => ({
-                value,
-                label,
-              }))}
-              size="small"
-              variant="borderless"
-              aria-label="Switch role"
-            />
+            {BYPASS_KEYCLOAK && (
+              <Select
+                value={role}
+                onChange={(v) => switchRole(v as UserRole)}
+                style={{ width: 180 }}
+                options={Object.entries(ROLE_TAG).map(([value, { label }]) => ({
+                  value,
+                  label,
+                }))}
+                size="small"
+                variant="borderless"
+                aria-label="Switch role"
+              />
+            )}
             <Dropdown
-              menu={{ items: userMenuItems }}
+              menu={{
+                items: userMenuItems,
+                onClick: ({ key }) => {
+                  if (key === "logout") {
+                    logout();
+                  }
+                },
+              }}
               placement="bottomRight"
               trigger={["click"]}
             >

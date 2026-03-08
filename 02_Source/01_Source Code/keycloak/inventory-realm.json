@@ -1,0 +1,152 @@
+{
+  "realm": "inventory-management",
+  "enabled": true,
+  "displayName": "Inventory Management System",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "roles": {
+    "realm": [
+      { "name": "admin", "description": "Full system access" },
+      { "name": "inventory_manager", "description": "Manage materials, lots, and transactions" },
+      { "name": "quality_control", "description": "Manage QC tests and lot approvals" },
+      { "name": "production", "description": "Manage production batches and consume materials" },
+      { "name": "viewer", "description": "Read-only access to all modules" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "inventory-frontend",
+      "name": "IMS Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "rootUrl": "http://localhost:5173",
+      "baseUrl": "/",
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost:3000"
+      ],
+      "protocol": "openid-connect",
+      "defaultClientScopes": ["web-origins", "profile", "roles", "email"],
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "inventory-backend",
+      "name": "IMS Backend",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "backend-secret-change-in-production",
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@ims.local",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "System",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "inv_manager",
+      "email": "manager@ims.local",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Inventory",
+      "lastName": "Manager",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "manager123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["inventory_manager"]
+    },
+    {
+      "username": "qc_user",
+      "email": "qc@ims.local",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "QC",
+      "lastName": "Inspector",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "qc123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["quality_control"]
+    },
+    {
+      "username": "prod_user",
+      "email": "production@ims.local",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Production",
+      "lastName": "Operator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "prod123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["production"]
+    },
+    {
+      "username": "viewer",
+      "email": "viewer@ims.local",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Read",
+      "lastName": "Only",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "viewer123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["viewer"]
+    }
+  ]
+}

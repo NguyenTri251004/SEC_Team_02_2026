@@ -164,7 +164,7 @@ describe("RBAC - Lots Permissions", () => {
     });
 
     it("should return false for non-existent action", () => {
-      expect(checkPermission(["admin"], "lots", "nonexistent" as any)).toBe(
+      expect(checkPermission(["admin"], "lots", "nonexistent" as never)).toBe(
         false,
       );
     });

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 
-export type MaterialType = 'RAW' | 'PACKAGING' | 'FINISHED' | 'CONSUMABLE';
+export type MaterialType = 'API' | 'Excipient' | 'Dietary Supplement' | 'Container' | 'Closure' | 'Process Chemical' | 'Testing Material';
 
 export interface Material {
   material_id: string;
@@ -20,7 +20,7 @@ const mockData: Material[] = [
     material_id: 'MAT-001', 
     part_number: 'PART-10025', 
     material_name: 'Resin Alpha (Fake)', 
-    material_type: 'RAW', 
+    material_type: 'API',
     storage_conditions: 'Room Temp, Low Humidity',
     specification_document: 'DOC-RA-01',
     created_date: '2026-02-15',
@@ -30,7 +30,7 @@ const mockData: Material[] = [
     material_id: 'MAT-002', 
     part_number: 'PART-20599', 
     material_name: 'Packaging Box Type B (Fake)', 
-    material_type: 'PACKAGING', 
+    material_type: 'Excipient',
     storage_conditions: 'Dry, Ambient',
     specification_document: null,
     created_date: '2026-02-20',
@@ -44,7 +44,7 @@ export const useMaterials = () => {
     queryFn: async (): Promise<Material[]> => {
       try {
         // Attempt to fetch real data from the backend
-        const response = await api.get('/materials');
+        const response = await api.get('/api/materials');
         const data = response.data?.data || response.data;
         
         // If the backend is running but the database is completely empty, use mock data for the demo
@@ -69,9 +69,9 @@ export const useSaveMaterial = () => {
   return useMutation({
     mutationFn: async ({ isEditing, data }: { isEditing: boolean; data: Partial<Material> }) => {
       if (isEditing) {
-        return api.put(`/materials/${data.material_id}`, data);
+        return api.put(`/api/materials/${data.material_id}`, data);
       }
-      return api.post('/materials', data);
+      return api.post('/api/materials', data);
     },
     onSuccess: () => {
       // Automatically refetch the table data when a save is successful

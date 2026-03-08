@@ -4,7 +4,8 @@ import pool from '../../../shared/db/pool';
 // Mock dependencies
 jest.mock('../../../shared/db/pool');
 
-const mockPool = pool as jest.Mocked<typeof pool>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockPool = pool as any;
 
 describe('Production Service', () => {
   beforeEach(() => {

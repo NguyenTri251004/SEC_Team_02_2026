@@ -1,13 +1,12 @@
-# fly.toml app configuration file generated for backend-bitter-wildflower-4393 on 2026-02-06T20:04:19+07:00
+# fly.toml app configuration file generated for ims-backend-sec02 on 2026-03-06T22:08:38+07:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'backend-bitter-wildflower-4393'
+app = 'ims-backend-sec02'
 primary_region = 'sin'
 
 [build]
-  dockerfile = "Dockerfile"
 
 [http_service]
   internal_port = 3000

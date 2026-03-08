@@ -1,22 +1,25 @@
-export type TransactionType = "IN" | "OUT";
+export type TransactionType = "Receipt" | "Usage" | "Split" | "Transfer" | "Adjustment" | "Disposal";
 
 export interface Transaction {
   transaction_id: string;
   transaction_type: TransactionType;
-  material_id: string;
+  lot_id: string;
   quantity: number;
-  unit?: string;
+  unit_of_measure?: string;
+  reference_id?: string;
   notes?: string;
-  created_by?: string;
+  performed_by?: string;
+  transaction_date: Date;
   created_date: Date;
 }
 
 export interface CreateTransactionDto {
   transaction_id: string;
   transaction_type: TransactionType;
-  material_id: string;
+  lot_id: string;
   quantity: number;
-  unit?: string;
+  unit_of_measure?: string;
+  reference_id?: string;
   notes?: string;
-  created_by?: string;
+  performed_by?: string;
 }

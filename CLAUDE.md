@@ -133,3 +133,74 @@ Frontend (`.env` in `frontend/`): `VITE_API_URL`, `VITE_KEYCLOAK_URL`
 - Elasticsearch: 9200
 - Keycloak: 8080
 - AI Service: 8000
+
+## Run Project
+
+When user says "Run Project", execute the following steps automatically and fix any errors encountered:
+
+1. **Start Docker Desktop** (if not running): `open -a Docker`, wait for daemon ready
+2. **Start Database**: `cd db_schema/ && docker-compose up -d`, handle container name conflicts by removing old containers
+3. **Wait for PostgreSQL**: poll `docker exec ims-postgres pg_isready -U myuser` until ready
+4. **Install deps if needed**: check `node_modules/` exists in both `backend/` and `frontend/`, run `npm install` if missing
+5. **Start Backend**: `cd backend/ && npm run dev` (run in background). Redis and Elasticsearch are optional — if they cause startup blocking, fix and retry
+6. **Start Frontend**: `cd frontend/ && npm run dev` (run in background)
+7. **Verify**: health check `curl localhost:3000/health` and `curl localhost:5173`, report status table
+
+Known issues to auto-fix:
+- Docker container name conflict → `docker rm -f ims-postgres` then retry
+- Redis blocking startup → ensure `redis.ts` has `socket.reconnectStrategy: false` and `connectTimeout: 3000`
+- Port already in use → kill existing process on that port and retry
+
+## Deploy
+
+When user says "Deploy", execute the following steps automatically. Fix any TS/build errors encountered before deploying.
+
+### Production URLs
+- **Frontend**: https://ims-frontend-sec02.vercel.app
+- **Backend**: https://ims-backend-sec02.fly.dev
+- **Database**: Supabase project `viguwtevkhfiszadpjvy`
+
+### Deploy Backend (Fly.io)
+```bash
+cd "02_Source/01_Source Code/backend"
+npx tsc --noEmit                                    # type-check first, fix errors if any
+flyctl deploy --remote-only -a ims-backend-sec02     # build & deploy (takes ~1-2 min)
+```
+- If TS errors occur, fix them before deploying
+- Fly.io app: `ims-backend-sec02`, region: Singapore (`sin`), image: node:22-slim
+- Secrets managed via `flyctl secrets set KEY=VALUE -a ims-backend-sec02`
+- Current secrets: `DATABASE_URL` (Supabase), `BYPASS_AUTH=true`, `PORT=3000`
+- Verify after deploy: `curl https://ims-backend-sec02.fly.dev/api/materials`
+- If DNS doesn't resolve locally, use: `curl --resolve ims-backend-sec02.fly.dev:443:66.241.125.199 https://ims-backend-sec02.fly.dev/api/materials`
+
+### Deploy Frontend (Vercel)
+Frontend auto-deploys on `git push` to `master` if connected to Vercel.
+If manual deploy needed:
+```bash
+cd "02_Source/01_Source Code/frontend"
+npm run build                                        # verify build succeeds
+vercel --prod                                        # deploy to production
+```
+- Vercel project: `ims-frontend-sec02`
+- `VITE_API_URL` is set to empty string (uses relative `/api/` path or falls back to fly.dev URL)
+- `tsconfig.app.json` must have `baseUrl` + `paths` for `@/*` alias (required for `tsc -b`)
+
+### Deploy Database Schema (Supabase)
+For schema changes, write a Node.js migration script and run it on Fly.io machine (local DNS cannot resolve `db.*.supabase.co`):
+```bash
+# 1. Write migration script to /tmp/migrate.js
+# 2. Upload to Fly.io
+echo "put /tmp/migrate.js /tmp/migrate.js" | flyctl sftp shell -a ims-backend-sec02
+# 3. Run on Fly.io (must copy to /app/ for pg module access)
+flyctl ssh console -a ims-backend-sec02 -C "/bin/sh -c 'cp /tmp/migrate.js /app/migrate.js && cd /app && node migrate.js'"
+```
+- The script should use `process.env.DATABASE_URL` (already set on Fly.io) with `ssl: { rejectUnauthorized: false }`
+- Or use Supabase Dashboard → SQL Editor for simple changes
+
+### Deploy Order
+If deploying everything: Database schema first → Backend → Frontend (push to trigger Vercel)
+
+### Quick Deploy (most common case — backend code changes only)
+```bash
+cd "02_Source/01_Source Code/backend" && npx tsc --noEmit && flyctl deploy --remote-only -a ims-backend-sec02
+```

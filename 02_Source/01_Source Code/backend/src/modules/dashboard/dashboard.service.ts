@@ -1,15 +1,17 @@
+import { QueryResultRow } from "pg";
 import pool from "../../shared/db/pool";
 import type {
   InventorySummary,
   InventorySummaryByMaterialType,
   InventorySummaryByStatus,
+  LotStatus,
   TransactionSummary,
   TransactionTrendPoint,
 } from "./dashboard.types";
 
 type PgError = { code?: string };
 
-async function queryInventoryTransactions<T>(
+async function queryInventoryTransactions<T extends QueryResultRow>(
   sql: string,
   params: unknown[]
 ): Promise<T[]> {
@@ -59,7 +61,7 @@ export async function getInventorySummary(): Promise<InventorySummary> {
   const statusMap = new Map<string, InventorySummaryByStatus>();
   for (const r of byStatusCountRows.rows) {
     statusMap.set(r.status, {
-      status: r.status as any,
+      status: r.status as LotStatus,
       lot_count: Number(r.lot_count),
       quantities_by_unit: [],
     });
@@ -68,10 +70,10 @@ export async function getInventorySummary(): Promise<InventorySummary> {
     const entry =
       statusMap.get(r.status) ??
       ({
-        status: r.status as any,
+        status: r.status as LotStatus,
         lot_count: 0,
         quantities_by_unit: [],
-      } satisfies InventorySummaryByStatus);
+      } as InventorySummaryByStatus);
     entry.quantities_by_unit?.push({
       unit_of_measure: r.unit_of_measure,
       total_quantity: Number(r.total_quantity),
@@ -143,7 +145,7 @@ export async function getTransactionSummary(): Promise<TransactionSummary> {
 
   const today = todayRows[0] ?? { receipts: "0", issues: "0" };
 
-  const trend: TransactionTrendPoint[] = trendRows.map((r: any) => ({
+  const trend: TransactionTrendPoint[] = trendRows.map((r) => ({
     date: r.date,
     receipts: Number(r.receipts),
     issues: Number(r.issues),

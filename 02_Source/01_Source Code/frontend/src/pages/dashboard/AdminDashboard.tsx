@@ -145,14 +145,34 @@ export default function AdminDashboard() {
   const { data: txnRes, isLoading: txnLoading } = useRecentTransactions();
   const { data: usersRes, isLoading: usersLoading } = useAdminUsers();
 
-  const stats = statsRes?.data ?? MOCK_STATS;
+  const rawStats = statsRes?.data;
   const transactions = txnRes?.data ?? MOCK_TRANSACTIONS;
   const users = usersRes?.data ?? MOCK_USERS;
   const loading = statsLoading;
 
+  // Normalize backend AdminStats (camelCase, object usersByRole) to frontend shape (snake_case, array users_by_role)
+  const stats: AdminStats = useMemo(() => {
+    if (!rawStats) return MOCK_STATS;
+    // If already in frontend shape (has users_by_role array)
+    if (Array.isArray((rawStats as any).users_by_role)) return rawStats;
+    // Backend returns camelCase shape: { totalUsers, activeUsers, usersByRole: { Admin: n, ... }, ... }
+    const backendStats = rawStats as any;
+    const usersByRoleObj = backendStats.usersByRole ?? backendStats.users_by_role ?? {};
+    const usersByRoleArr = Array.isArray(usersByRoleObj)
+      ? usersByRoleObj
+      : Object.entries(usersByRoleObj).map(([role, count]) => ({ role, count: count as number }));
+    return {
+      total_active_users: backendStats.activeUsers ?? backendStats.total_active_users ?? 0,
+      today_transactions: backendStats.todayTransactions ?? backendStats.today_transactions ?? 0,
+      total_lots: backendStats.totalLots ?? backendStats.total_lots ?? 0,
+      lots_in_quarantine: backendStats.quarantineLots ?? backendStats.lots_in_quarantine ?? 0,
+      users_by_role: usersByRoleArr,
+    };
+  }, [rawStats]);
+
   /* ── Memoised pie-chart data transform ── */
   const pieData = useMemo(
-    () => stats.users_by_role.map((r) => ({ name: r.role, value: r.count })),
+    () => (stats.users_by_role ?? []).map((r) => ({ name: r.role, value: r.count })),
     [stats.users_by_role],
   );
 

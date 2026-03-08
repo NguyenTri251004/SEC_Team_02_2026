@@ -23,7 +23,7 @@ export function MaterialFormModal({ isOpen, onClose, initialData }: MaterialForm
         });
       } else {
         form.resetFields();
-        form.setFieldsValue({ material_type: 'RAW' });
+        form.setFieldsValue({ material_type: 'API' });
       }
     }
   }, [isOpen, initialData, form]);
@@ -86,10 +86,13 @@ export function MaterialFormModal({ isOpen, onClose, initialData }: MaterialForm
             rules={[{ required: true, message: 'Please select a type' }]}
           >
             <Select>
-              <Select.Option value="RAW">RAW</Select.Option>
-              <Select.Option value="PACKAGING">PACKAGING</Select.Option>
-              <Select.Option value="CONSUMABLE">CONSUMABLE</Select.Option>
-              <Select.Option value="FINISHED">FINISHED</Select.Option>
+              <Select.Option value="API">API</Select.Option>
+              <Select.Option value="Excipient">Excipient</Select.Option>
+              <Select.Option value="Dietary Supplement">Dietary Supplement</Select.Option>
+              <Select.Option value="Container">Container</Select.Option>
+              <Select.Option value="Closure">Closure</Select.Option>
+              <Select.Option value="Process Chemical">Process Chemical</Select.Option>
+              <Select.Option value="Testing Material">Testing Material</Select.Option>
             </Select>
           </Form.Item>
         </div>

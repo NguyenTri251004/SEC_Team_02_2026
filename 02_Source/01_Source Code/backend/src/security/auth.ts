@@ -22,15 +22,55 @@ declare global {
 const KEYCLOAK_PUBLIC_KEY = process.env.KEYCLOAK_PUBLIC_KEY || "";
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key";
 const BYPASS_AUTH = process.env.BYPASS_AUTH === "true"; // Development mode
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL || "http://localhost:8080";
+const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || "inventory-management";
+
+/** Cached Keycloak public key (fetched dynamically) */
+let cachedPublicKey: string | null = null;
+let lastKeyFetch = 0;
+const KEY_FETCH_COOLDOWN_MS = 60_000; // min 60s between fetches
+
+/**
+ * Fetch the Keycloak realm public key and cache it.
+ */
+async function fetchKeycloakPublicKey(): Promise<string | null> {
+  const now = Date.now();
+  if (cachedPublicKey && now - lastKeyFetch < KEY_FETCH_COOLDOWN_MS) {
+    return cachedPublicKey;
+  }
+  try {
+    const url = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return cachedPublicKey;
+    const data = (await res.json()) as { public_key?: string };
+    if (data.public_key) {
+      cachedPublicKey =
+        `-----BEGIN PUBLIC KEY-----\n${data.public_key}\n-----END PUBLIC KEY-----`;
+      lastKeyFetch = now;
+    }
+    return cachedPublicKey;
+  } catch {
+    return null; // Keycloak unreachable — fall back to env / JWT_SECRET
+  }
+}
+
+/**
+ * Resolve the verification key: static env → dynamic Keycloak → JWT_SECRET fallback
+ */
+async function getVerificationKey(): Promise<string> {
+  if (KEYCLOAK_PUBLIC_KEY) return KEYCLOAK_PUBLIC_KEY;
+  const dynamic = await fetchKeycloakPublicKey();
+  return dynamic ?? JWT_SECRET;
+}
 
 /**
  * Middleware xác thực JWT từ header Authorization
  */
-export const authenticateJWT = (
+export const authenticateJWT = async (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   // Bypass auth trong development mode
   if (BYPASS_AUTH) {
     console.log("⚠️  Auth bypassed (BYPASS_AUTH=true)");
@@ -65,15 +105,10 @@ export const authenticateJWT = (
   }
 
   try {
-    // Verify JWT token
-    let publicKey = KEYCLOAK_PUBLIC_KEY;
+    // Resolve verification key (static env → dynamic Keycloak → JWT_SECRET)
+    const verifyKey = await getVerificationKey();
 
-    // Nếu không có public key, dùng secret (cho testing)
-    if (!publicKey) {
-      publicKey = JWT_SECRET;
-    }
-
-    const decoded = jwt.verify(token, publicKey) as any;
+    const decoded = jwt.verify(token, verifyKey) as any;
 
     // Extract user info từ JWT payload
     const roles = decoded.realm_access?.roles || decoded.roles || [];
@@ -88,6 +123,11 @@ export const authenticateJWT = (
 
     next();
   } catch (error) {
+    // If verification failed and we used a cached key, invalidate and retry once
+    if (cachedPublicKey) {
+      cachedPublicKey = null;
+      lastKeyFetch = 0;
+    }
     console.error("JWT verification failed:", error);
     res.status(403).json({
       success: false,
@@ -99,11 +139,11 @@ export const authenticateJWT = (
 /**
  * Middleware tùy chọn - Không bắt buộc auth nhưng parse JWT nếu có
  */
-export const optionalAuth = (
+export const optionalAuth = async (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
@@ -119,8 +159,8 @@ export const optionalAuth = (
   }
 
   try {
-    const publicKey = KEYCLOAK_PUBLIC_KEY || JWT_SECRET;
-    const decoded = jwt.verify(token, publicKey) as any;
+    const verifyKey = await getVerificationKey();
+    const decoded = jwt.verify(token, verifyKey) as any;
 
     const roles = decoded.realm_access?.roles || decoded.roles || [];
 
@@ -142,10 +182,10 @@ export const optionalAuth = (
 /**
  * Extract user từ token (helper function)
  */
-export const extractUserFromToken = (token: string): any | null => {
+export const extractUserFromToken = async (token: string): Promise<any | null> => {
   try {
-    const publicKey = KEYCLOAK_PUBLIC_KEY || JWT_SECRET;
-    const decoded = jwt.verify(token, publicKey);
+    const verifyKey = await getVerificationKey();
+    const decoded = jwt.verify(token, verifyKey);
     return decoded;
   } catch (error) {
     console.error("Failed to extract user from token:", error);

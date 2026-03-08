@@ -24,6 +24,28 @@ export enum UserRole {
 }
 
 /**
+ * Map DB role (PascalCase) → API role (snake_case) for frontend compatibility
+ */
+export const DB_ROLE_TO_API: Record<string, string> = {
+  Admin: "admin",
+  InventoryManager: "inventory_manager",
+  QualityControl: "quality_control",
+  Production: "production",
+  Viewer: "viewer",
+};
+
+/**
+ * Map API role (snake_case) → DB role (PascalCase) for writes
+ */
+export const API_ROLE_TO_DB: Record<string, string> = {
+  admin: "Admin",
+  inventory_manager: "InventoryManager",
+  quality_control: "QualityControl",
+  production: "Production",
+  viewer: "Viewer",
+};
+
+/**
  * Input for creating a new user
  */
 export interface CreateUserInput {
@@ -58,6 +80,8 @@ export interface AdminStats {
     Production: number;
     Viewer: number;
   };
+  /** Normalized users_by_role array for frontend compatibility */
+  users_by_role?: { role: string; count: number }[];
   todayTransactions: number;
   totalLots: number;
   quarantineLots: number;

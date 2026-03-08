@@ -4,10 +4,12 @@ import type { CurrentUser, UserRole } from "../types";
 import { AuthContext } from "./context";
 import { ROLE_TAG } from "../constants/roles";
 
-/** Set to true to enable role switching in UI (demo mode);
- *  Set to false to use Keycloak login/logout (production).
+/** Read from env variable VITE_BYPASS_KEYCLOAK.
+ *  Set to "true" to enable role switching in UI (demo mode);
+ *  Set to "false" to use Keycloak login/logout (production).
+ *  Defaults to true if not set (for backwards compatibility).
  */
-const BYPASS_KEYCLOAK = true;
+export const BYPASS_KEYCLOAK = (import.meta.env.VITE_BYPASS_KEYCLOAK ?? "true") !== "false";
 
 let didInit = false;
 

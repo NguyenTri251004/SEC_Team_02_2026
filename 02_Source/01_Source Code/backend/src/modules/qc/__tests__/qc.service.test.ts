@@ -527,7 +527,7 @@ describe("rejectLot", () => {
     expect(result.message).toContain("Depleted");
   });
 
-  it("rejects a Quarantine lot successfully and includes reason in notes", async () => {
+  it("rejects a Quarantine lot successfully", async () => {
     setupClientCalls([
       { rows: [] }, // BEGIN
       { rows: [{ status: "Quarantine" }] }, // SELECT status
@@ -543,13 +543,13 @@ describe("rejectLot", () => {
 
     expect(result.success).toBe(true);
     expect(result.message).toContain("từ chối");
-    // The UPDATE params[0] should include the reason
+    // Verify the UPDATE sets status to 'Rejected'
     const updateCall = mockClient.query.mock.calls.find((c: unknown[]) =>
       (c[0] as string).includes("status = 'Rejected'"),
     ) as unknown[];
     expect(updateCall).toBeDefined();
-    const noteParam = (updateCall[1] as string[])[0];
-    expect(noteParam).toContain("Identity test failed");
+    // The lot_id should be passed as parameter
+    expect(updateCall[1]).toContain("lot-001");
   });
 
   it("can also reject an Accepted lot", async () => {

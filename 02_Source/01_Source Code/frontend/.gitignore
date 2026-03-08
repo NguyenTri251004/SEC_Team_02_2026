@@ -36,3 +36,4 @@ dist-ssr
 
 # Testing coverage reports (if you add Vitest/Jest later)
 coverage/
+.vercel

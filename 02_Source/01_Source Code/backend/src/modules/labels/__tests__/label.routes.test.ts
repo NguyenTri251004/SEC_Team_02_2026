@@ -1,349 +1,329 @@
-/// <reference types="jest" />
-import { Request, Response } from "express";
-import * as labelService from "../label.service";
+/**
+ * Integration-style tests for Label Routes
+ * Tests actual Express route handlers via supertest.
+ * Mocks: auth middleware (bypass), label.service (DB layer).
+ */
+import express from "express";
+import request from "supertest";
 import { LabelType } from "../label.types";
 
+// ─── Mock auth & rbac before importing routes ────────────────────────────────
+jest.mock("../../../security/auth", () => ({
+  authenticateJWT: (_req: any, _res: any, next: any) => {
+    _req.user = { user_id: "u-1", username: "tester", roles: ["admin"] };
+    next();
+  },
+}));
+jest.mock("../../../security/rbac", () => ({
+  requirePermission: () => (_req: any, _res: any, next: any) => next(),
+}));
+
+// Mock service
 jest.mock("../label.service");
+import * as labelService from "../label.service";
+const svc = labelService as jest.Mocked<typeof labelService>;
 
-const mockLabelService = labelService as jest.Mocked<typeof labelService>;
+// Import routes AFTER mocks
+import labelRouter from "../label.routes";
 
-describe("Label Routes - Input Validation", () => {
-  let req: Partial<Request>;
-  let res: Partial<Response>;
-  let jsonSpy: jest.Mock;
-  let statusSpy: jest.Mock;
+// ─── Setup Express app ───────────────────────────────────────────────────────
+const app = express();
+app.use(express.json());
+app.use("/api/labels", labelRouter);
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jsonSpy = jest.fn().mockReturnValue({});
-    statusSpy = jest.fn().mockReturnValue({ json: jsonSpy });
+// ─── Fixtures ────────────────────────────────────────────────────────────────
+const TEMPLATE = {
+  template_id: "TMPL-001",
+  template_name: "Raw Material Label",
+  label_type: LabelType.RAW_MATERIAL,
+  template_content: '{"fields":["material_name","lot_id"]}',
+  width: 3.5,
+  height: 2.0,
+  created_date: new Date("2026-01-01"),
+  modified_date: new Date("2026-01-01"),
+};
 
-    req = {
-      params: {},
-      body: {},
-      user: { user_id: "user-1", username: "testuser", roles: ["admin"] },
-    };
+beforeEach(() => jest.clearAllMocks());
 
-    res = {
-      json: jsonSpy,
-      status: statusSpy,
-    };
+// ═════════════════════════════════════════════════════════════════════════════
+describe("GET /api/labels/templates", () => {
+  it("200 — returns template list", async () => {
+    svc.getAllTemplates.mockResolvedValueOnce([TEMPLATE]);
+
+    const res = await request(app).get("/api/labels/templates");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.total).toBe(1);
   });
 
-  const mockTemplate = {
-    template_id: "LABEL-001",
-    template_name: "Raw Material Label",
-    label_type: LabelType.RAW_MATERIAL,
-    template_content: '{"fields": ["material_name", "lot_id"]}',
-    width: 3.5,
-    height: 2.0,
-    created_date: new Date("2026-01-01"),
-    modified_date: new Date("2026-01-01"),
+  it("200 — returns empty array when no templates", async () => {
+    svc.getAllTemplates.mockResolvedValueOnce([]);
+
+    const res = await request(app).get("/api/labels/templates");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+    expect(res.body.total).toBe(0);
+  });
+
+  it("500 — on service error", async () => {
+    svc.getAllTemplates.mockRejectedValueOnce(new Error("DB"));
+
+    const res = await request(app).get("/api/labels/templates");
+
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+describe("GET /api/labels/templates/:id", () => {
+  it("200 — returns template by id", async () => {
+    svc.getTemplateById.mockResolvedValueOnce(TEMPLATE);
+
+    const res = await request(app).get("/api/labels/templates/TMPL-001");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.template_id).toBe("TMPL-001");
+  });
+
+  it("404 — template not found", async () => {
+    svc.getTemplateById.mockResolvedValueOnce(null);
+
+    const res = await request(app).get("/api/labels/templates/NOPE");
+
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+  });
+
+  it("500 — on service error", async () => {
+    svc.getTemplateById.mockRejectedValueOnce(new Error("DB"));
+
+    const res = await request(app).get("/api/labels/templates/TMPL-001");
+
+    expect(res.status).toBe(500);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+describe("POST /api/labels/templates", () => {
+  const validBody = {
+    template_name: "New Label",
+    label_type: LabelType.API,
+    template_content: "{}",
+    width: 4,
+    height: 2,
   };
 
-  // ============ Test Request Validation ============
-  describe("POST /api/labels/templates validation", () => {
-    it("should require template_id", () => {
-      req.body = {
-        template_name: "Test",
-        label_type: LabelType.API,
-        template_content: "{}",
-        width: 3.5,
-        height: 2.0,
-      };
+  it("201 — creates template with auto-generated id", async () => {
+    svc.createTemplate.mockResolvedValueOnce({ ...TEMPLATE, ...validBody });
 
-      const hasRequired = !!(req.body?.template_id && req.body?.template_name &&
-                            req.body?.label_type && req.body?.template_content &&
-                            req.body?.width !== undefined && req.body?.height !== undefined);
-      expect(hasRequired).toBe(false);
-    });
+    const res = await request(app)
+      .post("/api/labels/templates")
+      .send(validBody);
 
-    it("should require all fields", () => {
-      req.body = { template_name: "Test" };
-
-      const fields = ["template_id", "template_name", "label_type", "template_content", "width", "height"];
-      const hasMissing = fields.some(f => !req.body[f] && req.body[f] !== 0);
-      expect(hasMissing).toBe(true);
-    });
-
-    it("should accept valid input", () => {
-      req.body = {
-        template_id: "LABEL-001",
-        template_name: "Test",
-        label_type: LabelType.API,
-        template_content: "{}",
-        width: 3.5,
-        height: 2.0,
-      };
-
-      const fields = ["template_id", "template_name", "label_type", "template_content", "width", "height"];
-      const hasAll = fields.every(f => req.body[f] || req.body[f] === 0);
-      expect(hasAll).toBe(true);
-    });
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    // Service should have been called with a template_id (auto-generated)
+    const arg = svc.createTemplate.mock.calls[0][0];
+    expect(arg.template_id).toBeDefined();
   });
 
-  describe("POST /api/labels/generate validation", () => {
-    it("should require template_id", () => {
-      req.body = { lot_id: "LOT-001" };
+  it("201 — creates template with provided id", async () => {
+    const body = { ...validBody, template_id: "MY-ID" };
+    svc.createTemplate.mockResolvedValueOnce({ ...TEMPLATE, ...body });
 
-      expect(req.body?.template_id).toBeUndefined();
-      expect(!req.body?.template_id).toBe(true);
-    });
+    const res = await request(app)
+      .post("/api/labels/templates")
+      .send(body);
 
-    it("should require lot_id or batch_id", () => {
-      req.body = { template_id: "LABEL-001" };
-
-      const hasIdField = !!(req.body?.lot_id || req.body?.batch_id);
-      expect(hasIdField).toBe(false);
-    });
-
-    it("should accept template_id with lot_id", () => {
-      req.body = { template_id: "LABEL-001", lot_id: "LOT-001" };
-
-      const isValid = !!(req.body?.template_id && (req.body?.lot_id || req.body?.batch_id));
-      expect(isValid).toBe(true);
-    });
-
-    it("should accept template_id with batch_id", () => {
-      req.body = { template_id: "LABEL-001", batch_id: "BATCH-001" };
-
-      const isValid = !!(req.body?.template_id && (req.body?.lot_id || req.body?.batch_id));
-      expect(isValid).toBe(true);
-    });
+    expect(res.status).toBe(201);
+    const arg = svc.createTemplate.mock.calls[0][0];
+    expect(arg.template_id).toBe("MY-ID");
   });
 
-  // ============ Test Service Integration ============
-  describe("Service Integration Tests", () => {
-    it("should call service.getAllTemplates", async () => {
-      mockLabelService.getAllTemplates.mockResolvedValueOnce([mockTemplate]);
+  it("400 — missing template_name", async () => {
+    const { template_name, ...body } = validBody;
 
-      const result = await labelService.getAllTemplates();
+    const res = await request(app)
+      .post("/api/labels/templates")
+      .send(body);
 
-      expect(mockLabelService.getAllTemplates).toHaveBeenCalled();
-      expect(result).toEqual([mockTemplate]);
-    });
-
-    it("should call service.getTemplateById with ID", async () => {
-      mockLabelService.getTemplateById.mockResolvedValueOnce(mockTemplate);
-
-      const result = await labelService.getTemplateById("LABEL-001");
-
-      expect(mockLabelService.getTemplateById).toHaveBeenCalledWith("LABEL-001");
-      expect(result).toEqual(mockTemplate);
-    });
-
-    it("should call service.createTemplate with input", async () => {
-      const input = {
-        template_id: "LABEL-001",
-        template_name: "Test",
-        label_type: LabelType.API,
-        template_content: "{}",
-        width: 3.5,
-        height: 2.0,
-      };
-      mockLabelService.createTemplate.mockResolvedValueOnce(mockTemplate);
-
-      const result = await labelService.createTemplate(input);
-
-      expect(mockLabelService.createTemplate).toHaveBeenCalledWith(input);
-      expect(result).toEqual(mockTemplate);
-    });
-
-    it("should call service.updateTemplate with ID and input", async () => {
-      const updates = { template_name: "Updated" };
-      const updated = { ...mockTemplate, ...updates };
-      mockLabelService.updateTemplate.mockResolvedValueOnce(updated);
-
-      const result = await labelService.updateTemplate("LABEL-001", updates);
-
-      expect(mockLabelService.updateTemplate).toHaveBeenCalledWith("LABEL-001", updates);
-      expect(result).toEqual(updated);
-    });
-
-    it("should call service.deleteTemplate with ID", async () => {
-      mockLabelService.deleteTemplate.mockResolvedValueOnce(true);
-
-      const result = await labelService.deleteTemplate("LABEL-001");
-
-      expect(mockLabelService.deleteTemplate).toHaveBeenCalledWith("LABEL-001");
-      expect(result).toBe(true);
-    });
-
-    it("should call service.generateLabel for lot", async () => {
-      const generated = {
-        template_id: "LABEL-001",
-        template_name: "Test",
-        label_type: LabelType.RAW_MATERIAL,
-        width: 3.5,
-        height: 2.0,
-        content: { lot_id: "LOT-001" },
-        generated_date: new Date(),
-      };
-      mockLabelService.generateLabel.mockResolvedValueOnce(generated);
-
-      const result = await labelService.generateLabel({
-        template_id: "LABEL-001",
-        lot_id: "LOT-001",
-      });
-
-      expect(mockLabelService.generateLabel).toHaveBeenCalledWith({
-        template_id: "LABEL-001",
-        lot_id: "LOT-001",
-      });
-      expect(result).toEqual(generated);
-    });
-
-    it("should call service.generateLabel for batch", async () => {
-      const generated = {
-        template_id: "LABEL-001",
-        template_name: "Test",
-        label_type: LabelType.FINISHED_PRODUCT,
-        width: 3.5,
-        height: 2.0,
-        content: { batch_id: "BATCH-001" },
-        generated_date: new Date(),
-      };
-      mockLabelService.generateLabel.mockResolvedValueOnce(generated);
-
-      const result = await labelService.generateLabel({
-        template_id: "LABEL-001",
-        batch_id: "BATCH-001",
-      });
-
-      expect(mockLabelService.generateLabel).toHaveBeenCalledWith({
-        template_id: "LABEL-001",
-        batch_id: "BATCH-001",
-      });
-      expect(result).toEqual(generated);
-    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("Missing required fields");
   });
 
-  // ============ Test Error Handling ============
-  describe("Service Error Handling", () => {
-    it("should handle service errors on getAllTemplates", async () => {
-      mockLabelService.getAllTemplates.mockRejectedValueOnce(new Error("DB Error"));
+  it("400 — missing width", async () => {
+    const { width, ...body } = validBody;
 
-      try {
-        await labelService.getAllTemplates();
-        expect(true).toBe(false); // Should not reach here
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
-    });
+    const res = await request(app)
+      .post("/api/labels/templates")
+      .send(body);
 
-    it("should handle null return from getTemplateById", async () => {
-      mockLabelService.getTemplateById.mockResolvedValueOnce(null);
-
-      const result = await labelService.getTemplateById("NONEXISTENT");
-
-      expect(result).toBeNull();
-    });
-
-    it("should handle duplicate key error from createTemplate", async () => {
-      const error = new Error("Duplicate key") as any;
-      error.code = "23505";
-      mockLabelService.createTemplate.mockRejectedValueOnce(error);
-
-      try {
-        await labelService.createTemplate({
-          template_id: "LABEL-001",
-          template_name: "Test",
-          label_type: LabelType.API,
-          template_content: "{}",
-          width: 3.5,
-          height: 2.0,
-        });
-        expect(true).toBe(false);
-      } catch (error) {
-        expect((error as any).code).toBe("23505");
-      }
-    });
-
-    it("should handle null return from updateTemplate", async () => {
-      mockLabelService.updateTemplate.mockResolvedValueOnce(null);
-
-      const result = await labelService.updateTemplate("NONEXISTENT", { template_name: "New" });
-
-      expect(result).toBeNull();
-    });
-
-    it("should handle false return from deleteTemplate", async () => {
-      mockLabelService.deleteTemplate.mockResolvedValueOnce(false);
-
-      const result = await labelService.deleteTemplate("NONEXISTENT");
-
-      expect(result).toBe(false);
-    });
-
-    it("should handle error from generateLabel", async () => {
-      mockLabelService.generateLabel.mockRejectedValueOnce(new Error("Template not found"));
-
-      try {
-        await labelService.generateLabel({
-          template_id: "NONEXISTENT",
-          lot_id: "LOT-001",
-        });
-        expect(true).toBe(false);
-      } catch (error) {
-        expect((error as Error).message).toBe("Template not found");
-      }
-    });
+    expect(res.status).toBe(400);
   });
 
-  // ============ Test Response Types ============
-  describe("Response Type Validation", () => {
-    it("should return LabelTemplate from getTemplateById", async () => {
-      mockLabelService.getTemplateById.mockResolvedValueOnce(mockTemplate);
+  it("409 — duplicate key", async () => {
+    const err = new Error("dup") as any;
+    err.code = "23505";
+    svc.createTemplate.mockRejectedValueOnce(err);
 
-      const result = await labelService.getTemplateById("LABEL-001");
+    const res = await request(app)
+      .post("/api/labels/templates")
+      .send(validBody);
 
-      expect(result).toHaveProperty("template_id");
-      expect(result).toHaveProperty("template_name");
-      expect(result).toHaveProperty("label_type");
-      expect(result).toHaveProperty("template_content");
-      expect(result).toHaveProperty("width");
-      expect(result).toHaveProperty("height");
+    expect(res.status).toBe(409);
+    expect(res.body.error).toContain("already exists");
+  });
+
+  it("500 — generic service error", async () => {
+    svc.createTemplate.mockRejectedValueOnce(new Error("unknown"));
+
+    const res = await request(app)
+      .post("/api/labels/templates")
+      .send(validBody);
+
+    expect(res.status).toBe(500);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+describe("PUT /api/labels/templates/:id", () => {
+  it("200 — updates template", async () => {
+    const updated = { ...TEMPLATE, template_name: "Updated" };
+    svc.updateTemplate.mockResolvedValueOnce(updated);
+
+    const res = await request(app)
+      .put("/api/labels/templates/TMPL-001")
+      .send({ template_name: "Updated" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.template_name).toBe("Updated");
+    expect(svc.updateTemplate).toHaveBeenCalledWith(
+      "TMPL-001",
+      expect.objectContaining({ template_name: "Updated" }),
+    );
+  });
+
+  it("404 — template not found", async () => {
+    svc.updateTemplate.mockResolvedValueOnce(null);
+
+    const res = await request(app)
+      .put("/api/labels/templates/NOPE")
+      .send({ template_name: "X" });
+
+    expect(res.status).toBe(404);
+  });
+
+  it("500 — on service error", async () => {
+    svc.updateTemplate.mockRejectedValueOnce(new Error("DB"));
+
+    const res = await request(app)
+      .put("/api/labels/templates/TMPL-001")
+      .send({ template_name: "X" });
+
+    expect(res.status).toBe(500);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+describe("DELETE /api/labels/templates/:id", () => {
+  it("200 — deletes template", async () => {
+    svc.deleteTemplate.mockResolvedValueOnce(true);
+
+    const res = await request(app).delete("/api/labels/templates/TMPL-001");
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toContain("deleted");
+  });
+
+  it("404 — template not found", async () => {
+    svc.deleteTemplate.mockResolvedValueOnce(false);
+
+    const res = await request(app).delete("/api/labels/templates/NOPE");
+
+    expect(res.status).toBe(404);
+  });
+
+  it("500 — on service error", async () => {
+    svc.deleteTemplate.mockRejectedValueOnce(new Error("DB"));
+
+    const res = await request(app).delete("/api/labels/templates/TMPL-001");
+
+    expect(res.status).toBe(500);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+describe("POST /api/labels/generate", () => {
+  it("200 — generates label for lot", async () => {
+    const generated = {
+      template_id: "TMPL-001",
+      template_name: "Test",
+      label_type: LabelType.RAW_MATERIAL,
+      width: 3.5,
+      height: 2,
+      content: { lot_id: "LOT-001" },
+      generated_date: new Date(),
+    };
+    svc.generateLabel.mockResolvedValueOnce(generated);
+
+    const res = await request(app)
+      .post("/api/labels/generate")
+      .send({ template_id: "TMPL-001", lot_id: "LOT-001" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(svc.generateLabel).toHaveBeenCalledWith(
+      expect.objectContaining({ template_id: "TMPL-001", lot_id: "LOT-001" }),
+    );
+  });
+
+  it("200 — generates label for batch", async () => {
+    svc.generateLabel.mockResolvedValueOnce({
+      template_id: "TMPL-001",
+      template_name: "T",
+      label_type: LabelType.FINISHED_PRODUCT,
+      width: 3.5,
+      height: 2,
+      content: { batch_id: "B-1" },
+      generated_date: new Date(),
     });
 
-    it("should return array of templates from getAllTemplates", async () => {
-      const templates = [mockTemplate];
-      mockLabelService.getAllTemplates.mockResolvedValueOnce(templates);
+    const res = await request(app)
+      .post("/api/labels/generate")
+      .send({ template_id: "TMPL-001", batch_id: "B-1" });
 
-      const result = await labelService.getAllTemplates();
+    expect(res.status).toBe(200);
+  });
 
-      expect(Array.isArray(result)).toBe(true);
-      expect(result[0]).toHaveProperty("template_id");
-    });
+  it("400 — missing template_id", async () => {
+    const res = await request(app)
+      .post("/api/labels/generate")
+      .send({ lot_id: "LOT-001" });
 
-    it("should return boolean from deleteTemplate", async () => {
-      mockLabelService.deleteTemplate.mockResolvedValueOnce(true);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("template_id");
+  });
 
-      const result = await labelService.deleteTemplate("LABEL-001");
+  it("400 — missing lot_id and batch_id", async () => {
+    const res = await request(app)
+      .post("/api/labels/generate")
+      .send({ template_id: "TMPL-001" });
 
-      expect(typeof result).toBe("boolean");
-      expect(result).toBe(true);
-    });
+    expect(res.status).toBe(400);
+  });
 
-    it("should return GeneratedLabel from generateLabel", async () => {
-      const generated = {
-        template_id: "LABEL-001",
-        template_name: "Test",
-        label_type: LabelType.RAW_MATERIAL,
-        width: 3.5,
-        height: 2.0,
-        content: { lot_id: "LOT-001" },
-        generated_date: new Date(),
-      };
-      mockLabelService.generateLabel.mockResolvedValueOnce(generated);
+  it("400 — service throws descriptive error", async () => {
+    svc.generateLabel.mockRejectedValueOnce(new Error("Template not found"));
 
-      const result = await labelService.generateLabel({
-        template_id: "LABEL-001",
-        lot_id: "LOT-001",
-      });
+    const res = await request(app)
+      .post("/api/labels/generate")
+      .send({ template_id: "NOPE", lot_id: "LOT-001" });
 
-      expect(result).toHaveProperty("template_id");
-      expect(result).toHaveProperty("content");
-      expect(result).toHaveProperty("generated_date");
-    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Template not found");
   });
 });

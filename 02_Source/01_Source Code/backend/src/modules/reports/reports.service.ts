@@ -1,3 +1,4 @@
+import { QueryResultRow } from "pg";
 import pool from "../../shared/db/pool";
 import type {
   AuditLogRow,
@@ -28,7 +29,7 @@ export function exportToCSV<T extends Record<string, unknown>>(
   return [headerLine, ...lines].join("\n");
 }
 
-async function queryInventoryTransactions<T>(
+async function queryInventoryTransactions<T extends QueryResultRow>(
   sql: string,
   params: unknown[]
 ): Promise<T[]> {
