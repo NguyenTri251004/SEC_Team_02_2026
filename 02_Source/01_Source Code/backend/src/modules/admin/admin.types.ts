@@ -7,7 +7,7 @@ export interface User {
   email: string;
   role: UserRole;
   is_active: boolean;
-  last_login: Date | null;
+  last_login_at: Date | null;
   created_date: Date;
   modified_date: Date;
 }
@@ -71,20 +71,11 @@ export interface UpdateUserInput {
  * Admin dashboard statistics
  */
 export interface AdminStats {
-  totalUsers: number;
-  activeUsers: number;
-  usersByRole: {
-    Admin: number;
-    InventoryManager: number;
-    QualityControl: number;
-    Production: number;
-    Viewer: number;
-  };
-  /** Normalized users_by_role array for frontend compatibility */
-  users_by_role?: { role: string; count: number }[];
-  todayTransactions: number;
-  totalLots: number;
-  quarantineLots: number;
+  total_active_users: number;
+  today_transactions: number;
+  total_lots: number;
+  lots_in_quarantine: number;
+  users_by_role: { role: string; count: number }[];
 }
 
 /**

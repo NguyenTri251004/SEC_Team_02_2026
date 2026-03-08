@@ -60,7 +60,8 @@ export const getAllUsers = async (
   filters?: GetUsersFilters
 ): Promise<User[]> => {
   let query = `
-    SELECT user_id, username, email, role, is_active, last_login, created_date, modified_date
+    SELECT user_id, username, email, role, is_active,
+           last_login AS last_login_at, created_date, modified_date
     FROM users
     WHERE 1=1
   `;
@@ -110,7 +111,8 @@ export const getUserById = async (id: string): Promise<User | null> => {
   }
 
   const result = await pool.query<User>(
-    `SELECT user_id, username, email, role, is_active, last_login, created_date, modified_date
+    `SELECT user_id, username, email, role, is_active,
+           last_login AS last_login_at, created_date, modified_date
      FROM users
      WHERE user_id = $1`,
     [id]
@@ -139,7 +141,8 @@ export const createUser = async (input: CreateUserInput): Promise<User> => {
   const result = await pool.query<User>(
     `INSERT INTO users (user_id, username, email, password, role, is_active)
      VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING user_id, username, email, role, is_active, last_login, created_date, modified_date`,
+     RETURNING user_id, username, email, role, is_active,
+           last_login AS last_login_at, created_date, modified_date`,
     [
       input.user_id,
       input.username,
@@ -195,7 +198,8 @@ export const updateUser = async (
     `UPDATE users
      SET ${updates.join(", ")}
      WHERE user_id = $${paramCount}
-     RETURNING user_id, username, email, role, is_active, last_login, created_date, modified_date`,
+     RETURNING user_id, username, email, role, is_active,
+           last_login AS last_login_at, created_date, modified_date`,
     params
   );
 
@@ -212,7 +216,8 @@ export const toggleUserActive = async (id: string): Promise<User | null> => {
      SET is_active = NOT is_active,
          modified_date = CURRENT_TIMESTAMP
      WHERE user_id = $1
-     RETURNING user_id, username, email, role, is_active, last_login, created_date, modified_date`,
+     RETURNING user_id, username, email, role, is_active,
+           last_login AS last_login_at, created_date, modified_date`,
     [id]
   );
 
@@ -242,6 +247,21 @@ export const resetPassword = async (
   );
 
   return result.rowCount ? result.rowCount > 0 : false;
+};
+
+/**
+ * Update last_login timestamp for a user
+ */
+export const updateLastLogin = async (userId: string): Promise<void> => {
+  try {
+    await pool.query(
+      `UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE user_id = $1`,
+      [userId]
+    );
+    await invalidateCache();
+  } catch (error) {
+    console.warn("Failed to update last_login:", error);
+  }
 };
 
 /**
@@ -294,36 +314,20 @@ export const getAdminStats = async (): Promise<AdminStats> => {
      FROM inventory_lots`
   );
 
-  // Build stats object with normalized role names for frontend compatibility
-  const usersByRole: AdminStats["usersByRole"] = {
-    Admin: 0,
-    InventoryManager: 0,
-    QualityControl: 0,
-    Production: 0,
-    Viewer: 0,
-  };
-
-  usersByRoleResult.rows.forEach((row) => {
-    const role = row.role as keyof typeof usersByRole;
-    usersByRole[role] = parseInt(row.count);
-  });
-
-  // Convert usersByRole object to array format with normalized role names
-  const users_by_role = Object.entries(usersByRole)
-    .filter(([, count]) => count > 0)
-    .map(([role, count]) => ({
-      role: DB_ROLE_TO_API[role] ?? role,
-      count,
+  // Convert to array format with normalized role names for frontend
+  const users_by_role = usersByRoleResult.rows
+    .filter((row) => parseInt(row.count) > 0)
+    .map((row) => ({
+      role: DB_ROLE_TO_API[row.role] ?? row.role,
+      count: parseInt(row.count),
     }));
 
   const stats: AdminStats = {
-    totalUsers: parseInt(usersResult.rows[0].total_users),
-    activeUsers: parseInt(usersResult.rows[0].active_users),
-    usersByRole,
+    total_active_users: parseInt(usersResult.rows[0].active_users),
+    today_transactions: parseInt(transactionsResult.rows[0]?.count || "0"),
+    total_lots: parseInt(lotsResult.rows[0]?.total_lots || "0"),
+    lots_in_quarantine: parseInt(lotsResult.rows[0]?.quarantine_lots || "0"),
     users_by_role,
-    todayTransactions: parseInt(transactionsResult.rows[0]?.count || "0"),
-    totalLots: parseInt(lotsResult.rows[0]?.total_lots || "0"),
-    quarantineLots: parseInt(lotsResult.rows[0]?.quarantine_lots || "0"),
   };
 
   // Cache stats for 5 minutes (shorter TTL for dashboard data)

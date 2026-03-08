@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { updateLastLogin } from "../modules/admin/admin.service";
 
 // Extend Express Request để thêm user info
 declare global {
@@ -24,6 +25,19 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key";
 const BYPASS_AUTH = process.env.BYPASS_AUTH === "true"; // Development mode
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || "http://localhost:8080";
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || "inventory-management";
+
+/** Throttle map for last_login updates (userId → last update timestamp) */
+const loginTrackThrottle = new Map<string, number>();
+const LOGIN_TRACK_INTERVAL_MS = 5 * 60_000; // update at most once per 5 min per user
+
+function trackLogin(userId: string): void {
+  const now = Date.now();
+  const lastTracked = loginTrackThrottle.get(userId) ?? 0;
+  if (now - lastTracked < LOGIN_TRACK_INTERVAL_MS) return;
+  loginTrackThrottle.set(userId, now);
+  // Fire-and-forget — don't block the request
+  updateLastLogin(userId).catch(() => {});
+}
 
 /** Cached Keycloak public key (fetched dynamically) */
 let cachedPublicKey: string | null = null;
@@ -80,6 +94,8 @@ export const authenticateJWT = async (
       email: "dev@example.com",
       roles: ["admin", "inventory_manager", "quality_control", "production"],
     };
+    // Track login for the first admin user (fire-and-forget)
+    trackLogin("USR-001");
     next();
     return;
   }
@@ -113,13 +129,18 @@ export const authenticateJWT = async (
     // Extract user info từ JWT payload
     const roles = decoded.realm_access?.roles || decoded.roles || [];
 
+    const userId = decoded.sub || decoded.user_id || "unknown";
+
     req.user = {
-      user_id: decoded.sub || decoded.user_id || "unknown",
+      user_id: userId,
       username: decoded.preferred_username || decoded.username || "unknown",
       email: decoded.email,
       roles: roles,
       realm_access: decoded.realm_access,
     };
+
+    // Track login time (throttled, fire-and-forget)
+    trackLogin(userId);
 
     next();
   } catch (error) {

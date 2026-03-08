@@ -66,6 +66,15 @@ const start = async (): Promise<void> => {
     }
     console.log("✓ Đã kết nối PostgreSQL");
     done();
+
+    // One-time migration: set last_login for users who have never logged in
+    pool.query(
+      `UPDATE users SET last_login = modified_date WHERE last_login IS NULL`
+    ).then((res) => {
+      if (res.rowCount && res.rowCount > 0) {
+        console.log(`✓ Initialized last_login for ${res.rowCount} user(s)`);
+      }
+    }).catch((e) => console.warn("last_login migration skipped:", e.message));
   });
 
   // Kết nối Redis (không bắt buộc — app vẫn chạy nếu Redis không có)

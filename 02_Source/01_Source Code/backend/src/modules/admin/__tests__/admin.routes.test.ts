@@ -44,7 +44,7 @@ describe('Admin Routes', () => {
           email: 'admin@test.com',
           role: UserRole.ADMIN,
           is_active: true,
-          last_login: null,
+          last_login_at: null,
           created_date: new Date(),
           modified_date: new Date(),
         },
@@ -54,7 +54,7 @@ describe('Admin Routes', () => {
           email: 'manager@test.com',
           role: UserRole.INVENTORY_MANAGER,
           is_active: true,
-          last_login: null,
+          last_login_at: null,
           created_date: new Date(),
           modified_date: new Date(),
         },
@@ -84,7 +84,7 @@ describe('Admin Routes', () => {
           email: 'admin@test.com',
           role: UserRole.ADMIN,
           is_active: true,
-          last_login: null,
+          last_login_at: null,
           created_date: new Date(),
           modified_date: new Date(),
         },
@@ -153,7 +153,7 @@ describe('Admin Routes', () => {
         email: 'admin@test.com',
         role: UserRole.ADMIN,
         is_active: true,
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -206,7 +206,7 @@ describe('Admin Routes', () => {
 
       const createdUser = {
         ...newUser,
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -316,7 +316,7 @@ describe('Admin Routes', () => {
         user_id: 'USR-001',
         ...updateData,
         is_active: true,
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -378,7 +378,7 @@ describe('Admin Routes', () => {
         email: 'admin@test.com',
         role: UserRole.ADMIN,
         is_active: false, // Toggled to inactive
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -400,7 +400,7 @@ describe('Admin Routes', () => {
         email: 'admin@test.com',
         role: UserRole.ADMIN,
         is_active: true, // Toggled to active
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -427,18 +427,15 @@ describe('Admin Routes', () => {
   describe('GET /api/admin/stats', () => {
     it('should return admin statistics successfully', async () => {
       const mockStats = {
-        totalUsers: 5,
-        activeUsers: 4,
-        usersByRole: {
-          Admin: 1,
-          InventoryManager: 2,
-          QualityControl: 0,
-          Production: 0,
-          Viewer: 2,
-        },
-        totalLots: 10,
-        quarantineLots: 3,
-        todayTransactions: 5,
+        total_active_users: 4,
+        today_transactions: 5,
+        total_lots: 10,
+        lots_in_quarantine: 3,
+        users_by_role: [
+          { role: "admin", count: 1 },
+          { role: "inventory_manager", count: 2 },
+          { role: "viewer", count: 2 },
+        ],
       };
 
       mockAdminService.getAdminStats.mockResolvedValueOnce(mockStats);

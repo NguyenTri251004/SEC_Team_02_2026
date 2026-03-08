@@ -36,7 +36,7 @@ describe('Admin Service', () => {
           email: 'admin@test.com',
           role: UserRole.ADMIN,
           is_active: true,
-          last_login: null,
+          last_login_at: null,
           created_date: new Date(),
           modified_date: new Date(),
         },
@@ -46,7 +46,7 @@ describe('Admin Service', () => {
           email: 'manager@test.com',
           role: UserRole.INVENTORY_MANAGER,
           is_active: true,
-          last_login: null,
+          last_login_at: null,
           created_date: new Date(),
           modified_date: new Date(),
         },
@@ -80,7 +80,7 @@ describe('Admin Service', () => {
           email: 'admin@test.com',
           role: UserRole.ADMIN,
           is_active: true,
-          last_login: null,
+          last_login_at: null,
           created_date: new Date(),
           modified_date: new Date(),
         },
@@ -146,7 +146,7 @@ describe('Admin Service', () => {
         email: 'admin@test.com',
         role: UserRole.ADMIN,
         is_active: true,
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -175,7 +175,7 @@ describe('Admin Service', () => {
         email: 'admin@test.com',
         role: UserRole.ADMIN,
         is_active: true,
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -217,7 +217,7 @@ describe('Admin Service', () => {
         email: 'admin@test.com',
         role: UserRole.ADMIN,
         is_active: true,
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -255,7 +255,7 @@ describe('Admin Service', () => {
         email: input.email,
         role: input.role,
         is_active: true,
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -345,7 +345,7 @@ describe('Admin Service', () => {
         email: 'old@test.com',
         role: UserRole.VIEWER,
         is_active: true,
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -416,7 +416,7 @@ describe('Admin Service', () => {
         email: 'admin@test.com',
         role: UserRole.ADMIN,
         is_active: true,
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -444,7 +444,7 @@ describe('Admin Service', () => {
         email: 'admin@test.com',
         role: UserRole.ADMIN,
         is_active: true,
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -481,7 +481,7 @@ describe('Admin Service', () => {
         email: 'admin@test.com',
         role: UserRole.ADMIN,
         is_active: false, // Toggled
-        last_login: null,
+        last_login_at: null,
         created_date: new Date(),
         modified_date: new Date(),
       };
@@ -545,31 +545,31 @@ describe('Admin Service', () => {
       const result = await adminService.getAdminStats();
 
       expect(result).toMatchObject({
-        totalUsers: 5,
-        activeUsers: 4,
-        totalLots: 10,
-        quarantineLots: 3,
-        todayTransactions: 5,
+        total_active_users: 4,
+        today_transactions: 5,
+        total_lots: 10,
+        lots_in_quarantine: 3,
       });
-      expect(result.usersByRole.Admin).toBe(1);
-      expect(result.usersByRole.InventoryManager).toBe(2);
-      expect(result.usersByRole.Viewer).toBe(2);
+      expect(result.users_by_role).toEqual(
+        expect.arrayContaining([
+          { role: 'admin', count: 1 },
+          { role: 'inventory_manager', count: 2 },
+          { role: 'viewer', count: 2 },
+        ])
+      );
     });
 
     it('should return stats from cache when available', async () => {
       const cachedStats = {
-        totalUsers: 5,
-        activeUsers: 4,
-        usersByRole: {
-          Admin: 1,
-          InventoryManager: 2,
-          QualityControl: 0,
-          Production: 0,
-          Viewer: 2,
-        },
-        totalLots: 10,
-        quarantineLots: 3,
-        todayTransactions: 5,
+        total_active_users: 4,
+        today_transactions: 5,
+        total_lots: 10,
+        lots_in_quarantine: 3,
+        users_by_role: [
+          { role: 'admin', count: 1 },
+          { role: 'inventory_manager', count: 2 },
+          { role: 'viewer', count: 2 },
+        ],
       };
 
       mockRedis.get.mockResolvedValueOnce(JSON.stringify(cachedStats));
