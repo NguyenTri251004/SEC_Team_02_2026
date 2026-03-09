@@ -13,6 +13,7 @@ import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import reportRoutes from "./modules/reports/reports.routes";
 import productionRoutes from "./modules/production/production.routes";
 import adminRoutes from "./modules/admin/admin.routes";
+import authRoutes from "./modules/auth/auth.routes";
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 // Module routes
+app.use("/api/auth", authRoutes);
 app.use("/api/materials", materialRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/search", searchRoutes);

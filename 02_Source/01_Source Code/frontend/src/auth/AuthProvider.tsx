@@ -1,120 +1,117 @@
 import { useEffect, useState, useCallback, type ReactNode } from "react";
-import keycloak from "./keycloak";
 import type { CurrentUser, UserRole } from "../types";
 import { AuthContext } from "./context";
-import { ROLE_TAG } from "../constants/roles";
 
-/** Read from env variable VITE_BYPASS_KEYCLOAK.
- *  Set to "true" to enable role switching in UI (demo mode);
- *  Set to "false" to use Keycloak login/logout (production).
- *  Defaults to true if not set (for backwards compatibility).
- */
-export const BYPASS_KEYCLOAK = (import.meta.env.VITE_BYPASS_KEYCLOAK ?? "true") !== "false";
+const TOKEN_KEY = "ims_token";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
-let didInit = false;
+// Keep exported so AppLayout can still reference it (always false now = no demo role switcher)
+export const BYPASS_KEYCLOAK = false;
 
-/** Extract UserRole list from ROLE_TAG */
-const APP_ROLES = Object.keys(ROLE_TAG) as UserRole[];
-
-const DEMO_USER: CurrentUser = {
-  user_id: "demo-001",
-  username: "demo_user",
-  email: "demo@example.com",
-  role: "admin",
-  is_active: true,
-  last_login_at: new Date().toISOString(),
-};
-
-function resolveUserRoleFromRealmRoles(realmRoles: string[]): UserRole {
-  const matchedRole = APP_ROLES.find((role) => realmRoles.includes(role));
-  return matchedRole ?? "viewer";
+function parseToken(token: string): CurrentUser | null {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1])) as {
+      user_id?: string;
+      username?: string;
+      email?: string;
+      role?: string;
+    };
+    if (!payload.user_id || !payload.username || !payload.role) return null;
+    return {
+      user_id: payload.user_id,
+      username: payload.username,
+      email: payload.email ?? "",
+      role: payload.role as UserRole,
+      is_active: true,
+      last_login_at: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isInitialized, setIsInitialized] = useState(BYPASS_KEYCLOAK);
-  const [isAuthenticated, setIsAuthenticated] = useState(BYPASS_KEYCLOAK);
-  const [userRoles, setUserRoles] = useState<string[]>(
-    BYPASS_KEYCLOAK ? [DEMO_USER.role] : [],
-  );
-  const [user, setUser] = useState<CurrentUser | null>(
-    BYPASS_KEYCLOAK ? DEMO_USER : null,
-  );
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [token, setToken] = useState<string | undefined>(undefined);
 
-  const switchRole = useCallback((role: UserRole) => {
-    if (!BYPASS_KEYCLOAK) {
-      console.warn(
-        "Role switching disabled. Enable BYPASS_KEYCLOAK to allow demo mode.",
-      );
-      return;
+  // Restore session from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(TOKEN_KEY);
+    if (stored) {
+      const parsed = parseToken(stored);
+      if (parsed) {
+        setUser(parsed);
+        setToken(stored);
+        setIsAuthenticated(true);
+      } else {
+        localStorage.removeItem(TOKEN_KEY);
+      }
     }
-    setUser((prev) => (prev ? { ...prev, role } : prev));
-    setUserRoles((prev) => {
-      const next = prev.filter((item) => !APP_ROLES.includes(item as UserRole));
-      return [role, ...next];
-    });
+    setIsInitialized(true);
   }, []);
 
-  useEffect(() => {
-    if (BYPASS_KEYCLOAK) return;
-
-    if (didInit) return;
-    didInit = true;
-
-    keycloak
-      .init({
-        onLoad: "login-required",
-        checkLoginIframe: false,
-      })
-      .then((authenticated) => {
-        setIsAuthenticated(authenticated);
-
-        if (authenticated) {
-          const realmRoles = keycloak.tokenParsed?.realm_access?.roles ?? [];
-          setUserRoles(realmRoles);
-
-          const role = resolveUserRoleFromRealmRoles(realmRoles);
-          setUser({
-            user_id: String(keycloak.tokenParsed?.sub ?? ""),
-            username: String(
-              keycloak.tokenParsed?.preferred_username ??
-                keycloak.tokenParsed?.name ??
-                "user",
-            ),
-            email: String(keycloak.tokenParsed?.email ?? ""),
-            role,
-            is_active: true,
-            last_login_at: new Date().toISOString(),
-          });
-
-          window.history.replaceState(
-            {},
-            document.title,
-            window.location.pathname,
-          );
-        } else {
-          setUser(null);
-          setUserRoles([]);
-        }
-
-        setIsInitialized(true);
-      })
-      .catch((error) => {
-        console.error("Keycloak initialization failed:", error);
-        setIsInitialized(true);
+  const loginWithCredentials = useCallback(
+    async (username: string, password: string) => {
+      const res = await fetch(`${BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
       });
-
-    keycloak.onTokenExpired = () => {
-      keycloak.updateToken(30).catch(() => {
-        console.warn("Session expired. Automatically logging out.");
-        keycloak.logout({ redirectUri: window.location.origin });
+      const data = (await res.json()) as {
+        success: boolean;
+        token?: string;
+        user?: { user_id: string; username: string; email: string; role: string };
+        error?: string;
+      };
+      if (!res.ok || !data.success || !data.token || !data.user) {
+        throw new Error(data.error ?? "Đăng nhập thất bại");
+      }
+      localStorage.setItem(TOKEN_KEY, data.token);
+      setToken(data.token);
+      setUser({
+        user_id: data.user.user_id,
+        username: data.user.username,
+        email: data.user.email ?? "",
+        role: data.user.role as UserRole,
+        is_active: true,
+        last_login_at: new Date().toISOString(),
       });
-    };
+      setIsAuthenticated(true);
+    },
+    [],
+  );
+
+  const logout = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY);
+    setToken(undefined);
+    setUser(null);
+    setIsAuthenticated(false);
   }, []);
 
   if (!isInitialized) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+      <div
+        style={{
+          display: "flex",
+          height: "100vh",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#f0f2f5",
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            border: "3px solid #1677ff",
+            borderTopColor: "transparent",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+          }}
+        />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -124,23 +121,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         isAuthenticated,
         isInitialized,
-        userRoles,
+        userRoles: user ? [user.role] : [],
         user,
-        switchRole,
-        login: () => {
-          if (BYPASS_KEYCLOAK) return;
-          keycloak.login({ redirectUri: window.location.href });
-        },
-        logout: () => {
-          if (BYPASS_KEYCLOAK) {
-            setIsAuthenticated(false);
-            setUser(null);
-            setUserRoles([]);
-            return;
-          }
-          keycloak.logout({ redirectUri: window.location.origin });
-        },
-        token: keycloak.token,
+        loginWithCredentials,
+        login: () => {},
+        logout,
+        switchRole: () => {},
+        token,
       }}
     >
       {children}

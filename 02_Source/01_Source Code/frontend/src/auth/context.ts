@@ -6,6 +6,7 @@ export interface AuthContextType {
   isInitialized: boolean;
   login: () => void;
   logout: () => void;
+  loginWithCredentials: (username: string, password: string) => Promise<void>;
   userRoles: string[];
   user: CurrentUser | null;
   switchRole: (role: UserRole) => void;

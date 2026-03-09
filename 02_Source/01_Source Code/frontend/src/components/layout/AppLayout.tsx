@@ -4,7 +4,7 @@ import {
   Menu,
   Dropdown,
   Space,
-  Select,
+  Tag,
   Typography,
   Breadcrumb,
 } from "antd";
@@ -26,7 +26,6 @@ import {
 } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../auth/context";
-import { BYPASS_KEYCLOAK } from "../../auth/AuthProvider";
 import type { UserRole } from "../../types";
 import { ROLE_TAG } from "../../constants/roles";
 
@@ -85,7 +84,7 @@ function getSidebarItems(role: UserRole) {
 }
 
 export default function AppLayout() {
-  const { user, switchRole, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -193,20 +192,12 @@ export default function AppLayout() {
           </Space>
 
           <Space size="middle">
-            {BYPASS_KEYCLOAK && (
-              <Select
-                value={role}
-                onChange={(v) => switchRole(v as UserRole)}
-                style={{ width: 180 }}
-                options={Object.entries(ROLE_TAG).map(([value, { label }]) => ({
-                  value,
-                  label,
-                }))}
-                size="small"
-                variant="borderless"
-                aria-label="Switch role"
-              />
-            )}
+            <Tag
+              color={ROLE_TAG[role]?.color ?? "default"}
+              style={{ fontSize: 13, padding: "2px 10px", fontWeight: 600 }}
+            >
+              {ROLE_TAG[role]?.label ?? role}
+            </Tag>
             <Dropdown
               menu={{
                 items: userMenuItems,
