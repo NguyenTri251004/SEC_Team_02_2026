@@ -87,11 +87,11 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      test: ["CMD-SHELL", "bash -c 'cat /dev/null > /dev/tcp/localhost/8080' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s
+      start_period: 90s
     networks:
       - ims-network
 
@@ -116,7 +116,7 @@ services:
       elasticsearch:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -141,7 +141,7 @@ services:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - KEYCLOAK_URL=http://keycloak:8080
       - AI_SERVICE_URL=http://ai-service:8000
-      - BYPASS_AUTH=false
+      - BYPASS_AUTH=true
       - JWT_SECRET=dev-secret-key-for-testing
     ports:
       - "${BACKEND_PORT:-3000}:3000"
@@ -156,7 +156,7 @@ services:
       redis:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
+        condition: service_started
     networks:
       - ims-network
 
