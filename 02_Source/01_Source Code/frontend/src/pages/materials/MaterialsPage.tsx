@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Button, Input } from "antd";
-import { PlusOutlined, SearchOutlined, EditOutlined } from "@ant-design/icons";
+import { Button, Input, Popconfirm, message } from "antd";
+import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 
 import DashboardPage from "../dashboard/DashboardPage";
 import { DataTableCard } from "../../components/dashboard";
 import { MaterialFormModal } from "../../components/materials/MaterialFormModal";
-import { useMaterials, type Material } from "../../hooks/useMaterialsData";
+import { useMaterials, useDeleteMaterial, type Material } from "../../hooks/useMaterialsData";
 import { SECTION_GAP } from "../../constants/theme";
 
 import {
@@ -24,6 +24,16 @@ export default function MaterialsPage() {
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
 
   const { data: materials = [], isLoading } = useMaterials();
+  const { mutateAsync: deleteMaterial } = useDeleteMaterial();
+
+  const handleDelete = async (materialId: string) => {
+    try {
+      await deleteMaterial(materialId);
+      message.success('Material deleted successfully!');
+    } catch {
+      message.error('Failed to delete material.');
+    }
+  };
 
   const filteredData = materials.filter(
     (m: Material) =>
@@ -52,11 +62,27 @@ export default function MaterialsPage() {
       title: "Action",
       key: "action",
       render: (_, record) => (
-        <Button
-          type="text"
-          icon={<EditOutlined />}
-          onClick={() => openEditModal(record)}
-        />
+        <>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => openEditModal(record)}
+          />
+          <Popconfirm
+            title="Delete material"
+            description={`Are you sure you want to delete "${record.material_name}"?`}
+            onConfirm={() => handleDelete(record.material_id)}
+            okText="Delete"
+            okButtonProps={{ danger: true }}
+            cancelText="Cancel"
+          >
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+            />
+          </Popconfirm>
+        </>
       ),
     },
   ];

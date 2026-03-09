@@ -15,6 +15,8 @@ export function MaterialFormModal({ isOpen, onClose, initialData }: MaterialForm
 
   useEffect(() => {
     if (isOpen) {
+      // Always reset first to clear any previous values
+      form.resetFields();
       if (initialData) {
         form.setFieldsValue({
           ...initialData,
@@ -22,7 +24,6 @@ export function MaterialFormModal({ isOpen, onClose, initialData }: MaterialForm
           specification_document: initialData.specification_document || '',
         });
       } else {
-        form.resetFields();
         form.setFieldsValue({ material_type: 'API' });
       }
     }
@@ -31,7 +32,9 @@ export function MaterialFormModal({ isOpen, onClose, initialData }: MaterialForm
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      await saveMaterial({ isEditing, data: values });
+      // Ensure material_id is always present when editing (disabled fields may be excluded)
+      const data = isEditing ? { ...values, material_id: initialData!.material_id } : values;
+      await saveMaterial({ isEditing, data });
       message.success(`Material ${isEditing ? 'updated' : 'created'} successfully!`);
       onClose();
     } catch (error: any) {
@@ -50,7 +53,7 @@ export function MaterialFormModal({ isOpen, onClose, initialData }: MaterialForm
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={isPending}
-      destroyOnClose
+      forceRender
     >
       <Form form={form} layout="vertical" preserve={false}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
