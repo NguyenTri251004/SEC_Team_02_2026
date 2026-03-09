@@ -141,7 +141,7 @@ services:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - KEYCLOAK_URL=http://keycloak:8080
       - AI_SERVICE_URL=http://ai-service:8000
-      - BYPASS_AUTH=true
+      - BYPASS_AUTH=false
       - JWT_SECRET=dev-secret-key-for-testing
     ports:
       - "${BACKEND_PORT:-3000}:3000"
