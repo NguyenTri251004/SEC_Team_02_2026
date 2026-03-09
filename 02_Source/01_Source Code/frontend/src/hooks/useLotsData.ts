@@ -115,3 +115,16 @@ export const useUpdateLotStatus = () => {
     },
   });
 };
+
+export const useDeleteLot = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (lotId: string) => {
+      return api.delete(`/api/lots/${lotId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lots"] });
+    },
+  });
+};

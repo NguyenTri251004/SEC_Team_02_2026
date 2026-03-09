@@ -171,3 +171,11 @@ export const getLotsByMaterial = async (materialId: string): Promise<InventoryLo
   );
   return result.rows;
 };
+
+export const deleteLot = async (id: string): Promise<boolean> => {
+  const result = await pool.query(
+    `DELETE FROM inventory_lots WHERE lot_id = $1`,
+    [id]
+  );
+  return (result.rowCount ?? 0) > 0;
+};

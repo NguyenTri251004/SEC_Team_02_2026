@@ -168,4 +168,24 @@ router.patch(
   }
 );
 
+// DELETE /api/lots/:id — Xoa lot
+router.delete(
+  "/:id",
+  authenticateJWT,
+  requirePermission("lots", "delete"),
+  async (req: Request, res: Response) => {
+    try {
+      const deleted = await lotService.deleteLot(req.params.id);
+      if (!deleted) {
+        res.status(404).json({ success: false, error: "Khong tim thay lot" });
+        return;
+      }
+      res.json({ success: true, message: "Da xoa lot thanh cong" });
+    } catch (error) {
+      console.error("Loi xoa lot:", error);
+      res.status(500).json({ success: false, error: "Khong the xoa lot" });
+    }
+  }
+);
+
 export default router;

@@ -20,6 +20,7 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
 
   useEffect(() => {
     if (isOpen) {
+      form.resetFields();
       if (initialData) {
         form.setFieldsValue({
           ...initialData,
@@ -30,7 +31,6 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
             : null,
         });
       } else {
-        form.resetFields();
         form.setFieldsValue({
           received_date: dayjs(),
           is_sample: false,
@@ -70,7 +70,7 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={isPending}
-      destroyOnClose
+      forceRender
       width={640}
     >
       <Form form={form} layout="vertical" preserve={false}>
