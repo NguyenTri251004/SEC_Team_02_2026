@@ -57,7 +57,7 @@ export interface InventoryLot {
   material_type?: string;
 }
 
-export type TransactionType = "Receipt" | "Usage" | "Adjustment" | "Transfer";
+export type TransactionType = "Receipt" | "Usage" | "Adjustment" | "Transfer" | "Split" | "Disposal" | "QC_Approved" | "QC_Rejected";
 
 export interface InventoryTransaction {
   transaction_id: string;

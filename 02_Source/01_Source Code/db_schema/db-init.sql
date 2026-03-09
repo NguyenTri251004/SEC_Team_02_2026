@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS inventory_transactions (
   transaction_id    VARCHAR(36)    PRIMARY KEY,
   lot_id            VARCHAR(36)    NOT NULL REFERENCES inventory_lots(lot_id),
   transaction_type  VARCHAR(20)    NOT NULL
-                      CHECK (transaction_type IN ('Receipt','Usage','Split','Transfer','Adjustment','Disposal')),
+                      CHECK (transaction_type IN ('Receipt','Usage','Split','Transfer','Adjustment','Disposal','QC_Approved','QC_Rejected')),
   quantity          DECIMAL(10,3)  NOT NULL,
   unit_of_measure   VARCHAR(10)    NOT NULL,
   reference_id      VARCHAR(50),

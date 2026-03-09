@@ -1,5 +1,7 @@
+import crypto from "crypto";
 import { Router, Request, Response } from "express";
 import * as lotService from "./lot.service";
+import * as transactionService from "../transactions/transaction.service";
 import { authenticateJWT } from "../../security/auth";
 import { requirePermission } from "../../security/rbac";
 import { LotStatus } from "./lot.types";
@@ -103,6 +105,23 @@ router.post(
       }
 
       const lot = await lotService.createLot(req.body);
+
+      // Auto-log Receipt transaction
+      try {
+        await transactionService.createTransaction({
+          transaction_id: crypto.randomUUID(),
+          transaction_type: "Receipt" as const,
+          lot_id: lot.lot_id,
+          quantity: lot.quantity,
+          unit_of_measure: lot.unit_of_measure,
+          reference_id: undefined,
+          notes: `Lot received from ${lot.supplier_name}`,
+          performed_by: req.user?.username ?? "SYSTEM",
+        });
+      } catch (e) {
+        console.warn("Auto-log Receipt transaction failed:", e);
+      }
+
       res.status(201).json({ success: true, data: lot });
     } catch (error: unknown) {
       console.error("Loi tao lot:", error);
@@ -159,6 +178,31 @@ router.patch(
         res.status(404).json({ success: false, error: "Khong tim thay lot" });
         return;
       }
+
+      // Auto-log transaction based on new status
+      const txnTypeMap: Partial<Record<LotStatus, string>> = {
+        Accepted: "QC_Approved",
+        Rejected: "QC_Rejected",
+        Depleted: "Disposal",
+      };
+      const txnType = txnTypeMap[status as LotStatus];
+      if (txnType) {
+        try {
+          await transactionService.createTransaction({
+            transaction_id: crypto.randomUUID(),
+          transaction_type: txnType as import("../transactions/transaction.types").TransactionType,
+          lot_id: lot.lot_id,
+          quantity: lot.quantity,
+          unit_of_measure: lot.unit_of_measure,
+          reference_id: undefined,
+            notes: reason ?? `Status changed to ${status}`,
+            performed_by: req.user?.username ?? "SYSTEM",
+          });
+        } catch (e) {
+          console.warn("Auto-log status transaction failed:", e);
+        }
+      }
+
       res.json({ success: true, data: lot });
     } catch (error) {
       console.error("Loi cap nhat trang thai lot:", error);

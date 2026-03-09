@@ -71,7 +71,7 @@ router.post(
       // Auto-generate transaction_id if not provided
       const transaction_id = req.body.transaction_id || crypto.randomUUID();
 
-      const validTypes = ["Receipt", "Usage", "Split", "Transfer", "Adjustment", "Disposal"];
+      const validTypes = ["Receipt", "Usage", "Split", "Transfer", "Adjustment", "Disposal", "QC_Approved", "QC_Rejected"];
 
       if (!transaction_type || !lot_id || quantity == null) {
         res.status(400).json({

@@ -1,4 +1,4 @@
-export type TransactionType = "Receipt" | "Usage" | "Split" | "Transfer" | "Adjustment" | "Disposal";
+export type TransactionType = "Receipt" | "Usage" | "Split" | "Transfer" | "Adjustment" | "Disposal" | "QC_Approved" | "QC_Rejected";
 
 export interface Transaction {
   transaction_id: string;

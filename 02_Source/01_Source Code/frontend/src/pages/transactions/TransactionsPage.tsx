@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Button, Input, Tag } from "antd";
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { Input, Tag } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
 import DashboardPage from "../dashboard/DashboardPage";
 import { DataTableCard } from "../../components/dashboard";
-import { TransactionFormModal } from "../../components/transactions/TransactionFormModal";
 import { useTransactions } from "../../hooks/useTransactionsData";
 import { SECTION_GAP, TXN_TYPE_TAG } from "../../constants/theme";
 import type { InventoryTransaction } from "../../types";
@@ -14,7 +13,6 @@ import type { InventoryTransaction } from "../../types";
 export default function TransactionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: transactions = [], isLoading } = useTransactions();
-  const [formOpen, setFormOpen] = useState(false);
 
   const filteredData = transactions.filter(
     (t) =>
@@ -104,11 +102,6 @@ export default function TransactionsPage() {
     <DashboardPage
       title="Transaction History"
       subtitle="View all inventory movements: receipts, usage, adjustments, and transfers"
-      actions={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-          Record Transaction
-        </Button>
-      }
     >
       <div style={{ marginTop: SECTION_GAP }}>
         <DataTableCard<InventoryTransaction>
@@ -131,11 +124,6 @@ export default function TransactionsPage() {
           scroll={{ x: 1200 }}
         />
       </div>
-
-      <TransactionFormModal
-        isOpen={formOpen}
-        onClose={() => setFormOpen(false)}
-      />
     </DashboardPage>
   );
 }

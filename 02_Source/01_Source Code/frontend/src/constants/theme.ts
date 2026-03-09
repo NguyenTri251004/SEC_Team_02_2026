@@ -37,6 +37,8 @@ export const TXN_TYPE_TAG: Record<string, TagCfg> = {
   Transfer: { color: "blue", label: "Transfer" },
   Adjustment: { color: "gold", label: "Adjustment" },
   Disposal: { color: "red", label: "Disposal" },
+  QC_Approved: { color: "geekblue", label: "QC Approved" },
+  QC_Rejected: { color: "magenta", label: "QC Rejected" },
 };
 
 // ── Layout spacing ──────────────────────────────────────────────
