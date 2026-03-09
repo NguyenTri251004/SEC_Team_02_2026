@@ -18,15 +18,14 @@ export function UserFormModal({ isOpen, onClose, initialData }: UserFormModalPro
 
   useEffect(() => {
     if (isOpen) {
+      form.resetFields();
       if (initialData) {
         form.setFieldsValue({
           username: initialData.username,
           email: initialData.email,
           role: initialData.role,
-          is_active: initialData.is_active,
         });
       } else {
-        form.resetFields();
         form.setFieldsValue({ is_active: true });
       }
     }
@@ -36,7 +35,7 @@ export function UserFormModal({ isOpen, onClose, initialData }: UserFormModalPro
     try {
       const values = await form.validateFields();
       const payload = isEditing
-        ? { user_id: initialData!.user_id, email: values.email, role: values.role, is_active: values.is_active }
+        ? { user_id: initialData!.user_id, username: values.username, email: values.email, role: values.role }
         : { username: values.username, email: values.email, password: values.password, role: values.role, is_active: values.is_active };
       await saveUser({ isEditing, data: payload });
       message.success(`User ${isEditing ? "updated" : "created"} successfully!`);
@@ -59,7 +58,7 @@ export function UserFormModal({ isOpen, onClose, initialData }: UserFormModalPro
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={isPending}
-      destroyOnClose
+      forceRender
       width={520}
     >
       <Form form={form} layout="vertical" preserve={false}>
@@ -69,7 +68,7 @@ export function UserFormModal({ isOpen, onClose, initialData }: UserFormModalPro
             label="Username"
             rules={[{ required: true, message: "Please enter username" }]}
           >
-            <Input disabled={isEditing} placeholder="Ex: john_doe" />
+            <Input placeholder="Ex: john_doe" />
           </Form.Item>
 
           <Form.Item
@@ -97,7 +96,7 @@ export function UserFormModal({ isOpen, onClose, initialData }: UserFormModalPro
           </Form.Item>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isEditing ? "1fr" : "1fr 1fr", gap: 16 }}>
           <Form.Item
             name="role"
             label="Role"
@@ -112,9 +111,11 @@ export function UserFormModal({ isOpen, onClose, initialData }: UserFormModalPro
             />
           </Form.Item>
 
-          <Form.Item name="is_active" label="Active" valuePropName="checked">
-            <Switch />
-          </Form.Item>
+          {!isEditing && (
+            <Form.Item name="is_active" label="Active" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          )}
         </div>
       </Form>
     </Modal>
