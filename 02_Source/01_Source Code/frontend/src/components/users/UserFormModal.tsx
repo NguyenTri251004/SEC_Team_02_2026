@@ -36,16 +36,17 @@ export function UserFormModal({ isOpen, onClose, initialData }: UserFormModalPro
       const values = await form.validateFields();
       const payload = isEditing
         ? { user_id: initialData!.user_id, username: values.username, email: values.email, role: values.role }
-        : { username: values.username, email: values.email, password: values.password, role: values.role, is_active: values.is_active };
+        : { username: values.username, email: values.email, initial_password: values.password, role: values.role, is_active: values.is_active };
       await saveUser({ isEditing, data: payload });
       message.success(`User ${isEditing ? "updated" : "created"} successfully!`);
       onClose();
-    } catch (error: any) {
-      if (error.response?.status === 409) {
+    } catch (error) {
+      const err = error as { response?: { status?: number; data?: { error?: string } }; name?: string };
+      if (err.response?.status === 409) {
         message.error("Username or email already exists!");
-      } else if (error.response?.status === 400) {
-        message.error(error.response?.data?.error || "Invalid data");
-      } else if (error.name !== "ValidationError") {
+      } else if (err.response?.status === 400) {
+        message.error(err.response?.data?.error || "Invalid data");
+      } else if (err.name !== "ValidationError") {
         message.error("An error occurred while saving.");
       }
     }
@@ -86,13 +87,13 @@ export function UserFormModal({ isOpen, onClose, initialData }: UserFormModalPro
         {!isEditing && (
           <Form.Item
             name="password"
-            label="Password"
+            label="Initial Password (stored in Keycloak only)"
             rules={[
-              { required: true, message: "Please enter password" },
-              { min: 6, message: "Password must be at least 6 characters" },
+              { required: true, message: "Please enter an initial password" },
+              { min: 8, message: "Password must be at least 8 characters" },
             ]}
           >
-            <Input.Password placeholder="Enter password" />
+            <Input.Password placeholder="Min. 8 characters" />
           </Form.Item>
         )}
 
