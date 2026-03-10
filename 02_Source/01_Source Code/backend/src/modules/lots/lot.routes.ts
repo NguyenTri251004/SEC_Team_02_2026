@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { Router, Request, Response } from "express";
 import * as lotService from "./lot.service";
 import * as transactionService from "../transactions/transaction.service";
@@ -92,14 +91,14 @@ router.post(
   requirePermission("lots", "create"),
   async (req: Request, res: Response) => {
     try {
-      const { lot_id, material_id, manufacturer_name, manufacturer_lot, supplier_name,
+      const { material_id, manufacturer_name, manufacturer_lot, supplier_name,
               received_date, expiration_date, quantity, unit_of_measure } = req.body;
 
-      if (!lot_id || !material_id || !manufacturer_name || !manufacturer_lot ||
+      if (!material_id || !manufacturer_name || !manufacturer_lot ||
           !supplier_name || !received_date || !expiration_date || !quantity || !unit_of_measure) {
         res.status(400).json({
           success: false,
-          error: "Thieu thong tin bat buoc: lot_id, material_id, manufacturer_name, manufacturer_lot, supplier_name, received_date, expiration_date, quantity, unit_of_measure",
+          error: "Thieu thong tin bat buoc: material_id, manufacturer_name, manufacturer_lot, supplier_name, received_date, expiration_date, quantity, unit_of_measure",
         });
         return;
       }
@@ -109,7 +108,6 @@ router.post(
       // Auto-log Receipt transaction
       try {
         await transactionService.createTransaction({
-          transaction_id: crypto.randomUUID(),
           transaction_type: "Receipt" as const,
           lot_id: lot.lot_id,
           quantity: lot.quantity,
@@ -189,8 +187,7 @@ router.patch(
       if (txnType) {
         try {
           await transactionService.createTransaction({
-            transaction_id: crypto.randomUUID(),
-          transaction_type: txnType as import("../transactions/transaction.types").TransactionType,
+            transaction_type: txnType as import("../transactions/transaction.types").TransactionType,
           lot_id: lot.lot_id,
           quantity: lot.quantity,
           unit_of_measure: lot.unit_of_measure,

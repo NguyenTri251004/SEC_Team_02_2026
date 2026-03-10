@@ -45,6 +45,7 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
       const values = await form.validateFields();
       const payload = {
         ...values,
+        ...(isEditing && { lot_id: initialData!.lot_id }),
         received_date: values.received_date.format("YYYY-MM-DD"),
         expiration_date: values.expiration_date.format("YYYY-MM-DD"),
         in_use_expiration_date: values.in_use_expiration_date?.format("YYYY-MM-DD") ?? null,
@@ -74,31 +75,21 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
       width={640}
     >
       <Form form={form} layout="vertical" preserve={false}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <Form.Item
-            name="lot_id"
-            label="Lot ID"
-            rules={[{ required: true, message: "Please enter Lot ID" }]}
-          >
-            <Input disabled={isEditing} placeholder="Ex: LOT-009" />
-          </Form.Item>
-
-          <Form.Item
-            name="material_id"
-            label="Material"
-            rules={[{ required: true, message: "Please select a material" }]}
-          >
-            <Select
-              showSearch
-              placeholder="Select material"
-              optionFilterProp="label"
-              options={materials.map((m) => ({
-                value: m.material_id,
-                label: `${m.material_name} (${m.material_id})`,
-              }))}
-            />
-          </Form.Item>
-        </div>
+        <Form.Item
+          name="material_id"
+          label="Material"
+          rules={[{ required: true, message: "Please select a material" }]}
+        >
+          <Select
+            showSearch
+            placeholder="Select material"
+            optionFilterProp="label"
+            options={materials.map((m) => ({
+              value: m.material_id,
+              label: `${m.material_name} (${m.material_id})`,
+            }))}
+          />
+        </Form.Item>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <Form.Item

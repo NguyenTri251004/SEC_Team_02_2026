@@ -119,7 +119,22 @@ export const getTestsByLot = async (lotId: string): Promise<QCTest[]> => {
  * Tạo mới một QC test (result_status mặc định là 'Pending')
  */
 export const createTest = async (input: CreateQCTestInput): Promise<QCTest> => {
-  const testId = randomUUID();
+  // Generate QC-XXX formatted id
+  const seqResult = await pool.query<{ max_id: string | null }>(
+    `SELECT test_id AS max_id FROM qc_tests
+     WHERE test_id ~ '^QC-[0-9]+$'
+     ORDER BY LENGTH(test_id) DESC, test_id DESC
+     LIMIT 1`
+  );
+  const lastId = seqResult.rows[0]?.max_id;
+  let testId: string;
+  if (lastId) {
+    const num = parseInt(lastId.replace(/^QC-/, ""), 10);
+    testId = `QC-${String(num + 1).padStart(3, "0")}`;
+  } else {
+    const cnt = await pool.query<{ cnt: string }>(`SELECT COUNT(*) AS cnt FROM qc_tests`);
+    testId = `QC-${String(parseInt(cnt.rows[0]?.cnt ?? "0", 10) + 1).padStart(3, "0")}`;
+  }
   const testDate = input.test_date ?? new Date().toISOString();
 
   const sql = `

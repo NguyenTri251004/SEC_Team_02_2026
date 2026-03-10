@@ -56,23 +56,13 @@ export function MaterialFormModal({ isOpen, onClose, initialData }: MaterialForm
       forceRender
     >
       <Form form={form} layout="vertical" preserve={false}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <Form.Item 
-            name="material_id" 
-            label="Material ID" 
-            rules={[{ required: true, message: 'Please enter Material ID' }]}
-          >
-            <Input disabled={isEditing} placeholder="Ex: MAT-001" />
-          </Form.Item>
-
-          <Form.Item 
-            name="part_number" 
-            label="Part Number" 
-            rules={[{ required: true, message: 'Please enter Part Number' }]}
-          >
-            <Input placeholder="Ex: PART-12345" />
-          </Form.Item>
-        </div>
+        <Form.Item 
+          name="part_number" 
+          label="Part Number" 
+          rules={[{ required: true, message: 'Please enter Part Number' }]}
+        >
+          <Input placeholder="Ex: PART-12345" />
+        </Form.Item>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <Form.Item 

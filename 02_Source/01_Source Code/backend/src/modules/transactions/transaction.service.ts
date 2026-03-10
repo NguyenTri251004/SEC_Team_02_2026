@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import pool from "../../shared/db/pool";
 import { Transaction, CreateTransactionDto } from "./transaction.types";
 
@@ -39,9 +40,30 @@ export const getTransactionsByLot = async (
   return result.rows as Transaction[];
 };
 
+async function generateTransactionId(): Promise<string> {
+  const result = await pool.query<{ max_id: string | null }>(
+    `SELECT transaction_id AS max_id FROM inventory_transactions
+     WHERE transaction_id ~ '^TXN-[0-9]+$'
+     ORDER BY LENGTH(transaction_id) DESC, transaction_id DESC
+     LIMIT 1`
+  );
+  const last = result.rows[0]?.max_id;
+  if (last) {
+    const num = parseInt(last.replace(/^TXN-/, ""), 10);
+    return `TXN-${String(num + 1).padStart(3, "0")}`;
+  }
+  // Fallback: count all rows + 1
+  const countResult = await pool.query<{ cnt: string }>(
+    `SELECT COUNT(*) AS cnt FROM inventory_transactions`
+  );
+  const cnt = parseInt(countResult.rows[0]?.cnt ?? "0", 10);
+  return `TXN-${String(cnt + 1).padStart(3, "0")}`;
+}
+
 export const createTransaction = async (
   dto: CreateTransactionDto
 ): Promise<Transaction> => {
+  const transaction_id = dto.transaction_id ?? (await generateTransactionId());
   const result = await pool.query(
     `INSERT INTO inventory_transactions
        (transaction_id, transaction_type, lot_id, quantity, unit_of_measure, reference_id, notes, performed_by)
@@ -50,7 +72,7 @@ export const createTransaction = async (
                quantity, unit_of_measure, reference_id, notes,
                performed_by, transaction_date, created_date`,
     [
-      dto.transaction_id,
+      transaction_id,
       dto.transaction_type,
       dto.lot_id,
       dto.quantity,

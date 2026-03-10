@@ -52,7 +52,8 @@ export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTe
         message.error("Template content must be valid JSON");
         return;
       }
-      await saveTemplate({ isEditing, data: values });
+      const data = isEditing ? { ...values, template_id: initialData!.template_id } : values;
+      await saveTemplate({ isEditing, data });
       message.success(`Template ${isEditing ? "updated" : "created"} successfully!`);
       onClose();
     } catch (error: any) {
@@ -77,23 +78,13 @@ export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTe
       width={600}
     >
       <Form form={form} layout="vertical" preserve={false}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <Form.Item
-            name="template_id"
-            label="Template ID"
-            rules={[{ required: true, message: "Please enter Template ID" }]}
-          >
-            <Input disabled={isEditing} placeholder="Ex: TPL-004" />
-          </Form.Item>
-
-          <Form.Item
-            name="template_name"
-            label="Template Name"
-            rules={[{ required: true, message: "Please enter template name" }]}
-          >
-            <Input placeholder="Ex: Standard Lot Label" />
-          </Form.Item>
-        </div>
+        <Form.Item
+          name="template_name"
+          label="Template Name"
+          rules={[{ required: true, message: "Please enter template name" }]}
+        >
+          <Input placeholder="Ex: Standard Lot Label" />
+        </Form.Item>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
           <Form.Item

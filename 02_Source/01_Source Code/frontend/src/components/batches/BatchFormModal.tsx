@@ -60,31 +60,21 @@ export function BatchFormModal({ isOpen, onClose }: BatchFormModalProps) {
       width={640}
     >
       <Form form={form} layout="vertical" preserve={false}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <Form.Item
-            name="batch_id"
-            label="Batch ID"
-            rules={[{ required: true, message: "Please enter Batch ID" }]}
-          >
-            <Input placeholder="Ex: BATCH-004" />
-          </Form.Item>
-
-          <Form.Item
-            name="product_id"
-            label="Product"
-            rules={[{ required: true, message: "Please select a product" }]}
-          >
-            <Select
-              showSearch
-              placeholder="Select product"
-              optionFilterProp="label"
-              options={materials.map((m) => ({
-                value: m.material_id,
-                label: `${m.material_name} (${m.material_id})`,
-              }))}
-            />
-          </Form.Item>
-        </div>
+        <Form.Item
+          name="product_id"
+          label="Product"
+          rules={[{ required: true, message: "Please select a product" }]}
+        >
+          <Select
+            showSearch
+            placeholder="Select product"
+            optionFilterProp="label"
+            options={materials.map((m) => ({
+              value: m.material_id,
+              label: `${m.material_name} (${m.material_id})`,
+            }))}
+          />
+        </Form.Item>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <Form.Item

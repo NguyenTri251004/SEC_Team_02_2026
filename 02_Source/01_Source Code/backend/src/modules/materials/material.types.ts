@@ -10,7 +10,6 @@ export interface Material {
 }
 
 export interface CreateMaterialDto {
-  material_id: string;
   part_number: string;
   material_name: string;
   material_type: string;

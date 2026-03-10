@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import pool from "../../shared/db/pool";
 import {
   InventoryLot,
@@ -61,7 +62,23 @@ export const getLotById = async (id: string): Promise<InventoryLot | null> => {
   return result.rows[0] ?? null;
 };
 
+async function generateLotId(): Promise<string> {
+  const result = await pool.query<{ max_id: string | null }>(
+    `SELECT lot_id AS max_id FROM inventory_lots
+     WHERE lot_id ~ '^LOT-[0-9]+$'
+     ORDER BY LENGTH(lot_id) DESC, lot_id DESC
+     LIMIT 1`
+  );
+  const last = result.rows[0]?.max_id;
+  if (last) {
+    const num = parseInt(last.replace(/^LOT-/, ""), 10);
+    return `LOT-${String(num + 1).padStart(3, "0")}`;
+  }
+  return `LOT-${randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+}
+
 export const createLot = async (dto: CreateLotDto): Promise<InventoryLot> => {
+  const lot_id = await generateLotId();
   const result = await pool.query<InventoryLot>(
     `INSERT INTO inventory_lots
        (lot_id, material_id, manufacturer_name, manufacturer_lot, supplier_name,
@@ -70,7 +87,7 @@ export const createLot = async (dto: CreateLotDto): Promise<InventoryLot> => {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'Quarantine',$9,$10,$11,$12,$13,$14,$15)
      RETURNING *`,
     [
-      dto.lot_id,
+      lot_id,
       dto.material_id,
       dto.manufacturer_name,
       dto.manufacturer_lot,

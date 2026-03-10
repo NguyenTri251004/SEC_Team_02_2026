@@ -24,7 +24,7 @@ export function useAdminStats() {
   return useQuery({
     queryKey: ["admin", "stats"],
     queryFn: () => adminApi.getStats(),
-    refetchInterval: 60_000,
+    refetchInterval: 15_000,
   });
 }
 

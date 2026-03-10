@@ -26,7 +26,6 @@ export interface InventoryLot {
 }
 
 export interface CreateLotDto {
-  lot_id: string;
   material_id: string;
   manufacturer_name: string;
   manufacturer_lot: string;

@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import pool from "../../shared/db/pool";
 import redisClient, { CACHE_TTL } from "../../shared/cache/redis";
 import { Material, CreateMaterialDto, UpdateMaterialDto } from "./material.types";
@@ -48,14 +49,34 @@ export const getMaterialById = async (id: string): Promise<Material | null> => {
   return result.rows[0] ?? null;
 };
 
+/**
+ * Generate next MAT-XXX id by inspecting existing rows.
+ * Falls back to a UUID-based suffix if the table is empty.
+ */
+async function generateMaterialId(): Promise<string> {
+  const result = await pool.query<{ max_id: string | null }>(
+    `SELECT material_id AS max_id FROM materials
+     WHERE material_id ~ '^MAT[0-9]+$'
+     ORDER BY LENGTH(material_id) DESC, material_id DESC
+     LIMIT 1`
+  );
+  const last = result.rows[0]?.max_id;
+  if (last) {
+    const num = parseInt(last.replace(/^MAT/, ""), 10);
+    return `MAT${String(num + 1).padStart(3, "0")}`;
+  }
+  return `MAT${randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+}
+
 export const createMaterial = async (dto: CreateMaterialDto): Promise<Material> => {
+  const material_id = await generateMaterialId();
   const result = await pool.query<Material>(
     `INSERT INTO materials
        (material_id, part_number, material_name, material_type, storage_conditions, specification_document)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
     [
-      dto.material_id,
+      material_id,
       dto.part_number,
       dto.material_name,
       dto.material_type,

@@ -101,6 +101,9 @@ export const useRecordTransaction = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["lots"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "transaction-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "inventory-summary"] });
     },
   });
 };

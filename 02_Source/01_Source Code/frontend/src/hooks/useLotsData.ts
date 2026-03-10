@@ -99,6 +99,8 @@ export const useSaveLot = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lots"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "inventory-summary"] });
     },
   });
 };
@@ -112,6 +114,8 @@ export const useUpdateLotStatus = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lots"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "inventory-summary"] });
     },
   });
 };
@@ -125,6 +129,8 @@ export const useDeleteLot = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lots"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "inventory-summary"] });
     },
   });
 };

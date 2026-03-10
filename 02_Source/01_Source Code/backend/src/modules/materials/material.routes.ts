@@ -48,12 +48,12 @@ router.post(
   requirePermission("materials", "create"),
   async (req: Request, res: Response) => {
     try {
-      const { material_id, part_number, material_name, material_type } = req.body;
+      const { part_number, material_name, material_type } = req.body;
 
-      if (!material_id || !part_number || !material_name || !material_type) {
+      if (!part_number || !material_name || !material_type) {
         res.status(400).json({
           success: false,
-          error: "Thiếu thông tin bắt buộc: material_id, part_number, material_name, material_type",
+          error: "Thiếu thông tin bắt buộc: part_number, material_name, material_type",
         });
         return;
       }

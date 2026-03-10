@@ -14,7 +14,7 @@ export interface Transaction {
 }
 
 export interface CreateTransactionDto {
-  transaction_id: string;
+  transaction_id?: string;
   transaction_type: TransactionType;
   lot_id: string;
   quantity: number;
