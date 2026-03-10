@@ -24,6 +24,12 @@ const KEYCLOAK_PUBLIC_KEY = process.env.KEYCLOAK_PUBLIC_KEY || "";
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || "http://localhost:8080";
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || "inventory-management";
 
+function parseBearerToken(authHeader?: string): string | null {
+  if (!authHeader) return null;
+  const match = authHeader.match(/^Bearer ([^\s]+)$/);
+  return match?.[1] ?? null;
+}
+
 /** Throttle map for last_login updates (userId → last update timestamp) */
 const loginTrackThrottle = new Map<string, number>();
 const LOGIN_TRACK_INTERVAL_MS = 5 * 60_000; // update at most once per 5 min per user
@@ -56,8 +62,7 @@ async function fetchKeycloakPublicKey(): Promise<string | null> {
     if (!res.ok) return cachedPublicKey;
     const data = (await res.json()) as { public_key?: string };
     if (data.public_key) {
-      cachedPublicKey =
-        `-----BEGIN PUBLIC KEY-----\n${data.public_key}\n-----END PUBLIC KEY-----`;
+      cachedPublicKey = `-----BEGIN PUBLIC KEY-----\n${data.public_key}\n-----END PUBLIC KEY-----`;
       lastKeyFetch = now;
     }
     return cachedPublicKey;
@@ -73,7 +78,8 @@ async function fetchKeycloakPublicKey(): Promise<string | null> {
 async function getVerificationKey(): Promise<string> {
   if (KEYCLOAK_PUBLIC_KEY) return KEYCLOAK_PUBLIC_KEY;
   const dynamic = await fetchKeycloakPublicKey();
-  if (!dynamic) throw new Error("Keycloak public key unavailable — cannot verify token");
+  if (!dynamic)
+    throw new Error("Keycloak public key unavailable — cannot verify token");
   return dynamic;
 }
 
@@ -83,7 +89,7 @@ async function getVerificationKey(): Promise<string> {
 export const authenticateJWT = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   const authHeader = req.headers.authorization;
 
@@ -95,7 +101,7 @@ export const authenticateJWT = async (
     return;
   }
 
-  const token = authHeader.split(" ")[1]; // Bearer <token>
+  const token = parseBearerToken(authHeader);
 
   if (!token) {
     res.status(401).json({
@@ -148,7 +154,7 @@ export const authenticateJWT = async (
 export const optionalAuth = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   const authHeader = req.headers.authorization;
 
@@ -157,7 +163,7 @@ export const optionalAuth = async (
     return;
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = parseBearerToken(authHeader);
 
   if (!token) {
     next();
@@ -188,7 +194,9 @@ export const optionalAuth = async (
 /**
  * Extract user từ token (helper function)
  */
-export const extractUserFromToken = async (token: string): Promise<any | null> => {
+export const extractUserFromToken = async (
+  token: string,
+): Promise<any | null> => {
   try {
     const verifyKey = await getVerificationKey();
     const decoded = jwt.verify(token, verifyKey);

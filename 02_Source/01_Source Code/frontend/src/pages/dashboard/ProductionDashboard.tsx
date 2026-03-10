@@ -1,17 +1,12 @@
 import { useMemo, useState } from "react";
-import { Row, Col, Card, Button, Space, Empty, Input, Select } from "antd";
+import { Row, Col, Space, Empty, Input, Select } from "antd";
 import {
   CheckCircleOutlined,
   BuildOutlined,
   AuditOutlined,
   ArrowUpOutlined,
   WarningOutlined,
-  PlusOutlined,
-  ExportOutlined,
-  TagOutlined,
-  SwapOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
 import DashboardPage from "./DashboardPage";
 import { KpiCard, DataTableCard, AlertPanel } from "../../components/dashboard";
 import { tokens, SECTION_GAP } from "../../constants/theme";
@@ -193,7 +188,6 @@ const MOCK_QUARANTINE_LOTS: QuarantineLotRow[] = [
 const USE_SECTION_MOCK = true;
 
 export default function ProductionDashboard() {
-  const navigate = useNavigate();
   const [batchSearch, setBatchSearch] = useState("");
   const [batchStatusFilter, setBatchStatusFilter] = useState<
     ProductionBatch["status"] | undefined
@@ -355,7 +349,7 @@ export default function ProductionDashboard() {
   return (
     <DashboardPage
       title="Production Dashboard"
-      subtitle="Stock availability, batches, and quick actions"
+      subtitle="Stock availability, batches, and alerts overview"
     >
       <Row gutter={[16, 16]}>
         <Col xs={12} sm={4}>
@@ -440,48 +434,7 @@ export default function ProductionDashboard() {
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginTop: SECTION_GAP }}>
-        <Col xs={24} lg={10}>
-          <Card size="small" title="Quick Actions" style={{ height: "100%" }}>
-            <Space direction="vertical" style={{ width: "100%" }}>
-              <Button
-                icon={<PlusOutlined />}
-                block
-                onClick={() => navigate("/lots/new")}
-              >
-                New Receipt
-              </Button>
-              <Button
-                icon={<ExportOutlined />}
-                block
-                onClick={() => navigate("/transactions/issue")}
-              >
-                Issue Material
-              </Button>
-              <Button
-                icon={<TagOutlined />}
-                block
-                onClick={() => navigate("/labels/print")}
-              >
-                Print Label
-              </Button>
-              <Button
-                icon={<BuildOutlined />}
-                block
-                onClick={() => navigate("/batches/new")}
-              >
-                New Batch
-              </Button>
-              <Button
-                icon={<SwapOutlined />}
-                block
-                onClick={() => navigate("/transactions/transfer")}
-              >
-                Transfer
-              </Button>
-            </Space>
-          </Card>
-        </Col>
-        <Col xs={24} lg={14}>
+        <Col span={24}>
           <DataTableCard<InventoryTransaction>
             title="My Recent Transactions"
             columns={txnColumns}
