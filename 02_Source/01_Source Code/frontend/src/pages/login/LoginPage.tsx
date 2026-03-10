@@ -55,7 +55,7 @@ export default function LoginPage() {
             type="secondary"
             style={{ fontSize: 13, marginTop: 4, display: "block" }}
           >
-            Hệ thống quản lý kho nguyên vật liệu
+            Pharmaceutical Inventory Management System
           </Text>
         </div>
 
@@ -66,7 +66,7 @@ export default function LoginPage() {
           onClick={login}
           style={{ height: 44, fontWeight: 600, fontSize: 15 }}
         >
-          Đăng nhập với Keycloak
+          Sign in with Keycloak
         </Button>
       </Card>
     </div>
