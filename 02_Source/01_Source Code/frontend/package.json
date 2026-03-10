@@ -7,16 +7,17 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.7",
     "@ant-design/icons": "^6.1.0",
     "@tanstack/react-query": "^5.90.21",
-    "antd": "^6.3.1",
-    "dayjs": "^1.11.19",
     "@tanstack/react-table": "^8.21.3",
+    "antd": "^6.3.1",
     "axios": "^1.13.6",
+    "dayjs": "^1.11.19",
     "keycloak-js": "^26.2.3",
     "lucide-react": "^0.575.0",
     "react": "^19.2.0",
@@ -26,6 +27,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.26.1",
     "@eslint/js": "^9.39.1",
     "@tailwindcss/vite": "^4.2.1",
     "@types/node": "^24.10.1",
@@ -41,6 +43,7 @@
     "tailwindcss": "^4.2.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "wrangler": "^4.71.0"
   }
 }
