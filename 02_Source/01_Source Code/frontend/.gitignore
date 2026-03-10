@@ -37,3 +37,9 @@ dist-ssr
 # Testing coverage reports (if you add Vitest/Jest later)
 coverage/
 .vercel
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
