@@ -64,6 +64,8 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 
 ## STEP 0.2: Tạo Material (Định nghĩa nguyên vật liệu)
 
+> Role thực hiện: `Admin` hoặc `InventoryManager`
+
 ### 📋 ACTION: INSERT vào bảng `Materials`
 
 ```

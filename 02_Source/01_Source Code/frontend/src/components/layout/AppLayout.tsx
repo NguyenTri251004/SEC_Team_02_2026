@@ -48,19 +48,21 @@ const ROUTE_LABELS: Record<string, string> = {
 function getSidebarItems(role: UserRole) {
   const common = [
     { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
-    { key: "/lots", icon: <InboxOutlined />, label: "Inventory Lots" },
-    { key: "/materials", icon: <ExperimentOutlined />, label: "Materials" },
     { key: "/transactions", icon: <SwapOutlined />, label: "Transactions" },
   ];
 
   const map: Record<string, typeof common> = {
     admin: [
       ...common,
+      { key: "/materials", icon: <ExperimentOutlined />, label: "Materials" },
+      { key: "/lots", icon: <InboxOutlined />, label: "Inventory Lots" },
       { key: "/users", icon: <TeamOutlined />, label: "User Management" },
       { key: "/config", icon: <SettingOutlined />, label: "Configuration" },
     ],
     inventory_manager: [
       ...common,
+      { key: "/materials", icon: <ExperimentOutlined />, label: "Materials" },
+      { key: "/lots", icon: <InboxOutlined />, label: "Inventory Lots" },
       { key: "/reports", icon: <BarChartOutlined />, label: "Reports" },
     ],
     quality_control: [

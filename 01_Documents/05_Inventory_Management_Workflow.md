@@ -32,7 +32,7 @@ Dựa trên database schema từ [Inventory Management System Database Schema](h
 ## 2. Main Workflow Diagram
 
 > **Luồng chính theo tài liệu:** Material → InventoryLot → Transaction → Label Generation
-> 
+>
 > Label được generate từ dữ liệu của **InventoryLot** (kết hợp với Material), không phải từ Transaction.
 
 ```mermaid
@@ -81,7 +81,7 @@ flowchart TB
     LOT -->|"2. Record movement"| TXN_RCV
     LOT -->|"3. Generate from Lot data"| LBL_RM
     LBL -.->|"use template"| LBL_RM
-    
+
     %% QC FLOW
     LOT -->|"4. QC Testing"| QC_TEST
     QC_TEST --> QC_PASS
@@ -90,7 +90,7 @@ flowchart TB
     STATUS_ACC -->|"Update Lot status"| LBL_STATUS
     STATUS_REJ -->|"Update Lot status"| LBL_STATUS
     LBL -.->|"use template"| LBL_STATUS
-    
+
     %% PRODUCTION FLOW
     STATUS_ACC --> BATCH
     MAT -->|"Product reference"| BATCH
@@ -103,9 +103,9 @@ flowchart TB
     BATCH_COMP --> FIN
     FIN -->|"Generate from Batch data"| LBL_FIN
     LBL -.->|"use template"| LBL_FIN
-    
+
     BATCH_STATUS -->|"Fail"| BATCH_REJ
-    
+
     %% User performs actions
     USR -.->|"performs"| LOT
     USR -.->|"performs"| QC_TEST
@@ -130,14 +130,14 @@ flowchart TB
 
 ### Giải thích luồng chính:
 
-| Bước | Từ | Đến | Mô tả |
-|------|-----|-----|-------|
-| 1 | Materials | InventoryLot | Lot tham chiếu đến Material (material_id) |
-| 2 | InventoryLot | InventoryTransaction | Ghi nhận giao dịch Receipt (+quantity) |
-| 3 | InventoryLot | Label (Raw Material) | Generate label từ dữ liệu Lot + Material |
-| 4 | InventoryLot | QCTests | Thực hiện kiểm tra chất lượng |
-| 5 | QCTests Pass | InventoryLot | Cập nhật status: Quarantine → Accepted |
-| 6 | InventoryLot | Label (Status) | Generate label trạng thái mới |
+| Bước | Từ           | Đến                  | Mô tả                                     |
+| ---- | ------------ | -------------------- | ----------------------------------------- |
+| 1    | Materials    | InventoryLot         | Lot tham chiếu đến Material (material_id) |
+| 2    | InventoryLot | InventoryTransaction | Ghi nhận giao dịch Receipt (+quantity)    |
+| 3    | InventoryLot | Label (Raw Material) | Generate label từ dữ liệu Lot + Material  |
+| 4    | InventoryLot | QCTests              | Thực hiện kiểm tra chất lượng             |
+| 5    | QCTests Pass | InventoryLot         | Cập nhật status: Quarantine → Accepted    |
+| 6    | InventoryLot | Label (Status)       | Generate label trạng thái mới             |
 
 ---
 
@@ -248,25 +248,25 @@ flowchart TB
 
 ## 4. Transaction Types Summary
 
-| Transaction Type | Description | Quantity Effect |
-|-----------------|-------------|-----------------|
-| **Receipt** | Nhận nguyên liệu vào kho | +quantity |
-| **Usage** | Sử dụng cho production batch | -quantity |
-| **Transfer** | Chuyển location | 0 (location change) |
-| **Adjustment** | Điều chỉnh số lượng | ±quantity |
-| **Disposal** | Hủy bỏ | -quantity |
+| Transaction Type | Description                  | Quantity Effect     |
+| ---------------- | ---------------------------- | ------------------- |
+| **Receipt**      | Nhận nguyên liệu vào kho     | +quantity           |
+| **Usage**        | Sử dụng cho production batch | -quantity           |
+| **Transfer**     | Chuyển location              | 0 (location change) |
+| **Adjustment**   | Điều chỉnh số lượng          | ±quantity           |
+| **Disposal**     | Hủy bỏ                       | -quantity           |
 
 ---
 
 ## 5. Label Types Summary
 
-| Label Type | Sử dụng cho | Thời điểm generate |
-|------------|-------------|-------------------|
-| **Raw Material** | InventoryLot | Khi nhận nguyên liệu |
-| **API** | InventoryLot (API materials) | Khi nhận API |
-| **Status** | InventoryLot | Khi status thay đổi |
-| **Intermediate** | ProductionBatch | Trong quá trình sản xuất |
-| **Finished Product** | ProductionBatch | Khi batch complete |
+| Label Type           | Sử dụng cho                  | Thời điểm generate       |
+| -------------------- | ---------------------------- | ------------------------ |
+| **Raw Material**     | InventoryLot                 | Khi nhận nguyên liệu     |
+| **API**              | InventoryLot (API materials) | Khi nhận API             |
+| **Status**           | InventoryLot                 | Khi status thay đổi      |
+| **Intermediate**     | ProductionBatch              | Trong quá trình sản xuất |
+| **Finished Product** | ProductionBatch              | Khi batch complete       |
 
 ---
 
@@ -304,13 +304,13 @@ flowchart TB
 
 ## 7. User Roles & Permissions
 
-| Role | Materials | Inventory | QC | Production | Labels | Users |
-|------|-----------|-----------|-----|------------|--------|-------|
-| **Admin** | Full | Full | Full | Full | Full | Full |
-| **InventoryManager** | View | Full | View | View | Generate | - |
-| **QualityControl** | View | Update Status | Full | View | Generate | - |
-| **Production** | View | Use | View | Full | Generate | - |
-| **Viewer** | View | View | View | View | View | - |
+| Role                 | Materials | Inventory     | QC   | Production | Labels   | Users |
+| -------------------- | --------- | ------------- | ---- | ---------- | -------- | ----- |
+| **Admin**            | Full      | Full          | Full | Full       | Full     | Full  |
+| **InventoryManager** | Full      | Full          | View | View       | Generate | -     |
+| **QualityControl**   | View      | Update Status | Full | View       | Generate | -     |
+| **Production**       | View      | Use           | View | Full       | Generate | -     |
+| **Viewer**           | View      | View          | View | View       | View     | -     |
 
 ---
 
@@ -355,4 +355,4 @@ flowchart TB
 
 ---
 
-*Document generated based on [Inventory Management System Database Schema](https://nhbien.github.io/inventory-mangement-system-database-schema/)*
+_Document generated based on [Inventory Management System Database Schema](https://nhbien.github.io/inventory-mangement-system-database-schema/)_

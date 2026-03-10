@@ -15,7 +15,7 @@
 
 **Bước 1: Tạo Nguyên vật liệu (CREATE Material)**
 
-- Admin tạo Material master data
+- Admin/Inventory manager tạo Material master data
   - Material ID: MAT-001
   - Material Name: "Vitamin D3 100K"
   - Material Type: API
