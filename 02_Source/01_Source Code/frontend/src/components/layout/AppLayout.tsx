@@ -56,6 +56,14 @@ function getSidebarItems(role: UserRole) {
       ...common,
       { key: "/materials", icon: <ExperimentOutlined />, label: "Materials" },
       { key: "/lots", icon: <InboxOutlined />, label: "Inventory Lots" },
+      {
+        key: "/qc",
+        icon: <SafetyCertificateOutlined />,
+        label: "Quality Control",
+      },
+      { key: "/batches", icon: <BuildOutlined />, label: "Batches" },
+      { key: "/labels", icon: <TagsOutlined />, label: "Labels" },
+      { key: "/reports", icon: <BarChartOutlined />, label: "Reports" },
       { key: "/users", icon: <TeamOutlined />, label: "User Management" },
       { key: "/config", icon: <SettingOutlined />, label: "Configuration" },
     ],
@@ -63,6 +71,7 @@ function getSidebarItems(role: UserRole) {
       ...common,
       { key: "/materials", icon: <ExperimentOutlined />, label: "Materials" },
       { key: "/lots", icon: <InboxOutlined />, label: "Inventory Lots" },
+      { key: "/labels", icon: <TagsOutlined />, label: "Labels" },
       { key: "/reports", icon: <BarChartOutlined />, label: "Reports" },
     ],
     quality_control: [
@@ -76,7 +85,6 @@ function getSidebarItems(role: UserRole) {
     production: [
       ...common,
       { key: "/batches", icon: <BuildOutlined />, label: "Batches" },
-      { key: "/labels", icon: <TagsOutlined />, label: "Labels" },
       { key: "/reports", icon: <BarChartOutlined />, label: "Reports" },
     ],
     viewer: [],
