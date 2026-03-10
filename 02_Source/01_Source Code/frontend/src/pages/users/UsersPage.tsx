@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Button, Input, Tag, Badge, Space, message } from "antd";
-import { PlusOutlined, SearchOutlined, EditOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
+import { Button, Input, Tag, Badge, Space, message, Modal, Form } from "antd";
+import { PlusOutlined, SearchOutlined, EditOutlined, LockOutlined, UnlockOutlined, KeyOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
 import DashboardPage from "../dashboard/DashboardPage";
 import { DataTableCard } from "../../components/dashboard";
 import { UserFormModal } from "../../components/users/UserFormModal";
-import { useUsers, useToggleUserActive } from "../../hooks/useUsersData";
+import { useUsers, useToggleUserActive, useResetPassword } from "../../hooks/useUsersData";
 import { SECTION_GAP } from "../../constants/theme";
 import { ROLE_TAG } from "../../constants/roles";
 import type { User, UserRole } from "../../types";
@@ -19,6 +19,11 @@ export default function UsersPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const { mutateAsync: toggleActive } = useToggleUserActive();
+
+  const [resetPwOpen, setResetPwOpen] = useState(false);
+  const [resetPwUser, setResetPwUser] = useState<User | null>(null);
+  const [resetPwForm] = Form.useForm();
+  const { mutateAsync: resetPassword, isPending: isResetting } = useResetPassword();
 
   const handleCreate = () => {
     setEditingUser(null);
@@ -36,6 +41,26 @@ export default function UsersPage() {
       message.success(`User ${user.is_active ? "locked" : "unlocked"} successfully!`);
     } catch {
       message.error("Failed to toggle user status.");
+    }
+  };
+
+  const handleResetPassword = (user: User) => {
+    setResetPwUser(user);
+    resetPwForm.resetFields();
+    setResetPwOpen(true);
+  };
+
+  const handleResetPwOk = async () => {
+    try {
+      const { new_password } = await resetPwForm.validateFields();
+      await resetPassword({ userId: resetPwUser!.user_id, newPassword: new_password });
+      message.success(`Password reset successfully for ${resetPwUser!.username}`);
+      setResetPwOpen(false);
+    } catch (error) {
+      const err = error as { response?: { status?: number; data?: { error?: string } }; name?: string };
+      if (err.name !== "ValidationError") {
+        message.error(err.response?.data?.error || "Failed to reset password.");
+      }
     }
   };
 
@@ -128,6 +153,13 @@ export default function UsersPage() {
           <Button
             type="text"
             size="small"
+            icon={<KeyOutlined />}
+            title="Reset Password"
+            onClick={() => handleResetPassword(record)}
+          />
+          <Button
+            type="text"
+            size="small"
             icon={record.is_active ? <LockOutlined /> : <UnlockOutlined />}
             onClick={() => handleToggleActive(record)}
           />
@@ -173,6 +205,47 @@ export default function UsersPage() {
         onClose={() => setFormOpen(false)}
         initialData={editingUser}
       />
+
+      <Modal
+        title={`Reset Password — ${resetPwUser?.username ?? ""}`}
+        open={resetPwOpen}
+        onOk={handleResetPwOk}
+        onCancel={() => setResetPwOpen(false)}
+        confirmLoading={isResetting}
+        destroyOnClose
+        width={420}
+      >
+        <Form form={resetPwForm} layout="vertical">
+          <Form.Item
+            name="new_password"
+            label="New Password"
+            rules={[
+              { required: true, message: "Please enter a new password" },
+              { min: 8, message: "Password must be at least 8 characters" },
+            ]}
+          >
+            <Input.Password placeholder="Min. 8 characters" />
+          </Form.Item>
+          <Form.Item
+            name="confirm_password"
+            label="Confirm Password"
+            dependencies={["new_password"]}
+            rules={[
+              { required: true, message: "Please confirm the password" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("new_password") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error("Passwords do not match"));
+                },
+              }),
+            ]}
+          >
+            <Input.Password placeholder="Re-enter password" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </DashboardPage>
   );
 }

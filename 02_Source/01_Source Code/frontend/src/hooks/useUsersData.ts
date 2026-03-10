@@ -104,3 +104,11 @@ export const useToggleUserActive = () => {
     },
   });
 };
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: async ({ userId, newPassword }: { userId: string; newPassword: string }) => {
+      return api.post(`/api/admin/users/${userId}/reset-password`, { new_password: newPassword });
+    },
+  });
+};

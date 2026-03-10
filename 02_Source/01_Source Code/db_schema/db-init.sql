@@ -8,25 +8,25 @@
 -- 1. Users (Nguoi dung)
 -- ────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (
-  user_id         VARCHAR(36)  PRIMARY KEY,
+  user_id         VARCHAR(36)  PRIMARY KEY,          -- equals Keycloak sub (UUID)
   username        VARCHAR(50)  NOT NULL UNIQUE,
   email           VARCHAR(100) NOT NULL UNIQUE,
-  password        VARCHAR(100) NOT NULL,
   role            VARCHAR(20)  NOT NULL DEFAULT 'Viewer'
                     CHECK (role IN ('Admin','InventoryManager','QualityControl','Production','Viewer')),
   is_active       BOOLEAN      NOT NULL DEFAULT true,
   last_login      TIMESTAMP    NULL,
   created_date    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   modified_date   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+  -- NOTE: No password column — passwords are managed exclusively by Keycloak.
 );
 
--- Seed users (password = bcrypt hash of 'password123')
-INSERT INTO users (user_id, username, email, password, role, is_active, last_login) VALUES
-  ('USR-001', 'admin',          'admin@ims.local',    '$2b$10$dummyhashfordevonly000000000000000000000000000', 'Admin',            true,  '2026-03-09 08:30:00'),
-  ('USR-002', 'inv_manager',    'manager@ims.local',  '$2b$10$dummyhashfordevonly000000000000000000000000000', 'InventoryManager',  true,  '2026-03-08 14:15:00'),
-  ('USR-003', 'qc_analyst',     'qc@ims.local',       '$2b$10$dummyhashfordevonly000000000000000000000000000', 'QualityControl',    true,  '2026-03-09 07:45:00'),
-  ('USR-004', 'operator1',      'operator@ims.local',  '$2b$10$dummyhashfordevonly000000000000000000000000000', 'Production',        true,  '2026-03-07 16:20:00'),
-  ('USR-005', 'report_viewer',  'viewer@ims.local',    '$2b$10$dummyhashfordevonly000000000000000000000000000', 'Viewer',            false, NULL);
+-- Seed users (passwords managed by Keycloak; user_ids must match Keycloak subs in production)
+INSERT INTO users (user_id, username, email, role, is_active, last_login) VALUES
+  ('USR-001', 'admin',          'admin@ims.local',    'Admin',            true,  '2026-03-09 08:30:00'),
+  ('USR-002', 'inv_manager',    'manager@ims.local',  'InventoryManager', true,  '2026-03-08 14:15:00'),
+  ('USR-003', 'qc_analyst',     'qc@ims.local',       'QualityControl',   true,  '2026-03-09 07:45:00'),
+  ('USR-004', 'operator1',      'operator@ims.local', 'Production',       true,  '2026-03-07 16:20:00'),
+  ('USR-005', 'report_viewer',  'viewer@ims.local',   'Viewer',           false, NULL);
 
 -- ────────────────────────────────────────────────────────────
 -- 2. Materials (Nguyen vat lieu)

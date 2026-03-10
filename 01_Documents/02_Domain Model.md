@@ -33,10 +33,9 @@ Quản lý tài khoản người dùng và phân quyền trong hệ thống.
 
 | Column | Type | Constraints | Mô tả |
 |--------|------|-------------|-------|
-| user_id | STRING(36) | PK, NOT NULL | UUID primary key |
+| user_id | STRING(36) | PK, NOT NULL | UUID primary key (= Keycloak sub) |
 | username | STRING(50) | NOT NULL, UNIQUE | Tên đăng nhập |
 | email | STRING(100) | NOT NULL, UNIQUE | Email (validated) |
-| password | STRING(100) | NOT NULL | Mật khẩu (bcrypt hash) |
 | role | ENUM | NOT NULL, default: 'Viewer' | Vai trò người dùng |
 | is_active | BOOLEAN | default: true | Trạng thái tài khoản |
 | last_login | DATE | nullable | Lần đăng nhập cuối |
@@ -273,7 +272,6 @@ erDiagram
         string user_id PK
         string username UK
         string email UK
-        string password
         enum role "Admin|InventoryManager|QualityControl|Production|Viewer"
         boolean is_active
         date last_login

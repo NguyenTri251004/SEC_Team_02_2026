@@ -1,6 +1,5 @@
 import { Router, Request, Response } from "express";
 import * as adminService from "./admin.service";
-import crypto from "crypto";
 import { CreateUserInput, UpdateUserInput, GetUsersFilters, API_ROLE_TO_DB, UserRole } from "./admin.types";
 import { authenticateJWT } from "../../security/auth";
 import { adminOnly } from "../../security/rbac";
@@ -81,16 +80,12 @@ router.get("/users/:id", async (req: Request, res: Response) => {
 router.post("/users", async (req: Request, res: Response) => {
   try {
     const input: CreateUserInput = req.body;
-    // Auto-generate user_id if not provided
-    if (!input.user_id) {
-      input.user_id = crypto.randomUUID();
-    }
 
-    // Validation
-    if (!input.username || !input.email || !input.password || !input.role) {
+    // Validation — user_id is NOT accepted; it comes from Keycloak after registration
+    if (!input.username || !input.email || !input.initial_password || !input.role) {
       res.status(400).json({
         success: false,
-        error: "Thiếu thông tin bắt buộc: username, email, password, role",
+        error: "Thiếu thông tin bắt buộc: username, email, initial_password, role",
       });
       return;
     }
@@ -226,7 +221,8 @@ router.patch("/users/:id/toggle-active", async (req: Request, res: Response) => 
 
 /**
  * POST /api/admin/users/:id/reset-password
- * Admin reset user password
+ * Admin sets a new password for a user via Keycloak Admin API.
+ * The password is stored only in Keycloak — never in our database.
  */
 router.post("/users/:id/reset-password", async (req: Request, res: Response) => {
   try {
@@ -236,15 +232,6 @@ router.post("/users/:id/reset-password", async (req: Request, res: Response) => 
       res.status(400).json({
         success: false,
         error: "Thiếu new_password",
-      });
-      return;
-    }
-
-    // Password strength validation (basic)
-    if (new_password.length < 6) {
-      res.status(400).json({
-        success: false,
-        error: "Mật khẩu phải có ít nhất 6 ký tự",
       });
       return;
     }
@@ -261,7 +248,7 @@ router.post("/users/:id/reset-password", async (req: Request, res: Response) => 
 
     res.json({
       success: true,
-      message: "Đã reset mật khẩu thành công",
+      message: "Đã reset mật khẩu thành công qua Keycloak",
     });
   } catch (error) {
     console.error("Lỗi reset password:", error);
@@ -269,6 +256,27 @@ router.post("/users/:id/reset-password", async (req: Request, res: Response) => 
       success: false,
       error: "Không thể reset mật khẩu",
     });
+  }
+});
+
+/**
+ * POST /api/admin/users/:id/send-reset-email
+ * Trigger Keycloak to send a "reset password" email to the user.
+ * The user receives a one-time link to set their own new password.
+ */
+router.post("/users/:id/send-reset-email", async (req: Request, res: Response) => {
+  try {
+    const success = await adminService.sendResetPasswordEmail(req.params.id);
+
+    if (!success) {
+      res.status(404).json({ success: false, error: "Không tìm thấy user" });
+      return;
+    }
+
+    res.json({ success: true, message: "Đã gửi email reset mật khẩu qua Keycloak" });
+  } catch (error) {
+    console.error("Lỗi gửi reset email:", error);
+    res.status(500).json({ success: false, error: "Không thể gửi email reset mật khẩu" });
   }
 });
 
