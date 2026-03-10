@@ -19,10 +19,8 @@ declare global {
   }
 }
 
-// Keycloak public key hoặc JWT secret (từ environment)
+// Keycloak public key (from environment or fetched dynamically)
 const KEYCLOAK_PUBLIC_KEY = process.env.KEYCLOAK_PUBLIC_KEY || "";
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key";
-const BYPASS_AUTH = process.env.BYPASS_AUTH === "true"; // Development mode
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || "http://localhost:8080";
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || "inventory-management";
 
@@ -64,17 +62,19 @@ async function fetchKeycloakPublicKey(): Promise<string | null> {
     }
     return cachedPublicKey;
   } catch {
-    return null; // Keycloak unreachable — fall back to env / JWT_SECRET
+    return null; // Keycloak unreachable
   }
 }
 
 /**
- * Resolve the verification key: static env → dynamic Keycloak → JWT_SECRET fallback
+ * Resolve the verification key: static env → dynamic Keycloak fetch.
+ * Throws if no key is available so auth fails closed.
  */
 async function getVerificationKey(): Promise<string> {
   if (KEYCLOAK_PUBLIC_KEY) return KEYCLOAK_PUBLIC_KEY;
   const dynamic = await fetchKeycloakPublicKey();
-  return dynamic ?? JWT_SECRET;
+  if (!dynamic) throw new Error("Keycloak public key unavailable — cannot verify token");
+  return dynamic;
 }
 
 /**
@@ -85,21 +85,6 @@ export const authenticateJWT = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  // Bypass auth trong development mode
-  if (BYPASS_AUTH) {
-    console.log("⚠️  Auth bypassed (BYPASS_AUTH=true)");
-    req.user = {
-      user_id: "dev-user-001",
-      username: "dev_user",
-      email: "dev@example.com",
-      roles: ["admin", "inventory_manager", "quality_control", "production"],
-    };
-    // Track login for the first admin user (fire-and-forget)
-    trackLogin("USR-001");
-    next();
-    return;
-  }
-
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
@@ -121,7 +106,7 @@ export const authenticateJWT = async (
   }
 
   try {
-    // Resolve verification key (static env → dynamic Keycloak → JWT_SECRET)
+    // Resolve verification key (static env → dynamic Keycloak)
     const verifyKey = await getVerificationKey();
 
     const decoded = jwt.verify(token, verifyKey) as any;

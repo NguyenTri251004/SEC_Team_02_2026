@@ -4,9 +4,10 @@ import type { CurrentUser, UserRole } from "../types";
 export interface AuthContextType {
   isAuthenticated: boolean;
   isInitialized: boolean;
+  /** Redirects to Keycloak login page */
   login: () => void;
+  /** Redirects to Keycloak logout endpoint */
   logout: () => void;
-  loginWithCredentials: (username: string, password: string) => Promise<void>;
   userRoles: string[];
   user: CurrentUser | null;
   switchRole: (role: UserRole) => void;

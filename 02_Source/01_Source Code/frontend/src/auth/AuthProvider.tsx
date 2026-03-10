@@ -1,93 +1,84 @@
 import { useEffect, useState, useCallback, type ReactNode } from "react";
+import keycloak from "./keycloak";
 import type { CurrentUser, UserRole } from "../types";
 import { AuthContext } from "./context";
 
-const TOKEN_KEY = "ims_token";
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+// Ordered from most to least privileged — used to pick a primary role
+// when a Keycloak user holds multiple realm roles.
+const ROLE_PRIORITY: UserRole[] = [
+  "admin",
+  "inventory_manager",
+  "quality_control",
+  "production",
+  "viewer",
+];
 
-// Keep exported so AppLayout can still reference it (always false now = no demo role switcher)
-export const BYPASS_KEYCLOAK = false;
-
-function parseToken(token: string): CurrentUser | null {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1])) as {
-      user_id?: string;
-      username?: string;
-      email?: string;
-      role?: string;
-    };
-    if (!payload.user_id || !payload.username || !payload.role) return null;
-    return {
-      user_id: payload.user_id,
-      username: payload.username,
-      email: payload.email ?? "",
-      role: payload.role as UserRole,
-      is_active: true,
-      last_login_at: new Date().toISOString(),
-    };
-  } catch {
-    return null;
+function pickPrimaryRole(roles: string[]): UserRole {
+  for (const r of ROLE_PRIORITY) {
+    if (roles.includes(r)) return r;
   }
+  return "viewer";
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const [token, setToken] = useState<string | undefined>(undefined);
 
-  // Restore session from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(TOKEN_KEY);
-    if (stored) {
-      const parsed = parseToken(stored);
-      if (parsed) {
-        setUser(parsed);
-        setToken(stored);
-        setIsAuthenticated(true);
-      } else {
-        localStorage.removeItem(TOKEN_KEY);
-      }
-    }
-    setIsInitialized(true);
+    // check-sso: silently checks whether the user already has an active Keycloak
+    // session. If they do, the app initialises as authenticated without a redirect.
+    // If they don't, isAuthenticated stays false and the Login page is shown.
+    keycloak
+      .init({ onLoad: "check-sso" })
+      .then((authenticated) => {
+        if (authenticated && keycloak.tokenParsed) {
+          const parsed = keycloak.tokenParsed as Record<string, unknown>;
+          const roles: string[] =
+            (parsed["realm_access"] as { roles?: string[] } | undefined)
+              ?.roles ?? [];
+          setUser({
+            user_id: (parsed["sub"] as string) ?? "",
+            username: (parsed["preferred_username"] as string) ?? "",
+            email: (parsed["email"] as string) ?? "",
+            role: pickPrimaryRole(roles),
+            is_active: true,
+            last_login_at: new Date().toISOString(),
+          });
+          setUserRoles(roles);
+          setToken(keycloak.token);
+          setIsAuthenticated(true);
+        }
+        setIsInitialized(true);
+      })
+      .catch(() => setIsInitialized(true));
+
+    // Proactively refresh the token before it expires
+    keycloak.onTokenExpired = () => {
+      keycloak.updateToken(60).catch(() => {
+        // Refresh failed — session has ended; reset state
+        setIsAuthenticated(false);
+        setUser(null);
+        setUserRoles([]);
+        setToken(undefined);
+      });
+    };
+
+    keycloak.onAuthRefreshSuccess = () => {
+      setToken(keycloak.token);
+    };
   }, []);
 
-  const loginWithCredentials = useCallback(
-    async (username: string, password: string) => {
-      const res = await fetch(`${BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = (await res.json()) as {
-        success: boolean;
-        token?: string;
-        user?: { user_id: string; username: string; email: string; role: string };
-        error?: string;
-      };
-      if (!res.ok || !data.success || !data.token || !data.user) {
-        throw new Error(data.error ?? "Đăng nhập thất bại");
-      }
-      localStorage.setItem(TOKEN_KEY, data.token);
-      setToken(data.token);
-      setUser({
-        user_id: data.user.user_id,
-        username: data.user.username,
-        email: data.user.email ?? "",
-        role: data.user.role as UserRole,
-        is_active: true,
-        last_login_at: new Date().toISOString(),
-      });
-      setIsAuthenticated(true);
-    },
-    [],
-  );
+  // Redirect to Keycloak login page
+  const login = useCallback(() => {
+    keycloak.login();
+  }, []);
 
+  // Redirect to Keycloak logout endpoint and return to app root
   const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    setToken(undefined);
-    setUser(null);
-    setIsAuthenticated(false);
+    keycloak.logout({ redirectUri: window.location.origin });
   }, []);
 
   if (!isInitialized) {
@@ -121,10 +112,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         isAuthenticated,
         isInitialized,
-        userRoles: user ? [user.role] : [],
+        userRoles,
         user,
-        loginWithCredentials,
-        login: () => {},
+        login,
         logout,
         switchRole: () => {},
         token,

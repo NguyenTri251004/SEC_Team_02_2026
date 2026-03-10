@@ -24,10 +24,10 @@ const api = axios.create({
 });
 
 // ────────────────────────────────────────────────────────────
-// Request interceptor: attach stored JWT token
+// Request interceptor: attach Keycloak access token
 // ────────────────────────────────────────────────────────────
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("ims_token") ?? keycloak.token;
+  const token = keycloak.token;
   if (token) {
     config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;

@@ -140,9 +140,8 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redispassword}
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-inventory-management}
       - AI_SERVICE_URL=http://ai-service:8000
-      - BYPASS_AUTH=true
-      - JWT_SECRET=dev-secret-key-for-testing
     ports:
       - "${BACKEND_PORT:-3000}:3000"
     volumes:
