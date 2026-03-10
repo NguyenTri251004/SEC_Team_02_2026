@@ -1,19 +1,31 @@
 import { useState } from "react";
 import { Button, Input, Tag, Space, Popconfirm, message } from "antd";
-import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  SearchOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
 import DashboardPage from "../dashboard/DashboardPage";
 import { DataTableCard } from "../../components/dashboard";
 import { LabelTemplateFormModal } from "../../components/labels/LabelTemplateFormModal";
-import { useLabelTemplates, useDeleteTemplate } from "../../hooks/useLabelsData";
+import {
+  useLabelTemplates,
+  useDeleteTemplate,
+} from "../../hooks/useLabelsData";
 import { SECTION_GAP } from "../../constants/theme";
 import type { LabelTemplate } from "../../types";
 
 const LABEL_TYPE_COLOR: Record<string, string> = {
-  "QR Code": "blue",
-  Barcode: "green",
+  "Raw Material": "gold",
+  Sample: "cyan",
+  Intermediate: "purple",
+  "Finished Product": "green",
+  API: "blue",
+  Status: "default",
 };
 
 export default function LabelsPage() {
@@ -21,7 +33,9 @@ export default function LabelsPage() {
   const { data: templates = [], isLoading } = useLabelTemplates();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<LabelTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<LabelTemplate | null>(
+    null,
+  );
   const { mutateAsync: deleteTemplate } = useDeleteTemplate();
 
   const handleCreate = () => {
@@ -98,7 +112,8 @@ export default function LabelsPage() {
       key: "created_date",
       width: 120,
       render: (v: string) => dayjs(v).format("YYYY-MM-DD"),
-      sorter: (a, b) => dayjs(a.created_date).unix() - dayjs(b.created_date).unix(),
+      sorter: (a, b) =>
+        dayjs(a.created_date).unix() - dayjs(b.created_date).unix(),
     },
     {
       title: "Modified",
@@ -106,7 +121,8 @@ export default function LabelsPage() {
       key: "modified_date",
       width: 120,
       render: (v: string) => dayjs(v).format("YYYY-MM-DD"),
-      sorter: (a, b) => dayjs(a.modified_date).unix() - dayjs(b.modified_date).unix(),
+      sorter: (a, b) =>
+        dayjs(a.modified_date).unix() - dayjs(b.modified_date).unix(),
     },
     {
       title: "Actions",
@@ -129,12 +145,7 @@ export default function LabelsPage() {
             cancelText="Cancel"
             okButtonProps={{ danger: true }}
           >
-            <Button
-              type="text"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-            />
+            <Button type="text" size="small" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
       ),
@@ -144,7 +155,7 @@ export default function LabelsPage() {
   return (
     <DashboardPage
       title="Label Templates"
-      subtitle="Manage QR code and barcode label templates for lot identification"
+      subtitle="Manage label templates for inventory lots and production batches"
       actions={
         <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           Create Template
