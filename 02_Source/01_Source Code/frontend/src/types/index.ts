@@ -92,7 +92,7 @@ export interface QCTest {
   modified_date: string;
 }
 
-export type BatchStatus = "Planned" | "In Progress" | "Completed" | "Rejected";
+export type BatchStatus = "Planned" | "In Progress" | "Complete" | "Rejected";
 
 export interface ProductionBatch {
   batch_id: string;

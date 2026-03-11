@@ -26,7 +26,7 @@ export const QC_STATUS_TAG: Record<string, TagCfg> = {
 export const BATCH_STATUS_TAG: Record<string, TagCfg> = {
   Planned: { color: "blue", label: "Planned" },
   "In Progress": { color: "processing", label: "In Progress" },
-  Completed: { color: "success", label: "Completed" },
+  Complete: { color: "success", label: "Completed" },
   Rejected: { color: "error", label: "Rejected" },
 };
 

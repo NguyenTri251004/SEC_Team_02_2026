@@ -162,7 +162,7 @@ export function createBatchStatusColumn<T extends { status: string }>() {
     filters: [
       { text: "Planned", value: "Planned" },
       { text: "In Progress", value: "In Progress" },
-      { text: "Completed", value: "Completed" },
+      { text: "Completed", value: "Complete" },
       { text: "Rejected", value: "Rejected" },
     ],
     onFilter: (value: boolean | Key, record: T) =>

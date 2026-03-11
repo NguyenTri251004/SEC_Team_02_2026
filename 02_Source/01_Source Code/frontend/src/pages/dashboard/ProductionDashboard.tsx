@@ -153,7 +153,7 @@ const MOCK_BATCHES: ProductionBatch[] = [
     unit_of_measure: "units",
     manufacture_date: "2026-01-31",
     expiration_date: "2026-02-07",
-    status: "Completed",
+    status: "Complete",
     created_date: "2026-01-31",
     modified_date: "2026-01-31",
     product_name: "Vitamin D3 Softgel 1000IU",
@@ -198,7 +198,7 @@ export default function ProductionDashboard() {
   const { data: txnRes, isLoading: txnLoading } = useRecentTransactions();
   const { data: batchRes, isLoading: batchLoading } = useProductionBatches();
   const { data: completedBatchRes, isLoading: completedBatchLoading } =
-    useProductionBatches("status=Completed&sort=modified_date:desc&limit=1");
+    useProductionBatches("status=Complete&sort=modified_date:desc&limit=1");
   const { data: expRes } = useExpiringLots();
   const { data: quarantineLotsRes, isLoading: quarantineLotsLoading } = useLots(
     "status=Quarantine&sort=expiration_date:asc&limit=10",
@@ -471,7 +471,7 @@ export default function ProductionDashboard() {
                 options={[
                   { label: "Planned", value: "Planned" },
                   { label: "In Progress", value: "In Progress" },
-                  { label: "Completed", value: "Completed" },
+                  { label: "Completed", value: "Complete" },
                   { label: "Rejected", value: "Rejected" },
                 ]}
               />
