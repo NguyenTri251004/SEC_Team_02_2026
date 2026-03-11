@@ -232,6 +232,21 @@ function applyRange<T>(rows: T[], range: TrendRange): T[] {
   return rows.slice(-30);
 }
 
+function calculateDaysToExpiry(expirationDate: string): number {
+  const today = new Date();
+  const startOfToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  const expiryDate = new Date(`${expirationDate}T00:00:00`);
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
+
+  return Math.ceil(
+    (expiryDate.getTime() - startOfToday.getTime()) / millisecondsPerDay,
+  );
+}
+
 export default function InventoryManagerDashboard() {
   const { message } = App.useApp();
   const [trendRange, setTrendRange] = useState<TrendRange>("30d");
@@ -248,7 +263,14 @@ export default function InventoryManagerDashboard() {
   const invSummary = invRes?.data ?? MOCK_INV;
   const txnSummary = txnSumRes?.data ?? MOCK_TXN_SUMMARY;
   const transactions = txnRes?.data ?? MOCK_TRANSACTIONS;
-  const expiring = expRes?.data ?? MOCK_EXPIRING;
+  const expiring = useMemo<ExpiringLot[]>(
+    () =>
+      expRes?.data?.map((lot) => ({
+        ...lot,
+        days_to_expiry: calculateDaysToExpiry(lot.expiration_date),
+      })) ?? MOCK_EXPIRING,
+    [expRes?.data],
+  );
   const expiringCount = expRes?.total ?? 12;
   const totalMaterials = materialsRes?.total ?? 0;
   const loading = invLoading;

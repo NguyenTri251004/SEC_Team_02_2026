@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import type { JwtPayload } from "jsonwebtoken";
 
 jest.mock("jsonwebtoken", () => ({
   __esModule: true,
@@ -12,15 +13,22 @@ jest.mock("../../modules/admin/admin.service", () => ({
 }));
 
 type AuthModule = typeof import("../auth");
-type JwtModule = typeof import("jsonwebtoken");
 type AdminServiceModule = typeof import("../../modules/admin/admin.service");
+type VerifyReturn = string | JwtPayload;
+type JwtVerifyMock = jest.Mock<VerifyReturn, [string, string]>;
 
-interface MockResponse {
-  status: jest.MockedFunction<(code: number) => Response>;
-  json: jest.MockedFunction<(body: unknown) => Response>;
+interface MockJwtModule {
+  default: {
+    verify: JwtVerifyMock;
+  };
 }
 
-interface DecodedToken {
+interface MockResponse {
+  status: jest.MockedFunction<(code: number) => MockResponse>;
+  json: jest.MockedFunction<(body: unknown) => MockResponse>;
+}
+
+interface DecodedToken extends JwtPayload {
   sub?: string;
   user_id?: string;
   preferred_username?: string;
@@ -34,7 +42,7 @@ interface DecodedToken {
 
 interface LoadedAuthContext {
   auth: AuthModule;
-  verifyMock: jest.MockedFunction<JwtModule["default"]["verify"]>;
+  verifyMock: JwtVerifyMock;
   updateLastLoginMock: jest.MockedFunction<AdminServiceModule["updateLastLogin"]>;
 }
 
@@ -49,13 +57,14 @@ const originalEnv = process.env;
 const originalFetch = global.fetch;
 
 const createResponse = (): MockResponse => {
-  const response = {
+  let response!: MockResponse;
+  response = {
     status: jest
-      .fn<(code: number) => Response>()
-      .mockImplementation((_code: number) => response as unknown as Response),
+      .fn<MockResponse, [number]>()
+      .mockImplementation((_code: number) => response),
     json: jest
-      .fn<(body: unknown) => Response>()
-      .mockImplementation((_body: unknown) => response as unknown as Response),
+      .fn<MockResponse, [unknown]>()
+      .mockImplementation((_body: unknown) => response),
   };
 
   return response;
@@ -69,19 +78,19 @@ const createRequest = (authorization?: string): Request =>
 const loadAuthContext = async (): Promise<LoadedAuthContext> => {
   jest.resetModules();
 
-  const [auth, jwtModule, adminServiceModule] = await Promise.all([
+  const [auth, adminServiceModule] = await Promise.all([
     import("../auth"),
-    import("jsonwebtoken"),
     import("../../modules/admin/admin.service"),
   ]);
+  const jwtModule = jest.requireMock("jsonwebtoken") as MockJwtModule;
 
-  const verifyMock = jest.mocked(jwtModule.default.verify);
+  const verifyMock = jwtModule.default.verify;
   const updateLastLoginMock = jest.mocked(adminServiceModule.updateLastLogin);
 
   verifyMock.mockReset();
   updateLastLoginMock.mockReset();
   updateLastLoginMock.mockResolvedValue(undefined);
-  verifyMock.mockReturnValue(defaultDecodedToken as ReturnType<typeof verifyMock>);
+  verifyMock.mockReturnValue(defaultDecodedToken);
 
   return {
     auth,
@@ -111,7 +120,7 @@ describe("auth middleware", () => {
       const { auth } = await loadAuthContext();
       const request = createRequest();
       const response = createResponse();
-      const next = jest.fn<NextFunction>();
+      const next: jest.MockedFunction<NextFunction> = jest.fn();
 
       await auth.authenticateJWT(
         request,
@@ -131,7 +140,7 @@ describe("auth middleware", () => {
       const { auth } = await loadAuthContext();
       const request = createRequest("Token abc123");
       const response = createResponse();
-      const next = jest.fn<NextFunction>();
+      const next: jest.MockedFunction<NextFunction> = jest.fn();
 
       await auth.authenticateJWT(
         request,
@@ -151,7 +160,7 @@ describe("auth middleware", () => {
       const { auth, verifyMock, updateLastLoginMock } = await loadAuthContext();
       const request = createRequest("Bearer valid-token");
       const response = createResponse();
-      const next = jest.fn<NextFunction>();
+      const next: jest.MockedFunction<NextFunction> = jest.fn();
 
       await auth.authenticateJWT(
         request,
@@ -180,11 +189,11 @@ describe("auth middleware", () => {
         user_id: "user-roles",
         username: "fallback-user",
         roles: ["viewer"],
-      } as ReturnType<typeof verifyMock>);
+      });
 
       const request = createRequest("Bearer valid-token");
       const response = createResponse();
-      const next = jest.fn<NextFunction>();
+      const next: jest.MockedFunction<NextFunction> = jest.fn();
 
       await auth.authenticateJWT(
         request,
@@ -210,7 +219,7 @@ describe("auth middleware", () => {
 
       const request = createRequest("Bearer bad-token");
       const response = createResponse();
-      const next = jest.fn<NextFunction>();
+      const next: jest.MockedFunction<NextFunction> = jest.fn();
 
       await auth.authenticateJWT(
         request,
@@ -232,7 +241,7 @@ describe("auth middleware", () => {
       const { auth, verifyMock } = await loadAuthContext();
       const request = createRequest();
       const response = createResponse();
-      const next = jest.fn<NextFunction>();
+      const next: jest.MockedFunction<NextFunction> = jest.fn();
 
       await auth.optionalAuth(request, response as unknown as Response, next);
 
@@ -245,7 +254,7 @@ describe("auth middleware", () => {
       const { auth, verifyMock } = await loadAuthContext();
       const request = createRequest("Basic abc123");
       const response = createResponse();
-      const next = jest.fn<NextFunction>();
+      const next: jest.MockedFunction<NextFunction> = jest.fn();
 
       await auth.optionalAuth(request, response as unknown as Response, next);
 
@@ -258,7 +267,7 @@ describe("auth middleware", () => {
       const { auth } = await loadAuthContext();
       const request = createRequest("Bearer valid-token");
       const response = createResponse();
-      const next = jest.fn<NextFunction>();
+      const next: jest.MockedFunction<NextFunction> = jest.fn();
 
       await auth.optionalAuth(request, response as unknown as Response, next);
 
@@ -274,7 +283,7 @@ describe("auth middleware", () => {
 
       const request = createRequest("Bearer bad-token");
       const response = createResponse();
-      const next = jest.fn<NextFunction>();
+      const next: jest.MockedFunction<NextFunction> = jest.fn();
 
       await auth.optionalAuth(request, response as unknown as Response, next);
 
@@ -306,12 +315,12 @@ describe("auth middleware", () => {
     it("fetches Keycloak public key dynamically when no static key is configured", async () => {
       delete process.env.KEYCLOAK_PUBLIC_KEY;
       const { auth, verifyMock } = await loadAuthContext();
-      const fetchMock = jest.fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>();
+      const fetchMock: jest.MockedFunction<typeof fetch> = jest.fn();
 
       fetchMock.mockResolvedValue({
         ok: true,
         json: async () => ({ public_key: "dynamic-key" }),
-      } as unknown as Response);
+      } as Awaited<ReturnType<typeof fetch>>);
       global.fetch = fetchMock;
 
       await auth.extractUserFromToken("dynamic-token");
@@ -329,7 +338,7 @@ describe("auth middleware", () => {
     it("returns null when Keycloak key cannot be fetched", async () => {
       delete process.env.KEYCLOAK_PUBLIC_KEY;
       const { auth, verifyMock } = await loadAuthContext();
-      const fetchMock = jest.fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>();
+      const fetchMock: jest.MockedFunction<typeof fetch> = jest.fn();
 
       fetchMock.mockRejectedValue(new Error("network down"));
       global.fetch = fetchMock;
