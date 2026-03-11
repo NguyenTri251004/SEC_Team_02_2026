@@ -167,7 +167,6 @@ describe("Cross-Module Business Flows", () => {
       mockPool.query.mockResolvedValueOnce(toResult([LOT]));
 
       const result = await lotService.createLot({
-        lot_id: LOT.lot_id,
         material_id: LOT.material_id,
         manufacturer_name: LOT.manufacturer_name,
         manufacturer_lot: LOT.manufacturer_lot,
@@ -275,7 +274,6 @@ describe("Cross-Module Business Flows", () => {
       mockPool.query.mockResolvedValueOnce(toResult([LOT]));
 
       const result = await lotService.createLot({
-        lot_id: LOT.lot_id,
         material_id: LOT.material_id,
         manufacturer_name: LOT.manufacturer_name,
         manufacturer_lot: LOT.manufacturer_lot,

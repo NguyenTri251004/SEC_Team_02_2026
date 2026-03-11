@@ -60,7 +60,7 @@ describe('Admin Routes', () => {
         },
       ];
 
-      mockAdminService.getAllUsers.mockResolvedValueOnce(mockUsers);
+      mockAdminService.getAllUsers.mockResolvedValueOnce(mockUsers as any);
 
       const response = await request(app).get('/api/admin/users');
 
@@ -90,7 +90,7 @@ describe('Admin Routes', () => {
         },
       ];
 
-      mockAdminService.getAllUsers.mockResolvedValueOnce(mockUsers);
+      mockAdminService.getAllUsers.mockResolvedValueOnce(mockUsers as any);
 
       const response = await request(app)
         .get('/api/admin/users')
@@ -158,7 +158,7 @@ describe('Admin Routes', () => {
         modified_date: new Date(),
       };
 
-      mockAdminService.getUserById.mockResolvedValueOnce(mockUser);
+      mockAdminService.getUserById.mockResolvedValueOnce(mockUser as any);
 
       const response = await request(app).get('/api/admin/users/USR-001');
 
@@ -321,7 +321,7 @@ describe('Admin Routes', () => {
         modified_date: new Date(),
       };
 
-      mockAdminService.updateUser.mockResolvedValueOnce(updatedUser);
+      mockAdminService.updateUser.mockResolvedValueOnce(updatedUser as any);
 
       const response = await request(app)
         .put('/api/admin/users/USR-001')
@@ -383,7 +383,7 @@ describe('Admin Routes', () => {
         modified_date: new Date(),
       };
 
-      mockAdminService.toggleUserActive.mockResolvedValueOnce(toggledUser);
+      mockAdminService.toggleUserActive.mockResolvedValueOnce(toggledUser as any);
 
       const response = await request(app).patch('/api/admin/users/USR-001/toggle-active');
 
@@ -405,7 +405,7 @@ describe('Admin Routes', () => {
         modified_date: new Date(),
       };
 
-      mockAdminService.toggleUserActive.mockResolvedValueOnce(toggledUser);
+      mockAdminService.toggleUserActive.mockResolvedValueOnce(toggledUser as any);
 
       const response = await request(app).patch('/api/admin/users/USR-001/toggle-active');
 

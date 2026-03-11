@@ -185,7 +185,6 @@ describe("Warehouse Lifecycle Integration", () => {
       mockQuery.mockResolvedValueOnce(toResult([MATERIAL]));
 
       const result = await materialService.createMaterial({
-        material_id: MATERIAL.material_id,
         part_number: MATERIAL.part_number,
         material_name: MATERIAL.material_name,
         material_type: MATERIAL.material_type,
@@ -214,7 +213,6 @@ describe("Warehouse Lifecycle Integration", () => {
       mockQuery.mockResolvedValueOnce(toResult([LOT]));
 
       const result = await lotService.createLot({
-        lot_id: LOT.lot_id,
         material_id: LOT.material_id,
         manufacturer_name: LOT.manufacturer_name,
         manufacturer_lot: LOT.manufacturer_lot,
