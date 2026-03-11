@@ -59,117 +59,10 @@ import type {
   AlertItem,
 } from "../../types";
 
-/* ── Mock data ── */
-const MOCK_INV: InventorySummary = {
-  by_status: [
-    {
-      status: "Accepted",
-      lot_count: 5240,
-      quantities_by_unit: [
-        { unit_of_measure: "kg", total_quantity: 420 },
-        { unit_of_measure: "ea", total_quantity: 200 },
-      ],
-    },
-    {
-      status: "Quarantine",
-      lot_count: 15,
-      quantities_by_unit: [{ unit_of_measure: "kg", total_quantity: 82 }],
-    },
-    {
-      status: "Rejected",
-      lot_count: 8,
-      quantities_by_unit: [{ unit_of_measure: "kg", total_quantity: 12 }],
-    },
-    {
-      status: "Depleted",
-      lot_count: 2978,
-      quantities_by_unit: [{ unit_of_measure: "kg", total_quantity: 0 }],
-    },
-  ],
-  by_material_type: [
-    { material_type: "API", unit_of_measure: "kg", total_quantity: 420 },
-    {
-      material_type: "Excipient",
-      unit_of_measure: "L",
-      total_quantity: 340,
-    },
-    {
-      material_type: "Container",
-      unit_of_measure: "ea",
-      total_quantity: 200,
-    },
-  ],
+const EMPTY_INV_SUMMARY: InventorySummary = {
+  by_status: [],
+  by_material_type: [],
 };
-
-const MOCK_TXN_SUMMARY: TransactionSummary = {
-  today_receipts: 24,
-  today_issues: 18,
-};
-
-const MOCK_TRANSACTIONS: InventoryTransaction[] = [
-  {
-    transaction_id: "T001",
-    lot_id: "LOT-065",
-    transaction_type: "Receipt",
-    quantity: 10,
-    unit_of_measure: "kg",
-    reference_id: null,
-    notes: null,
-    performed_by: "op01",
-    transaction_date: "2026-02-28T09:30:00Z",
-    created_date: "2026-02-28T09:30:00Z",
-    material_name: "API-X",
-  },
-  {
-    transaction_id: "T002",
-    lot_id: "LOT-042",
-    transaction_type: "Usage",
-    quantity: -2,
-    unit_of_measure: "kg",
-    reference_id: null,
-    notes: null,
-    performed_by: "prod01",
-    transaction_date: "2026-02-28T09:15:00Z",
-    created_date: "2026-02-28T09:15:00Z",
-    material_name: "Vitamin D3",
-  },
-  {
-    transaction_id: "T003",
-    lot_id: "LOT-033",
-    transaction_type: "Transfer",
-    quantity: 0,
-    unit_of_measure: "kg",
-    reference_id: null,
-    notes: null,
-    performed_by: "op02",
-    transaction_date: "2026-02-28T09:00:00Z",
-    created_date: "2026-02-28T09:00:00Z",
-    material_name: "Excipient B",
-  },
-];
-
-const MOCK_EXPIRING: ExpiringLot[] = [
-  {
-    lot_id: "LOT-042",
-    material_name: "Vitamin D3",
-    status: "Accepted",
-    quantity: 5,
-    unit_of_measure: "kg",
-    expiration_date: "2026-03-15",
-    days_to_expiry: 15,
-    storage_location: "WH-A-01",
-  },
-  {
-    lot_id: "LOT-018",
-    material_name: "Excipient B",
-    status: "Accepted",
-    quantity: 12,
-    unit_of_measure: "kg",
-    expiration_date: "2026-03-22",
-    days_to_expiry: 22,
-    storage_location: "WH-B-03",
-  },
-];
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
   Accepted: <CheckCircleOutlined />,
@@ -190,19 +83,6 @@ interface TrendPoint {
   receipts: number;
   issues: number;
 }
-
-/* ── Mock trend data for Receipt vs Usage line chart (30d) ── */
-const MOCK_TREND: TrendPoint[] = Array.from({ length: 30 }, (_, index) => {
-  const day = String(index + 1).padStart(2, "0");
-  const receipts = 16 + ((index * 7) % 13) + (index % 3);
-  const issues = 12 + ((index * 5) % 11) + (index % 2);
-
-  return {
-    date: `Feb ${day}`,
-    receipts,
-    issues,
-  };
-});
 
 type TrendRange = "7d" | "14d" | "30d";
 
@@ -233,17 +113,25 @@ function applyRange<T>(rows: T[], range: TrendRange): T[] {
 }
 
 function calculateDaysToExpiry(expirationDate: string): number {
+  const dateOnly = expirationDate.includes("T")
+    ? expirationDate.slice(0, 10)
+    : expirationDate;
   const today = new Date();
   const startOfToday = new Date(
     today.getFullYear(),
     today.getMonth(),
     today.getDate(),
   );
-  const expiryDate = new Date(`${expirationDate}T00:00:00`);
+  const expiryDate = new Date(`${dateOnly}T00:00:00`);
   const millisecondsPerDay = 24 * 60 * 60 * 1000;
+  const expiryTime = expiryDate.getTime();
+
+  if (Number.isNaN(expiryTime)) {
+    return Number.NaN;
+  }
 
   return Math.ceil(
-    (expiryDate.getTime() - startOfToday.getTime()) / millisecondsPerDay,
+    (expiryTime - startOfToday.getTime()) / millisecondsPerDay,
   );
 }
 
@@ -260,20 +148,19 @@ export default function InventoryManagerDashboard() {
   const { data: expRes, isLoading: expLoading } = useExpiringLots();
   const { data: materialsRes, isLoading: materialsLoading } = useMaterials();
 
-  const invSummary = invRes?.data ?? MOCK_INV;
-  const txnSummary = txnSumRes?.data ?? MOCK_TXN_SUMMARY;
-  const transactions = txnRes?.data ?? MOCK_TRANSACTIONS;
+  const invSummary = invRes?.data ?? EMPTY_INV_SUMMARY;
+  const txnSummary = txnSumRes?.data;
+  const transactions = txnRes?.data ?? [];
   const expiring = useMemo<ExpiringLot[]>(
     () =>
       expRes?.data?.map((lot) => ({
         ...lot,
         days_to_expiry: calculateDaysToExpiry(lot.expiration_date),
-      })) ?? MOCK_EXPIRING,
+      })) ?? [],
     [expRes?.data],
   );
-  const expiringCount = expRes?.total ?? 12;
+  const expiringCount = expRes?.total ?? 0;
   const totalMaterials = materialsRes?.total ?? 0;
-  const loading = invLoading;
 
   const stockRows = useMemo(
     () =>
@@ -305,7 +192,7 @@ export default function InventoryManagerDashboard() {
   );
 
   const trendData = useMemo(() => {
-    const source = hasTrendData(txnSummary) ? txnSummary.trend : MOCK_TREND;
+    const source = txnSummary && hasTrendData(txnSummary) ? txnSummary.trend : [];
     return applyRange(source, trendRange);
   }, [trendRange, txnSummary]);
 
@@ -438,7 +325,7 @@ export default function InventoryManagerDashboard() {
               iconBg={`${STATUS_COLOR[s.status] ?? tokens.colorPrimary}14`}
               iconColor={STATUS_COLOR[s.status]}
               delta={formatQuantitiesByUnit(s.quantities_by_unit) ?? undefined}
-              loading={loading}
+              loading={invLoading}
               valueStyle={{ color: STATUS_COLOR[s.status] }}
             />
           </Col>
@@ -460,18 +347,18 @@ export default function InventoryManagerDashboard() {
         <Col xs={12} sm={6}>
           <KpiCard
             label="Today's Receipts"
-            value={txnSummary.today_receipts}
             icon={<ArrowUpOutlined />}
             iconBg="rgba(82,196,26,0.08)"
             iconColor={tokens.colorSuccess}
             loading={txnSumLoading}
             valueStyle={{ color: tokens.colorSuccess }}
+            value={txnSummary?.today_receipts ?? "-"}
           />
         </Col>
         <Col xs={12} sm={6}>
           <KpiCard
             label="Today's Issues"
-            value={txnSummary.today_issues}
+            value={txnSummary?.today_issues ?? "-"}
             icon={<ArrowDownOutlined />}
             iconBg="rgba(255,77,79,0.08)"
             iconColor={tokens.colorError}
@@ -497,7 +384,7 @@ export default function InventoryManagerDashboard() {
         <Col xs={24} lg={12}>
           <ChartCard
             title={`Stock by Material Type${selectedStockUnit ? ` (${selectedStockUnit})` : ""}`}
-            loading={loading}
+            loading={invLoading}
             empty={barData.length === 0}
             height={280}
             extra={
@@ -550,7 +437,7 @@ export default function InventoryManagerDashboard() {
         <Col xs={24} lg={12}>
           <ChartCard
             title={`Receipt vs Usage Trend (${trendRange})`}
-            loading={loading}
+            loading={txnSumLoading}
             empty={trendData.length === 0}
             height={280}
             extra={
@@ -646,7 +533,7 @@ export default function InventoryManagerDashboard() {
 
       {/* ── 6. Alerts ── */}
       <div style={{ marginTop: SECTION_GAP }}>
-        <AlertPanel alerts={alerts} loading={loading} />
+        <AlertPanel alerts={alerts} loading={invLoading || expLoading} />
       </div>
     </DashboardPage>
   );
