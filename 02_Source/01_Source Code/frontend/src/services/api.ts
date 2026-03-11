@@ -15,6 +15,9 @@ import type {
   User,
   PaginatedResponse,
   ApiResponse,
+  InventoryReportRow,
+  TransactionReportRow,
+  AuditLogRow,
 } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -183,6 +186,18 @@ export const productionApi = {
 // Reports
 // ────────────────────────────────────────────────────────────
 export const reportApi = {
+  getInventoryReport: async (filters?: Record<string, string>) => {
+    const res = await api.get("/api/reports/inventory", { params: filters });
+    return res.data as { data: InventoryReportRow[] };
+  },
+  getTransactionReport: async (filters?: Record<string, string>) => {
+    const res = await api.get("/api/reports/transactions", { params: filters });
+    return res.data as { data: TransactionReportRow[] };
+  },
+  getAuditLog: async (filters?: Record<string, string>) => {
+    const res = await api.get("/api/reports/audit-log", { params: filters });
+    return res.data as { data: AuditLogRow[] };
+  },
   exportReport: async (body: {
     type: string;
     filters: Record<string, unknown>;

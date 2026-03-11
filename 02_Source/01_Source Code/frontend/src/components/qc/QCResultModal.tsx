@@ -102,7 +102,11 @@ export function QCResultModal({ isOpen, onClose, test }: QCResultModalProps) {
             />
           </Form.Item>
 
-          <Form.Item name="verified_by" label="Verified By">
+          <Form.Item
+            name="verified_by"
+            label="Verified By"
+            rules={[{ required: true, message: "Please enter verifier name" }]}
+          >
             <Input placeholder="Ex: qc_supervisor" />
           </Form.Item>
         </div>

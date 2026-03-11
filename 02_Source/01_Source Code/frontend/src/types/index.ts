@@ -235,3 +235,46 @@ export interface AlertItem {
   count: number;
   link: string;
 }
+
+// ---- Report row types ----
+export interface InventoryReportRow {
+  lot_id: string;
+  material_id: string;
+  material_name: string;
+  material_type: string;
+  manufacturer_name?: string;
+  manufacturer_lot?: string;
+  supplier_name?: string;
+  received_date: string;
+  expiration_date?: string;
+  status: string;
+  quantity: number;
+  unit_of_measure: string;
+  storage_location?: string;
+  po_number?: string;
+}
+
+export interface TransactionReportRow {
+  transaction_id: string;
+  lot_id: string;
+  transaction_type: string;
+  quantity: number;
+  unit_of_measure: string;
+  reference_id?: string;
+  notes?: string;
+  performed_by?: string;
+  transaction_date: string;
+  created_date: string;
+  material_id?: string;
+  material_name?: string;
+}
+
+export interface AuditLogRow {
+  event_type: string;
+  event_date: string;
+  lot_id: string;
+  reference_id?: string;
+  performed_by?: string;
+  notes?: string;
+  details?: string;
+}

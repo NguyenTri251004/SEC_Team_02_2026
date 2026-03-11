@@ -206,6 +206,7 @@ CREATE TABLE IF NOT EXISTS qc_tests (
                          CHECK (result_status IN ('Pass','Fail','Pending')),
   performed_by         VARCHAR(50)   NOT NULL,
   verified_by          VARCHAR(50),
+  notes                TEXT,
   created_date         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   modified_date        TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

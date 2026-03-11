@@ -1,3 +1,6 @@
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
 export function exportToCSV(
   data: Record<string, unknown>[],
   columns: { key: string; title: string }[],
@@ -35,4 +38,35 @@ export function exportToCSV(
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+export function exportToPDF(
+  data: Record<string, unknown>[],
+  columns: { key: string; title: string }[],
+  title: string,
+  filename: string,
+): void {
+  const doc = new jsPDF({ orientation: "landscape" });
+
+  doc.setFontSize(14);
+  doc.text(title, 14, 15);
+  doc.setFontSize(9);
+  doc.setTextColor(120);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+
+  autoTable(doc, {
+    startY: 28,
+    head: [columns.map((c) => c.title)],
+    body: data.map((row) =>
+      columns.map((col) => {
+        const val = row[col.key];
+        return val === null || val === undefined ? "" : String(val);
+      }),
+    ),
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [22, 119, 255] },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+  });
+
+  doc.save(`${filename}.pdf`);
 }
