@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Button, Tag, Space, Progress, Alert, Tooltip, Table, Empty, Tabs } from "antd";
-import { PlusOutlined, ExperimentOutlined, ClockCircleOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import { useState, useMemo } from "react";
+import { Button, Tag, Space, Progress, Alert, Tooltip, Table, Empty, Input } from "antd";
+import { PlusOutlined, ExperimentOutlined, ClockCircleOutlined, CheckCircleOutlined, SearchOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
@@ -22,17 +22,28 @@ const LOT_STATUS_TAG: Record<string, { label: string; color: string }> = {
 
 export default function QCPage() {
   const { data: tests = [], isLoading: testsLoading } = useQCTests();
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const { data: queueData = [], isLoading: queueLoading } = useQCQueue(statusFilter === "all" ? undefined : statusFilter);
+  const { data: queueData = [], isLoading: queueLoading } = useQCQueue();
 
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
   const [resultTest, setResultTest] = useState<QCTest | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
+  // Filter queue data based on search term
+  const filteredQueueData = useMemo(() => {
+    if (!searchTerm.trim()) return queueData;
+    const term = searchTerm.toLowerCase();
+    return queueData.filter(
+      (item) =>
+        item.lot_id.toLowerCase().includes(term) ||
+        item.material_name.toLowerCase().includes(term)
+    );
+  }, [queueData, searchTerm]);
 
   const pendingCount = tests.filter((t) => t.result_status === "Pending").length;
 
   // Check how many lots are ready for approval (all tests completed and passed)
-  const readyForApprovalCount = queueData.filter(
+  const readyForApprovalCount = filteredQueueData.filter(
     (item) => item.total_tests > 0 && item.pending_tests === 0
   ).length;
 
@@ -269,7 +280,7 @@ export default function QCPage() {
       }
     >
       {/* Alert for lots ready for approval */}
-      {(statusFilter === "all" || statusFilter === "Quarantine") && readyForApprovalCount > 0 && (
+      {readyForApprovalCount > 0 && (
         <Alert
           message={`${readyForApprovalCount} lot(s) ready for approval`}
           description="All tests completed. Review test results and approve or reject the lot(s)."
@@ -286,20 +297,17 @@ export default function QCPage() {
         <DataTableCard<QCQueueItem>
           title="QC Testing - Lot Management"
           extra={
-            <Tabs
-              activeKey={statusFilter}
-              onChange={setStatusFilter}
-              size="small"
-              items={[
-                { key: "all", label: "All Lots" },
-                { key: "Quarantine", label: "🟠 Quarantine" },
-                { key: "Accepted", label: "✅ Accepted" },
-                { key: "Rejected", label: "❌ Rejected" },
-              ]}
+            <Input
+              placeholder="Search by Lot ID or Material Name"
+              prefix={<SearchOutlined />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              allowClear
+              style={{ width: 300 }}
             />
           }
           columns={lotColumns}
-          dataSource={queueData}
+          dataSource={filteredQueueData}
           rowKey="lot_id"
           loading={queueLoading || testsLoading}
           pagination={{ pageSize: 10 }}

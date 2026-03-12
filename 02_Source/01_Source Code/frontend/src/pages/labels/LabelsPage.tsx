@@ -205,6 +205,37 @@ export default function LabelsPage() {
       sorter: (a, b) => a.material_id.localeCompare(b.material_id),
     },
     {
+      title: "Entity Type",
+      dataIndex: "entity_type",
+      key: "entity_type",
+      width: 120,
+      render: (type: string) => {
+        const colorMap: Record<string, string> = {
+          material: "blue",
+          lot: "orange",
+          batch: "purple",
+        };
+        return (
+          <Tag color={colorMap[type] || "default"}>
+            {type.toUpperCase()}
+          </Tag>
+        );
+      },
+      filters: [
+        { text: "Material", value: "material" },
+        { text: "Lot", value: "lot" },
+        { text: "Batch", value: "batch" },
+      ],
+      onFilter: (value, record) => record.entity_type === value,
+    },
+    {
+      title: "Entity ID",
+      dataIndex: "entity_id",
+      key: "entity_id",
+      width: 150,
+      ellipsis: true,
+    },
+    {
       title: "Part Number",
       dataIndex: "part_number",
       key: "part_number",

@@ -40,6 +40,12 @@ export enum CodeType {
   QR_CODE = "qrcode",
 }
 
+export enum EntityType {
+  MATERIAL = "material",
+  LOT = "lot",
+  BATCH = "batch",
+}
+
 export interface GenerateLabelInput {
   material_id: string;
   code_type: CodeType;
@@ -47,7 +53,8 @@ export interface GenerateLabelInput {
 
 export interface GenerateLabelFromTemplateInput {
   template_id: string;
-  entity_id: string; // lot_id, batch_id, or material_id depending on template
+  entity_type: EntityType;
+  entity_id: string; // lot_id, batch_id, or material_id depending on entity_type
   code_type: CodeType;
 }
 
@@ -57,6 +64,8 @@ export interface GeneratedLabel {
   material_name: string;
   part_number: string;
   material_type: string;
+  entity_type: EntityType;
+  entity_id: string;
   code_type: CodeType;
   code_data: string; // base64 encoded image
   label_content: Record<string, unknown>;

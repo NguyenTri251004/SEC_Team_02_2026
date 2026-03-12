@@ -162,12 +162,20 @@ router.post(
   requirePermission("labels", "generate"),
   async (req: Request, res: Response) => {
     try {
-      const { template_id, entity_id, code_type } = req.body;
+      const { template_id, entity_type, entity_id, code_type } = req.body;
 
-      if (!template_id || !entity_id) {
+      if (!template_id || !entity_type || !entity_id) {
         res.status(400).json({
           success: false,
-          error: "Missing required fields: template_id, entity_id",
+          error: "Missing required fields: template_id, entity_type, entity_id",
+        });
+        return;
+      }
+
+      if (!['material', 'lot', 'batch'].includes(entity_type)) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid entity_type. Must be 'material', 'lot', or 'batch'",
         });
         return;
       }
@@ -183,6 +191,7 @@ router.post(
       const userId = (req as any).user?.user_id || 'system';
       const label = await labelService.generateLabelFromTemplate({
         template_id,
+        entity_type,
         entity_id,
         code_type,
       }, userId);

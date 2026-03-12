@@ -58,11 +58,16 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
       message.success(`Lot ${isEditing ? "updated" : "created"} successfully!`);
       onClose();
     } catch (error: unknown) {
-      if (error.response?.status === 409) {
-        message.error("Lot ID already exists!");
-      } else if (error.response?.status === 400) {
-        message.error(error.response?.data?.error || "Invalid data");
-      } else if (error.name !== "ValidationError") {
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as { response?: { status?: number; data?: { error?: string } } };
+        if (axiosError.response?.status === 409) {
+          message.error("Lot ID already exists!");
+        } else if (axiosError.response?.status === 400) {
+          message.error(axiosError.response?.data?.error || "Invalid data");
+        } else {
+          message.error("An error occurred while saving.");
+        }
+      } else if (error && typeof error === "object" && "name" in error && (error as { name: string }).name !== "ValidationError") {
         message.error("An error occurred while saving.");
       }
     }

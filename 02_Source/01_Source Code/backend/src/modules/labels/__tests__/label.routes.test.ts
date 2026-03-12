@@ -47,7 +47,7 @@ const TEMPLATE = {
 beforeEach(() => jest.clearAllMocks());
 
 // ═════════════════════════════════════════════════════════════════════════════
-describe.skip("GET /api/labels/templates", () => {
+describe("GET /api/labels/templates", () => {
   it("200 — returns template list", async () => {
     svc.getAllTemplates.mockResolvedValueOnce([TEMPLATE]);
 
@@ -80,7 +80,7 @@ describe.skip("GET /api/labels/templates", () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-describe.skip("GET /api/labels/templates/:id", () => {
+describe("GET /api/labels/templates/:id", () => {
   it("200 — returns template by id", async () => {
     svc.getTemplateById.mockResolvedValueOnce(TEMPLATE);
 
@@ -109,7 +109,7 @@ describe.skip("GET /api/labels/templates/:id", () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-describe.skip("POST /api/labels/templates", () => {
+describe("POST /api/labels/templates", () => {
   const validBody = {
     template_name: "New Label",
     label_type: LabelType.API,
@@ -191,7 +191,7 @@ describe.skip("POST /api/labels/templates", () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-describe.skip("PUT /api/labels/templates/:id", () => {
+describe("PUT /api/labels/templates/:id", () => {
   it("200 — updates template", async () => {
     const updated = { ...TEMPLATE, template_name: "Updated" };
     svc.updateTemplate.mockResolvedValueOnce(updated);
@@ -230,7 +230,7 @@ describe.skip("PUT /api/labels/templates/:id", () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-describe.skip("DELETE /api/labels/templates/:id", () => {
+describe("DELETE /api/labels/templates/:id", () => {
   it("200 — deletes template", async () => {
     svc.deleteTemplate.mockResolvedValueOnce(true);
 
@@ -258,73 +258,378 @@ describe.skip("DELETE /api/labels/templates/:id", () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-describe.skip("POST /api/labels/generate", () => {
-  it("200 — generates label for lot", async () => {
+describe("POST /api/labels/generate", () => {
+  it("200 — generates label for material with QR code", async () => {
     const generated = {
-      template_id: "TMPL-001",
-      template_name: "Test",
-      label_type: LabelType.RAW_MATERIAL,
-      width: 3.5,
-      height: 2,
-      content: { lot_id: "LOT-001" },
-      generated_date: new Date(),
+      label_id: "uuid-1",
+      material_id: "MAT-001",
+      material_name: "Test Material",
+      part_number: "PART-001",
+      material_type: "API",
+      entity_type: "material" as any,
+      entity_id: "MAT-001",
+      code_type: "qrcode",
+      code_data: "data:image/png;base64,xyz",
+      label_content: JSON.parse('{"material_id": "MAT-001"}'),
+      created_by: "u-1",
+      created_date: new Date(),
     };
     svc.generateLabel.mockResolvedValueOnce(generated);
 
     const res = await request(app)
       .post("/api/labels/generate")
-      .send({ template_id: "TMPL-001", lot_id: "LOT-001" });
+      .send({ material_id: "MAT-001", code_type: "qrcode" });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(svc.generateLabel).toHaveBeenCalledWith(
-      expect.objectContaining({ template_id: "TMPL-001", lot_id: "LOT-001" }),
-    );
+    expect(res.body.data.material_id).toBe("MAT-001");
   });
 
-  it("200 — generates label for batch", async () => {
+  it("200 — generates label for material with barcode", async () => {
     svc.generateLabel.mockResolvedValueOnce({
-      template_id: "TMPL-001",
-      template_name: "T",
-      label_type: LabelType.FINISHED_PRODUCT,
-      width: 3.5,
-      height: 2,
-      content: { batch_id: "B-1" },
-      generated_date: new Date(),
+      label_id: "uuid-2",
+      material_id: "MAT-002",
+      material_name: "Material 2",
+      part_number: "PART-002",
+      material_type: "Raw Material",
+      entity_type: "material" as any,
+      entity_id: "MAT-002",
+      code_type: "barcode",
+      code_data: "data:image/png;base64,barcode",
+      label_content: JSON.parse('{}'),
+      created_by: "u-1",
+      created_date: new Date(),
     });
 
     const res = await request(app)
       .post("/api/labels/generate")
-      .send({ template_id: "TMPL-001", batch_id: "B-1" });
+      .send({ material_id: "MAT-002", code_type: "barcode" });
 
     expect(res.status).toBe(200);
   });
 
-  it("400 — missing template_id", async () => {
+  it("400 — missing material_id", async () => {
     const res = await request(app)
       .post("/api/labels/generate")
-      .send({ lot_id: "LOT-001" });
+      .send({ code_type: "qrcode" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("material_id");
+  });
+
+  it("400 — missing code_type", async () => {
+    const res = await request(app)
+      .post("/api/labels/generate")
+      .send({ material_id: "MAT-001" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("code_type");
+  });
+
+  it("400 — invalid code_type", async () => {
+    const res = await request(app)
+      .post("/api/labels/generate")
+      .send({ material_id: "MAT-001", code_type: "invalid" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("code_type");
+  });
+
+  it("400 — service throws descriptive error", async () => {
+    svc.generateLabel.mockRejectedValueOnce(new Error("Material MAT-999 not found"));
+
+    const res = await request(app)
+      .post("/api/labels/generate")
+      .send({ material_id: "MAT-999", code_type: "qrcode" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Material MAT-999 not found");
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+describe("POST /api/labels/generate-from-template", () => {
+  it("200 — generates label from template for lot entity", async () => {
+    const generated = {
+      label_id: "uuid-3",
+      material_id: "MAT-001",
+      material_name: "Acetaminophen API",
+      part_number: "PART-001",
+      material_type: "API",
+      entity_type: "lot" as any,
+      entity_id: "LOT-001",
+      code_type: "qrcode",
+      code_data: "data:image/png;base64,qr",
+      label_content: JSON.parse('{"entity_type": "lot", "lot_id": "LOT-001"}'),
+      created_by: "u-1",
+      created_date: new Date(),
+    };
+    svc.generateLabelFromTemplate.mockResolvedValueOnce(generated);
+
+    const res = await request(app)
+      .post("/api/labels/generate-from-template")
+      .send({ 
+        template_id: "TMPL-001", 
+        entity_type: "lot", 
+        entity_id: "LOT-001",
+        code_type: "qrcode" 
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.entity_type).toBe("lot");
+    expect(res.body.data.entity_id).toBe("LOT-001");
+  });
+
+  it("200 — generates label from template for batch entity", async () => {
+    svc.generateLabelFromTemplate.mockResolvedValueOnce({
+      label_id: "uuid-4",
+      material_id: "MAT-002",
+      material_name: "Product",
+      part_number: "PART-002",
+      material_type: "Finished Product",
+      entity_type: "batch" as any,
+      entity_id: "BATCH-001",
+      code_type: "barcode",
+      code_data: "data:image/png;base64,bar",
+      label_content: JSON.parse('{"entity_type": "batch"}'),
+      created_by: "u-1",
+      created_date: new Date(),
+    });
+
+    const res = await request(app)
+      .post("/api/labels/generate-from-template")
+      .send({ 
+        template_id: "TMPL-002", 
+        entity_type: "batch", 
+        entity_id: "BATCH-001",
+        code_type: "barcode" 
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.entity_type).toBe("batch");
+  });
+
+  it("200 — generates label from template for material entity", async () => {
+    svc.generateLabelFromTemplate.mockResolvedValueOnce({
+      label_id: "uuid-5",
+      material_id: "MAT-003",
+      material_name: "Material",
+      part_number: "PART-003",
+      material_type: "API",
+      entity_type: "material" as any,
+      entity_id: "MAT-003",
+      code_type: "qrcode",
+      code_data: "data:image/png;base64,qr",
+      label_content: JSON.parse('{"entity_type": "material"}'),
+      created_by: "u-1",
+      created_date: new Date(),
+    });
+
+    const res = await request(app)
+      .post("/api/labels/generate-from-template")
+      .send({ 
+        template_id: "TMPL-003", 
+        entity_type: "material", 
+        entity_id: "MAT-003",
+        code_type: "qrcode" 
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.entity_type).toBe("material");
+  });
+
+  it("400 — missing template_id", async () => {
+    const res = await request(app)
+      .post("/api/labels/generate-from-template")
+      .send({ entity_type: "lot", entity_id: "LOT-001", code_type: "qrcode" });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("template_id");
   });
 
-  it("400 — missing lot_id and batch_id", async () => {
+  it("400 — missing entity_type", async () => {
     const res = await request(app)
-      .post("/api/labels/generate")
-      .send({ template_id: "TMPL-001" });
+      .post("/api/labels/generate-from-template")
+      .send({ template_id: "TMPL-001", entity_id: "LOT-001", code_type: "qrcode" });
 
     expect(res.status).toBe(400);
+    expect(res.body.error).toContain("entity_type");
+  });
+
+  it("400 — missing entity_id", async () => {
+    const res = await request(app)
+      .post("/api/labels/generate-from-template")
+      .send({ template_id: "TMPL-001", entity_type: "lot", code_type: "qrcode" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("entity_id");
+  });
+
+  it("400 — invalid entity_type", async () => {
+    const res = await request(app)
+      .post("/api/labels/generate-from-template")
+      .send({ 
+        template_id: "TMPL-001", 
+        entity_type: "invalid", 
+        entity_id: "ID-001",
+        code_type: "qrcode" 
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("entity_type");
+  });
+
+  it("400 — invalid code_type", async () => {
+    const res = await request(app)
+      .post("/api/labels/generate-from-template")
+      .send({ 
+        template_id: "TMPL-001", 
+        entity_type: "lot", 
+        entity_id: "LOT-001",
+        code_type: "invalid" 
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("code_type");
   });
 
   it("400 — service throws descriptive error", async () => {
-    svc.generateLabel.mockRejectedValueOnce(new Error("Template not found"));
+    svc.generateLabelFromTemplate.mockRejectedValueOnce(new Error("Template TMPL-999 not found"));
 
     const res = await request(app)
-      .post("/api/labels/generate")
-      .send({ template_id: "NOPE", lot_id: "LOT-001" });
+      .post("/api/labels/generate-from-template")
+      .send({ 
+        template_id: "TMPL-999", 
+        entity_type: "lot", 
+        entity_id: "LOT-001",
+        code_type: "qrcode" 
+      });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("Template not found");
+    expect(res.body.error).toBe("Template TMPL-999 not found");
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+describe("GET /api/labels", () => {
+  it("200 — returns all generated labels", async () => {
+    const labels = [
+      {
+        label_id: "uuid-1",
+        material_id: "MAT-001",
+        material_name: "Material 1",
+        part_number: "PART-001",
+        material_type: "API",
+        entity_type: "lot" as any,
+        entity_id: "LOT-001",
+        code_type: "qrcode",
+        code_data: "data:image/png;base64,xyz",
+        label_content: JSON.parse('{}'),
+        created_by: "u-1",
+        created_date: new Date(),
+      },
+    ];
+    svc.getAllGeneratedLabels.mockResolvedValueOnce(labels);
+
+    const res = await request(app).get("/api/labels");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.total).toBe(1);
+  });
+
+  it("200 — returns empty array when no labels", async () => {
+    svc.getAllGeneratedLabels.mockResolvedValueOnce([]);
+
+    const res = await request(app).get("/api/labels");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+  });
+
+  it("500 — on service error", async () => {
+    svc.getAllGeneratedLabels.mockRejectedValueOnce(new Error("DB down"));
+
+    const res = await request(app).get("/api/labels");
+
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+describe("GET /api/labels/:id", () => {
+  it("200 — returns label by id", async () => {
+    const label = {
+      label_id: "uuid-1",
+      material_id: "MAT-001",
+      material_name: "Material",
+      part_number: "PART-001",
+      material_type: "API",
+      entity_type: "lot" as any,
+      entity_id: "LOT-001",
+      code_type: "qrcode",
+      code_data: "data:image/png;base64,xyz",
+      label_content: JSON.parse('{}'),
+      created_by: "u-1",
+      created_date: new Date(),
+    };
+    svc.getGeneratedLabelById.mockResolvedValueOnce(label);
+
+    const res = await request(app).get("/api/labels/uuid-1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.label_id).toBe("uuid-1");
+  });
+
+  it("404 — label not found", async () => {
+    svc.getGeneratedLabelById.mockResolvedValueOnce(null);
+
+    const res = await request(app).get("/api/labels/NOPE");
+
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+  });
+
+  it("500 — on service error", async () => {
+    svc.getGeneratedLabelById.mockRejectedValueOnce(new Error("DB"));
+
+    const res = await request(app).get("/api/labels/uuid-1");
+
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+describe("DELETE /api/labels/:id", () => {
+  it("200 — deletes label successfully", async () => {
+    svc.deleteGeneratedLabel.mockResolvedValueOnce(true);
+
+    const res = await request(app).delete("/api/labels/uuid-1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toContain("deleted");
+  });
+
+  it("404 — label not found", async () => {
+    svc.deleteGeneratedLabel.mockResolvedValueOnce(false);
+
+    const res = await request(app).delete("/api/labels/NOPE");
+
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+  });
+
+  it("500 — on service error", async () => {
+    svc.deleteGeneratedLabel.mockRejectedValueOnce(new Error("DB"));
+
+    const res = await request(app).delete("/api/labels/uuid-1");
+
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
   });
 });

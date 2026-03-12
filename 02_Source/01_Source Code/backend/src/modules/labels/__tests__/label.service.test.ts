@@ -2,7 +2,7 @@
 /// <reference types="jest" />
 import * as labelService from "../label.service";
 import pool from "../../../shared/db/pool";
-import { LabelType } from "../label.types";
+import { LabelType, CodeType } from "../label.types";
 
 // Mock the database pool with proper typing
 jest.mock("../../../shared/db/pool");
@@ -15,9 +15,17 @@ jest.mock("../../../shared/cache/redis", () => ({
   CACHE_TTL: 3600,
 }));
 
+// Mock QRCode and bwip-js
+jest.mock("qrcode", () => ({
+  toDataURL: jest.fn().mockResolvedValue("data:image/png;base64,mockQRCodeData"),
+}));
+jest.mock("bwip-js", () => ({
+  toBuffer: jest.fn().mockResolvedValue(Buffer.from("mockBarcodeData")),
+}));
+
 const mockPool = pool as jest.Mocked<any>;
 
-describe.skip("Label Service", () => {
+describe("Label Service", () => {
   const mockTemplate = {
     template_id: "LABEL-001",
     template_name: "Raw Material Label",
@@ -225,74 +233,197 @@ describe.skip("Label Service", () => {
 
   // ============ generateLabel ============
   describe("generateLabel", () => {
-    it("should generate label for a lot", async () => {
+    const mockMaterial = {
+      material_id: "MAT-001",
+      part_number: "PART-001",
+      material_name: "Test Material",
+      material_type: "API",
+      storage_conditions: "Room temperature",
+      specification_document: "DOC-001",
+    };
+
+    it("should generate QR code label for a material", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [mockMaterial], rowCount: 1 }) // material query
+        .mockResolvedValueOnce({ rows: [{ label_id: "uuid-1" }], rowCount: 1 }); // insert query
+
+      const result = await labelService.generateLabel(
+        {
+          material_id: "MAT-001",
+          code_type: CodeType.QR_CODE,
+        },
+        "user123"
+      );
+
+      expect(result.material_id).toBe("MAT-001");
+      expect(result.entity_type).toBe("material");
+      expect(result.code_type).toBe(CodeType.QR_CODE);
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining("SELECT material_id"),
+        ["MAT-001"]
+      );
+    });
+
+    it("should generate barcode label for a material", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [mockMaterial], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [{ label_id: "uuid-2" }], rowCount: 1 });
+
+      const result = await labelService.generateLabel(
+        {
+          material_id: "MAT-001",
+          code_type: CodeType.BARCODE,
+        },
+        "user123"
+      );
+
+      expect(result.code_type).toBe(CodeType.BARCODE);
+      expect(result.entity_id).toBe("MAT-001");
+    });
+
+    it("should throw error when material not found", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      await expect(
+        labelService.generateLabel(
+          {
+            material_id: "NONEXISTENT",
+            code_type: CodeType.QR_CODE,
+          },
+          "user123"
+        )
+      ).rejects.toThrow("not found");
+    });
+  });
+
+  // ============ generateLabelFromTemplate ============
+  describe("generateLabelFromTemplate", () => {
+    const mockTemplate = {
+      template_id: "TMPL-001",
+      template_name: "Raw Material Label",
+      label_type: LabelType.RAW_MATERIAL,
+      template_content: "Material: {{material_name}}, Lot: {{lot_id}}",
+      width: 3.5,
+      height: 2.0,
+    };
+
+    it("should generate label from template for lot entity", async () => {
       const mockLot = {
         lot_id: "LOT-001",
-        material_name: "Test Material",
-        material_type: "API",
+        material_id: "MAT-001",
+        material_name: "Acetaminophen API",
         part_number: "PART-001",
-        manufacturer_name: "Manufacturer Inc",
-        manufacturer_lot: "MFG-LOT-001",
-        supplier_name: "Supplier Co",
-        received_date: "2026-01-01",
-        expiration_date: "2027-01-01",
+        material_type: "API",
         quantity: 100,
-        unit_of_measure: "kg",
-        storage_location: "A1-B2",
         status: "Accepted",
       };
 
       mockPool.query
-        .mockResolvedValueOnce({ rows: [mockTemplate], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [mockLot], rowCount: 1 });
+        .mockResolvedValueOnce({ rows: [mockTemplate], rowCount: 1 }) // getTemplate
+        .mockResolvedValueOnce({ rows: [mockLot], rowCount: 1 }) // getLot
+        .mockResolvedValueOnce({ rows: [{ label_id: "uuid-3", created_by: "user123", created_date: new Date() }], rowCount: 1 }); // insert
 
-      const result = await labelService.generateLabel({
-        template_id: "LABEL-001",
-        lot_id: "LOT-001",
-      });
+      const result = await labelService.generateLabelFromTemplate(
+        {
+          template_id: "TMPL-001",
+          entity_type: "lot",
+          entity_id: "LOT-001",
+          code_type: CodeType.QR_CODE,
+        },
+        "user123"
+      );
 
-      expect(result.template_id).toBe("LABEL-001");
-      expect(result.content.lot_id).toBe("LOT-001");
-      expect(result.content.material_name).toBe("Test Material");
-      expect(result.content.quantity).toBe(100);
+      expect(result.entity_type).toBe("lot");
+      expect(result.entity_id).toBe("LOT-001");
+      expect(result.material_id).toBe("MAT-001");
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining("FROM inventory_lots"),
+        ["LOT-001"]
+      );
     });
 
-    it("should generate label for a batch", async () => {
+    it("should generate label from template for batch entity", async () => {
       const mockBatch = {
         batch_id: "BATCH-001",
-        batch_number: "BATCH-2026-001",
-        material_name: "Test Product",
-        material_type: "API",
+        product_id: "MAT-002",
+        material_name: "Acetaminophen Tablet",
+        part_number: "PART-002",
+        material_type: "Finished Product",
         batch_size: 500,
-        unit_of_measure: "kg",
-        manufacture_date: "2026-01-01",
-        expiration_date: "2027-01-01",
         status: "Complete",
       };
 
       mockPool.query
-        .mockResolvedValueOnce({ rows: [mockTemplate], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [mockBatch], rowCount: 1 });
+        .mockResolvedValueOnce({ rows: [mockTemplate], rowCount: 1 }) // getTemplate
+        .mockResolvedValueOnce({ rows: [mockBatch], rowCount: 1 }) // getBatch
+        .mockResolvedValueOnce({ rows: [{ label_id: "uuid-4", created_by: "user123", created_date: new Date() }], rowCount: 1 }); // insert
 
-      const result = await labelService.generateLabel({
-        template_id: "LABEL-001",
-        batch_id: "BATCH-001",
-      });
+      const result = await labelService.generateLabelFromTemplate(
+        {
+          template_id: "TMPL-001",
+          entity_type: "batch",
+          entity_id: "BATCH-001",
+          code_type: CodeType.BARCODE,
+        },
+        "user123"
+      );
 
-      expect(result.template_id).toBe("LABEL-001");
-      expect(result.content.batch_id).toBe("BATCH-001");
-      expect(result.content.batch_size).toBe(500);
+      expect(result.entity_type).toBe("batch");
+      expect(result.entity_id).toBe("BATCH-001");
+      expect(result.material_id).toBe("MAT-002");
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining("FROM production_batches"),
+        ["BATCH-001"]
+      );
+    });
+
+    it("should generate label from template for material entity", async () => {
+      const mockMaterial = {
+        material_id: "MAT-003",
+        part_number: "PART-003",
+        material_name: "Paracetamol API",
+        material_type: "API",
+        storage_conditions: "Cool, dry place",
+      };
+
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [mockTemplate], rowCount: 1 }) // getTemplate
+        .mockResolvedValueOnce({ rows: [mockMaterial], rowCount: 1 }) // getMaterial
+        .mockResolvedValueOnce({ rows: [{ label_id: "uuid-5", created_by: "user123", created_date: new Date() }], rowCount: 1 }); // insert
+
+      const result = await labelService.generateLabelFromTemplate(
+        {
+          template_id: "TMPL-001",
+          entity_type: "material",
+          entity_id: "MAT-003",
+          code_type: CodeType.QR_CODE,
+        },
+        "user123"
+      );
+
+      expect(result.entity_type).toBe("material");
+      expect(result.entity_id).toBe("MAT-003");
+      expect(result.material_id).toBe("MAT-003");
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining("FROM materials"),
+        ["MAT-003"]
+      );
     });
 
     it("should throw error when template not found", async () => {
       mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
       await expect(
-        labelService.generateLabel({
-          template_id: "NONEXISTENT",
-          lot_id: "LOT-001",
-        })
-      ).rejects.toThrow("not found");
+        labelService.generateLabelFromTemplate(
+          {
+            template_id: "NONEXISTENT",
+            entity_type: "lot",
+            entity_id: "LOT-001",
+            code_type: CodeType.QR_CODE,
+          },
+          "user123"
+        )
+      ).rejects.toThrow("Template NONEXISTENT not found");
     });
 
     it("should throw error when lot not found", async () => {
@@ -301,11 +432,16 @@ describe.skip("Label Service", () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
       await expect(
-        labelService.generateLabel({
-          template_id: "LABEL-001",
-          lot_id: "NONEXISTENT",
-        })
-      ).rejects.toThrow("not found");
+        labelService.generateLabelFromTemplate(
+          {
+            template_id: "TMPL-001",
+            entity_type: "lot",
+            entity_id: "NONEXISTENT",
+            code_type: CodeType.QR_CODE,
+          },
+          "user123"
+        )
+      ).rejects.toThrow("Lot NONEXISTENT not found");
     });
 
     it("should throw error when batch not found", async () => {
@@ -314,11 +450,174 @@ describe.skip("Label Service", () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
       await expect(
-        labelService.generateLabel({
-          template_id: "LABEL-001",
-          batch_id: "NONEXISTENT",
-        })
-      ).rejects.toThrow("not found");
+        labelService.generateLabelFromTemplate(
+          {
+            template_id: "TMPL-001",
+            entity_type: "batch",
+            entity_id: "NONEXISTENT",
+            code_type: CodeType.QR_CODE,
+          },
+          "user123"
+        )
+      ).rejects.toThrow("Batch NONEXISTENT not found");
+    });
+
+    it("should throw error when material not found", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [mockTemplate], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      await expect(
+        labelService.generateLabelFromTemplate(
+          {
+            template_id: "TMPL-001",
+            entity_type: "material",
+            entity_id: "NONEXISTENT",
+            code_type: CodeType.QR_CODE,
+          },
+          "user123"
+        )
+      ).rejects.toThrow("Material NONEXISTENT not found");
+    });
+  });
+
+  // ============ getAllGeneratedLabels ============
+  describe("getAllGeneratedLabels", () => {
+    it("should return all generated labels with material info", async () => {
+      const mockLabels = [
+        {
+          label_id: "uuid-1",
+          material_id: "MAT-001",
+          material_name: "Test Material",
+          part_number: "PART-001",
+          material_type: "API",
+          entity_type: "material",
+          entity_id: "MAT-001",
+          code_type: "qrcode",
+          code_data: "data:image/png;base64,xyz",
+          label_content: '{"entity_type": "material"}',
+          created_by: "user123",
+          created_date: new Date(),
+        },
+      ];
+
+      mockPool.query.mockResolvedValueOnce({ rows: mockLabels, rowCount: 1 });
+
+      const result = await labelService.getAllGeneratedLabels();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].label_id).toBe("uuid-1");
+      expect(result[0].entity_type).toBe("material");
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining("FROM generated_labels gl")
+      );
+    });
+
+    it("should return empty array when no labels exist", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      const result = await labelService.getAllGeneratedLabels();
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ============ getGeneratedLabelById ============
+  describe("getGeneratedLabelById", () => {
+    it("should return a generated label by ID", async () => {
+      const mockLabel = {
+        label_id: "uuid-1",
+        material_id: "MAT-001",
+        material_name: "Test Material",
+        part_number: "PART-001",
+        material_type: "API",
+        entity_type: "lot",
+        entity_id: "LOT-001",
+        code_type: "qrcode",
+        code_data: "data:image/png;base64,xyz",
+        label_content: '{"entity_type": "lot"}',
+        created_by: "user123",
+        created_date: new Date(),
+      };
+
+      mockPool.query.mockResolvedValueOnce({ rows: [mockLabel], rowCount: 1 });
+
+      const result = await labelService.getGeneratedLabelById("uuid-1");
+
+      expect(result).not.toBeNull();
+      expect(result?.label_id).toBe("uuid-1");
+      expect(result?.entity_type).toBe("lot");
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining("WHERE gl.label_id = $1"),
+        ["uuid-1"]
+      );
+    });
+
+    it("should return null when label not found", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      const result = await labelService.getGeneratedLabelById("NONEXISTENT");
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // ============ deleteGeneratedLabel ============
+  describe("deleteGeneratedLabel", () => {
+    it("should delete a generated label successfully", async () => {
+      mockPool.query.mockResolvedValueOnce({ rowCount: 1 });
+
+      const result = await labelService.deleteGeneratedLabel("uuid-1");
+
+      expect(result).toBe(true);
+      expect(mockPool.query).toHaveBeenCalledWith(
+        "DELETE FROM generated_labels WHERE label_id = $1",
+        ["uuid-1"]
+      );
+    });
+
+    it("should return false when label not found", async () => {
+      mockPool.query.mockResolvedValueOnce({ rowCount: 0 });
+
+      const result = await labelService.deleteGeneratedLabel("NONEXISTENT");
+
+      expect(result).toBe(false);
+    });
+  });
+
+  // ============ getTemplatesByLabelType ============
+  describe("getTemplatesByLabelType", () => {
+    it("should return templates filtered by label type", async () => {
+      const mockTemplates = [
+        {
+          template_id: "TMPL-001",
+          template_name: "Raw Material Label",
+          label_type: LabelType.RAW_MATERIAL,
+          template_content: "{}",
+          width: 3.5,
+          height: 2.0,
+          created_date: new Date(),
+        },
+      ];
+
+      mockPool.query.mockResolvedValueOnce({ rows: mockTemplates, rowCount: 1 });
+
+      const result = await labelService.getTemplatesByLabelType(LabelType.RAW_MATERIAL);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].label_type).toBe(LabelType.RAW_MATERIAL);
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining("WHERE label_type = $1"),
+        [LabelType.RAW_MATERIAL]
+      );
+    });
+
+    it("should return empty array when no templates of that type exist", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      const result = await labelService.getTemplatesByLabelType(LabelType.API);
+
+      expect(result).toEqual([]);
     });
   });
 });

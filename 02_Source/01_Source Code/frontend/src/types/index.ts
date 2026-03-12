@@ -122,6 +122,7 @@ export interface LabelTemplate {
 }
 
 export type CodeType = "barcode" | "qrcode";
+export type EntityType = "material" | "lot" | "batch";
 
 export interface GenerateLabelInput {
   material_id: string;
@@ -130,6 +131,7 @@ export interface GenerateLabelInput {
 
 export interface GenerateLabelFromTemplateInput {
   template_id: string;
+  entity_type: EntityType;
   entity_id: string;
   code_type: CodeType;
 }
@@ -140,6 +142,8 @@ export interface GeneratedLabel {
   material_name: string;
   part_number: string;
   material_type: string;
+  entity_type: EntityType;
+  entity_id: string;
   code_type: CodeType;
   code_data: string; // base64 encoded image
   label_content: Record<string, unknown>;

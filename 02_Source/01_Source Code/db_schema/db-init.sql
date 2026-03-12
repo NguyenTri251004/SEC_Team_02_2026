@@ -94,35 +94,14 @@ INSERT INTO label_templates (template_id, template_name, label_type, template_co
    3.00, 2.00);
 
 -- ────────────────────────────────────────────────────────────
--- 3a. LabelTemplates (Mau nhan)
--- ────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS label_templates (
-  template_id      VARCHAR(36)    PRIMARY KEY,
-  template_name    VARCHAR(100)   NOT NULL,
-  label_type       VARCHAR(50)    NOT NULL CHECK (label_type IN (
-                                    'Raw Material', 'Sample', 'Finished Product', 
-                                    'API', 'Status', 'Intermediate'
-                                  )),
-  template_content TEXT           NOT NULL,  -- JSON or HTML template with placeholders
-  width            DECIMAL(10,2)  DEFAULT 100.0,  -- in mm
-  height           DECIMAL(10,2)  DEFAULT 50.0,   -- in mm
-  description      TEXT,
-  is_active        BOOLEAN        DEFAULT true,
-  created_by       VARCHAR(50)    NOT NULL,
-  created_date     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  modified_by      VARCHAR(50),
-  modified_date    TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_label_templates_type ON label_templates (label_type);
-CREATE INDEX IF NOT EXISTS idx_label_templates_active ON label_templates (is_active);
-
--- ────────────────────────────────────────────────────────────
 -- 3b. GeneratedLabels (Nhan da tao)
 -- ────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS generated_labels (
   label_id         VARCHAR(36)    PRIMARY KEY,
   material_id      VARCHAR(20)    NOT NULL REFERENCES materials(material_id),
+  entity_type      VARCHAR(20)    NOT NULL DEFAULT 'material'
+                     CHECK (entity_type IN ('material', 'lot', 'batch')),
+  entity_id        VARCHAR(36)    NOT NULL,
   code_type        VARCHAR(10)    NOT NULL CHECK (code_type IN ('barcode', 'qrcode')),
   code_data        TEXT           NOT NULL,
   label_content    TEXT           NOT NULL,
@@ -131,6 +110,8 @@ CREATE TABLE IF NOT EXISTS generated_labels (
 );
 
 CREATE INDEX IF NOT EXISTS idx_generated_labels_material_id ON generated_labels (material_id);
+CREATE INDEX IF NOT EXISTS idx_generated_labels_entity_type ON generated_labels (entity_type);
+CREATE INDEX IF NOT EXISTS idx_generated_labels_entity_id ON generated_labels (entity_id);
 CREATE INDEX IF NOT EXISTS idx_generated_labels_created_date ON generated_labels (created_date);
 CREATE INDEX IF NOT EXISTS idx_generated_labels_code_type ON generated_labels (code_type);
 
