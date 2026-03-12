@@ -59,39 +59,7 @@ INSERT INTO materials (material_id, part_number, material_name, material_type, s
   ('MAT006', 'PART-10006', 'Ibuprofen API',           'API',              '15-25C, dry place',              'SPEC-IBU-001'),
   ('MAT007', 'PART-10007', 'Reference Standard Kit',  'Testing Material', '2-8C, refrigerated',             'SPEC-REF-001');
 
--- ────────────────────────────────────────────────────────────
--- 3. LabelTemplates (Mau nhan)
--- ────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS label_templates (
-  template_id       VARCHAR(20)    PRIMARY KEY,
-  template_name     VARCHAR(100)   NOT NULL,
-  label_type        VARCHAR(30)    NOT NULL
-                      CHECK (label_type IN (
-                        'Raw Material','API','Sample','Intermediate','Finished Product','Status'
-                      )),
-  template_content  TEXT           NOT NULL,
-  width             DECIMAL(5,2)   NOT NULL,
-  height            DECIMAL(5,2)   NOT NULL,
-  created_date      TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  modified_date     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
 
-INSERT INTO label_templates (template_id, template_name, label_type, template_content, width, height) VALUES
-  ('TPL-001', 'Standard Raw Material Label', 'Raw Material',
-   '{"fields":["lot_id","material_name","manufacturer_lot","received_date","expiration_date","quantity","storage_location"]}',
-   4.00, 2.00),
-  ('TPL-002', 'API Label',                   'API',
-   '{"fields":["lot_id","material_name","manufacturer_name","manufacturer_lot","received_date","expiration_date","quantity","storage_conditions"]}',
-   4.00, 3.00),
-  ('TPL-003', 'Status Label',                'Status',
-   '{"fields":["lot_id","material_name","status","modified_date"]}',
-   3.00, 1.50),
-  ('TPL-004', 'Finished Product Label',      'Finished Product',
-   '{"fields":["batch_number","product_name","manufacture_date","expiration_date","batch_size"]}',
-   4.00, 3.00),
-  ('TPL-005', 'Sample Label',                'Sample',
-   '{"fields":["lot_id","material_name","is_sample","parent_lot_id","quantity"]}',
-   3.00, 2.00);
 
 -- ────────────────────────────────────────────────────────────
 -- 3a. LabelTemplates (Mau nhan)
@@ -116,6 +84,23 @@ CREATE TABLE IF NOT EXISTS label_templates (
 
 CREATE INDEX IF NOT EXISTS idx_label_templates_type ON label_templates (label_type);
 CREATE INDEX IF NOT EXISTS idx_label_templates_active ON label_templates (is_active);
+
+INSERT INTO label_templates (template_id, template_name, label_type, template_content, width, height, description, is_active, created_by) VALUES
+  ('TPL-001', 'Standard Raw Material Label', 'Raw Material',
+   '{"fields":["lot_id","material_name","manufacturer_lot","received_date","expiration_date","quantity","storage_location"]}',
+   100.0, 50.0, 'Standard label for raw materials', true, 'admin'),
+  ('TPL-002', 'API Label', 'API',
+   '{"fields":["lot_id","material_name","manufacturer_name","manufacturer_lot","received_date","expiration_date","quantity","storage_conditions"]}',
+   100.0, 75.0, 'Label for API materials', true, 'admin'),
+  ('TPL-003', 'Status Label', 'Status',
+   '{"fields":["lot_id","material_name","status","modified_date"]}',
+   75.0, 37.5, 'Label for lot status indication', true, 'admin'),
+  ('TPL-004', 'Finished Product Label', 'Finished Product',
+   '{"fields":["batch_number","product_name","manufacture_date","expiration_date","batch_size"]}',
+   100.0, 75.0, 'Label for finished products', true, 'admin'),
+  ('TPL-005', 'Sample Label', 'Sample',
+   '{"fields":["lot_id","material_name","is_sample","parent_lot_id","quantity"]}',
+   75.0, 50.0, 'Label for QC samples', true, 'admin');
 
 -- ────────────────────────────────────────────────────────────
 -- 3b. GeneratedLabels (Nhan da tao)
