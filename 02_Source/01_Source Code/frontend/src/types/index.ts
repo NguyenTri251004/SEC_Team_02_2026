@@ -128,6 +128,12 @@ export interface GenerateLabelInput {
   code_type: CodeType;
 }
 
+export interface GenerateLabelFromTemplateInput {
+  template_id: string;
+  entity_id: string;
+  code_type: CodeType;
+}
+
 export interface GeneratedLabel {
   label_id: string;
   material_id: string;

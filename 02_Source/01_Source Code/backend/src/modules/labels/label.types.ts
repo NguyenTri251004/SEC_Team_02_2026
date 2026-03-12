@@ -45,6 +45,12 @@ export interface GenerateLabelInput {
   code_type: CodeType;
 }
 
+export interface GenerateLabelFromTemplateInput {
+  template_id: string;
+  entity_id: string; // lot_id, batch_id, or material_id depending on template
+  code_type: CodeType;
+}
+
 export interface GeneratedLabel {
   label_id: string;
   material_id: string;

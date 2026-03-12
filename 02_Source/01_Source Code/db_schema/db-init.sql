@@ -94,6 +94,30 @@ INSERT INTO label_templates (template_id, template_name, label_type, template_co
    3.00, 2.00);
 
 -- ────────────────────────────────────────────────────────────
+-- 3a. LabelTemplates (Mau nhan)
+-- ────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS label_templates (
+  template_id      VARCHAR(36)    PRIMARY KEY,
+  template_name    VARCHAR(100)   NOT NULL,
+  label_type       VARCHAR(50)    NOT NULL CHECK (label_type IN (
+                                    'Raw Material', 'Sample', 'Finished Product', 
+                                    'API', 'Status', 'Intermediate'
+                                  )),
+  template_content TEXT           NOT NULL,  -- JSON or HTML template with placeholders
+  width            DECIMAL(10,2)  DEFAULT 100.0,  -- in mm
+  height           DECIMAL(10,2)  DEFAULT 50.0,   -- in mm
+  description      TEXT,
+  is_active        BOOLEAN        DEFAULT true,
+  created_by       VARCHAR(50)    NOT NULL,
+  created_date     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modified_by      VARCHAR(50),
+  modified_date    TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_label_templates_type ON label_templates (label_type);
+CREATE INDEX IF NOT EXISTS idx_label_templates_active ON label_templates (is_active);
+
+-- ────────────────────────────────────────────────────────────
 -- 3b. GeneratedLabels (Nhan da tao)
 -- ────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS generated_labels (

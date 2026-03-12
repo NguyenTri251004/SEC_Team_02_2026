@@ -1,5 +1,5 @@
 import pool from "../../shared/db/pool";
-import { LabelTemplate, CreateTemplateInput, UpdateTemplateInput, GenerateLabelInput, GeneratedLabel, LabelType, CodeType } from "./label.types";
+import { LabelTemplate, CreateTemplateInput, UpdateTemplateInput, GenerateLabelInput, GenerateLabelFromTemplateInput, GeneratedLabel, LabelType, CodeType } from "./label.types";
 import crypto from "crypto";
 import QRCode from "qrcode";
 import bwipjs from "bwip-js";
@@ -317,4 +317,199 @@ export const deleteGeneratedLabel = async (labelId: string): Promise<boolean> =>
     [labelId]
   );
   return (result.rowCount ?? 0) > 0;
+};
+
+/**
+ * Helper: Get entity data based on entity type
+ */
+const getEntityData = async (entityId: string): Promise<Record<string, any> | null> => {
+  // Try to find entity in different tables
+  // Check if it's a material (MAT prefix)
+  if (entityId.startsWith('MAT')) {
+    const result = await pool.query(
+      `SELECT material_id, part_number, material_name, material_type, storage_conditions, specification_document, created_date
+       FROM materials WHERE material_id = $1`,
+      [entityId]
+    );
+    if (result.rows.length > 0) {
+      return { ...result.rows[0], entity_type: 'Material' };
+    }
+  }
+
+  // Check if it's an inventory lot (LOT prefix)
+  if (entityId.startsWith('LOT')) {
+    const result = await pool.query(
+      `SELECT l.*, m.material_name, m.part_number, m.material_type
+       FROM inventory_lots l
+       JOIN materials m ON l.material_id = m.material_id
+       WHERE l.lot_id = $1`,
+      [entityId]
+    );
+    if (result.rows.length > 0) {
+      const lot = result.rows[0];
+      return {
+        ...lot,
+        entity_type: lot.is_sample ? 'Sample' : 'InventoryLot',
+        // Format dates for display
+        received_date: lot.received_date?.toISOString().split('T')[0],
+        expiration_date: lot.expiration_date?.toISOString().split('T')[0],
+        in_use_expiration_date: lot.in_use_expiration_date?.toISOString().split('T')[0],
+      };
+    }
+  }
+
+  // Check if it's a production batch (BATCH prefix)
+  if (entityId.startsWith('BATCH')) {
+    const result = await pool.query(
+      `SELECT b.*, m.material_name as product_name, m.part_number
+       FROM production_batches b
+       JOIN materials m ON b.product_id = m.material_id
+       WHERE b.batch_id = $1`,
+      [entityId]
+    );
+    if (result.rows.length > 0) {
+      const batch = result.rows[0];
+      return {
+        ...batch,
+        entity_type: 'ProductionBatch',
+        // Format dates for display
+        manufacture_date: batch.manufacture_date?.toISOString().split('T')[0],
+        expiration_date: batch.expiration_date?.toISOString().split('T')[0],
+      };
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Replace placeholders in template content with actual entity data
+ * Supports {{field_name}} syntax
+ */
+const replacePlaceholders = (template: string, data: Record<string, any>): string => {
+  let result = template;
+  
+  // Find all placeholders in format {{field_name}}
+  const placeholderRegex = /\{\{([^}]+)\}\}/g;
+  let match;
+  
+  while ((match = placeholderRegex.exec(template)) !== null) {
+    const fieldName = match[1].trim();
+    const value = data[fieldName];
+    
+    // Replace placeholder with actual value (or 'N/A' if not found)
+    const replacement = value !== undefined && value !== null ? String(value) : 'N/A';
+    result = result.replace(match[0], replacement);
+  }
+  
+  return result;
+};
+
+/**
+ * Generate label from template
+ */
+export const generateLabelFromTemplate = async (
+  input: GenerateLabelFromTemplateInput,
+  userId: string
+): Promise<GeneratedLabel> => {
+  // Get template
+  const template = await getTemplateById(input.template_id);
+  if (!template) {
+    throw new Error(`Template ${input.template_id} not found`);
+  }
+
+  // Get entity data
+  const entityData = await getEntityData(input.entity_id);
+  if (!entityData) {
+    throw new Error(`Entity ${input.entity_id} not found`);
+  }
+
+  // Get material_id (needed for foreign key in generated_labels table)
+  let materialId: string;
+  if (entityData.entity_type === 'Material') {
+    materialId = entityData.material_id;
+  } else if (entityData.entity_type === 'InventoryLot' || entityData.entity_type === 'Sample') {
+    materialId = entityData.material_id;
+  } else if (entityData.entity_type === 'ProductionBatch') {
+    materialId = entityData.product_id;
+  } else {
+    throw new Error(`Unknown entity type: ${entityData.entity_type}`);
+  }
+
+  // Replace placeholders in template content
+  const processedContent = replacePlaceholders(template.template_content, entityData);
+
+  // Prepare label content
+  const content: Record<string, unknown> = {
+    entity_type: entityData.entity_type,
+    entity_id: input.entity_id,
+    template_id: input.template_id,
+    template_name: template.template_name,
+    label_type: template.label_type,
+    processed_content: processedContent,
+    raw_data: entityData,
+    generated_date: new Date().toISOString(),
+  };
+
+  // Generate code data (barcode or QR code)
+  let generatedCode: string;
+
+  if (input.code_type === CodeType.QR_CODE) {
+    // For QR code, encode full JSON data
+    const qrPayload = JSON.stringify(content);
+    generatedCode = await generateQRCode(qrPayload);
+  } else {
+    // For barcode, encode entity_id
+    const displayText = `${template.label_type}: ${entityData.material_name || entityData.product_name || input.entity_id}`;
+    generatedCode = await generateBarcode(input.entity_id, displayText);
+  }
+
+  // Save to database
+  const labelId = crypto.randomUUID();
+  const insertResult = await pool.query<any>(
+    `INSERT INTO generated_labels (label_id, material_id, code_type, code_data, label_content, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING *`,
+    [
+      labelId,
+      materialId,
+      input.code_type,
+      generatedCode,
+      JSON.stringify(content),
+      userId,
+    ]
+  );
+
+  const savedLabel = insertResult.rows[0];
+
+  // Get material info for response
+  const materialResult = await pool.query<any>(
+    `SELECT material_name, part_number, material_type FROM materials WHERE material_id = $1`,
+    [materialId]
+  );
+  const material = materialResult.rows[0] || { material_name: 'Unknown', part_number: 'N/A', material_type: 'N/A' };
+
+  return {
+    label_id: savedLabel.label_id,
+    material_id: materialId,
+    material_name: material.material_name,
+    part_number: material.part_number,
+    material_type: material.material_type,
+    code_type: savedLabel.code_type,
+    code_data: savedLabel.code_data,
+    label_content: content,
+    created_by: savedLabel.created_by,
+    created_date: savedLabel.created_date,
+  };
+};
+
+/**
+ * Get templates by label type
+ */
+export const getTemplatesByLabelType = async (labelType: LabelType): Promise<LabelTemplate[]> => {
+  const result = await pool.query<LabelTemplate>(
+    "SELECT * FROM label_templates WHERE label_type = $1 ORDER BY created_date DESC",
+    [labelType]
+  );
+  return result.rows;
 };

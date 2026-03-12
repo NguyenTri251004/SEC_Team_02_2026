@@ -6,6 +6,8 @@ import {
   EyeOutlined,
   DeleteOutlined,
   QrcodeOutlined,
+  EditOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -13,28 +15,79 @@ import dayjs from "dayjs";
 import DashboardPage from "../dashboard/DashboardPage";
 import { DataTableCard } from "../../components/dashboard";
 import { GenerateLabelModal } from "../../components/labels/GenerateLabelModal";
+import { LabelTemplateFormModal } from "../../components/labels/LabelTemplateFormModal";
 import {
   useGeneratedLabels,
   useDeleteLabel,
+  useTemplates,
+  useDeleteTemplate,
 } from "../../hooks/useLabelsData";
 import { SECTION_GAP } from "../../constants/theme";
-import type { GeneratedLabel } from "../../types";
+import type { GeneratedLabel, LabelTemplate } from "../../types";
 
 const CODE_TYPE_COLOR: Record<string, string> = {
   qrcode: "blue",
   barcode: "green",
 };
 
+const LABEL_TYPE_COLOR: Record<string, string> = {
+  raw_material: "orange",
+  api: "purple",
+  sample: "cyan",
+  intermediate: "geekblue",
+  finished_product: "green",
+  status: "blue",
+};
+
+const LABEL_TYPE_NAMES: Record<string, string> = {
+  raw_material: "Raw Material",
+  api: "API",
+  sample: "Sample",
+  intermediate: "Intermediate",
+  finished_product: "Finished Product",
+  status: "Status",
+};
+
 export default function LabelsPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [templateSearchTerm, setTemplateSearchTerm] = useState("");
   const { data: labels = [], isLoading } = useGeneratedLabels();
+  const { data: templates = [], isLoading: templatesLoading } = useTemplates();
 
   const [generateOpen, setGenerateOpen] = useState(false);
   const [viewingLabel, setViewingLabel] = useState<GeneratedLabel | null>(null);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<LabelTemplate | undefined>(undefined);
+  
   const { mutateAsync: deleteLabel } = useDeleteLabel();
+  const { mutateAsync: deleteTemplate } = useDeleteTemplate();
 
   const handleGenerate = () => {
     setGenerateOpen(true);
+  };
+
+  const handleCreateTemplate = () => {
+    setEditingTemplate(undefined);
+    setTemplateModalOpen(true);
+  };
+
+  const handleEditTemplate = (template: LabelTemplate) => {
+    setEditingTemplate(template);
+    setTemplateModalOpen(true);
+  };
+
+  const handleCloseTemplateModal = () => {
+    setTemplateModalOpen(false);
+    setEditingTemplate(undefined);
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      await deleteTemplate(templateId);
+      message.success("Template deleted successfully!");
+    } catch {
+      message.error("Failed to delete template.");
+    }
   };
 
   const handleView = (label: GeneratedLabel) => {
@@ -66,6 +119,82 @@ export default function LabelsPage() {
       l.part_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       l.material_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const filteredTemplates = templates.filter(
+    (t) =>
+      t.template_name.toLowerCase().includes(templateSearchTerm.toLowerCase()) ||
+      t.template_id.toLowerCase().includes(templateSearchTerm.toLowerCase()) ||
+      t.label_type.toLowerCase().includes(templateSearchTerm.toLowerCase())
+  );
+
+  const templateColumns: ColumnsType<LabelTemplate> = [
+    {
+      title: "Template ID",
+      dataIndex: "template_id",
+      key: "template_id",
+      width: 120,
+      sorter: (a, b) => a.template_id.localeCompare(b.template_id),
+    },
+    {
+      title: "Template Name",
+      dataIndex: "template_name",
+      key: "template_name",
+      ellipsis: true,
+    },
+    {
+      title: "Label Type",
+      dataIndex: "label_type",
+      key: "label_type",
+      width: 150,
+      render: (type: string) => (
+        <Tag color={LABEL_TYPE_COLOR[type] ?? "default"}>
+          {LABEL_TYPE_NAMES[type] ?? type}
+        </Tag>
+      ),
+    },
+    {
+      title: "Dimensions",
+      key: "dimensions",
+      width: 120,
+      render: (_, record) => `${record.width}" × ${record.height}"`,
+    },
+    {
+      title: "Created Date",
+      dataIndex: "created_date",
+      key: "created_date",
+      width: 150,
+      render: (v: string) => dayjs(v).format("YYYY-MM-DD HH:mm"),
+      sorter: (a, b) =>
+        dayjs(a.created_date).unix() - dayjs(b.created_date).unix(),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 120,
+      fixed: "right",
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="text"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleEditTemplate(record)}
+            title="Edit Template"
+          />
+          <Popconfirm
+            title="Delete this template?"
+            description="This action cannot be undone."
+            onConfirm={() => handleDeleteTemplate(record.template_id)}
+            okText="Delete"
+            cancelText="Cancel"
+            okButtonProps={{ danger: true }}
+          >
+            <Button type="text" size="small" danger icon={<DeleteOutlined />} title="Delete" />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
   const columns: ColumnsType<GeneratedLabel> = [
     {
@@ -160,15 +289,48 @@ export default function LabelsPage() {
       title="Generated Labels"
       subtitle="View and manage generated barcode/QR code labels for materials"
       actions={
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleGenerate}
-        >
-          Generate Label
-        </Button>
+        <Space>
+          <Button
+            type="default"
+            icon={<FileTextOutlined />}
+            onClick={handleCreateTemplate}
+          >
+            Create Template
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleGenerate}
+          >
+            Generate Label
+          </Button>
+        </Space>
       }
     >
+      {/* Template Management Section */}
+      <div style={{ marginTop: SECTION_GAP }}>
+        <DataTableCard<LabelTemplate>
+          title="Label Templates"
+          extra={
+            <Input
+              placeholder="Search templates..."
+              prefix={<SearchOutlined style={{ color: "rgba(0,0,0,.25)" }} />}
+              value={templateSearchTerm}
+              onChange={(e) => setTemplateSearchTerm(e.target.value)}
+              style={{ width: 300 }}
+              allowClear
+            />
+          }
+          columns={templateColumns}
+          dataSource={filteredTemplates}
+          rowKey="template_id"
+          loading={templatesLoading}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: 1200 }}
+        />
+      </div>
+
+      {/* Generated Labels Section */}
       <div style={{ marginTop: SECTION_GAP }}>
         <DataTableCard<GeneratedLabel>
           title="Label History"
@@ -194,6 +356,12 @@ export default function LabelsPage() {
       <GenerateLabelModal
         isOpen={generateOpen}
         onClose={() => setGenerateOpen(false)}
+      />
+
+      <LabelTemplateFormModal
+        isOpen={templateModalOpen}
+        onClose={handleCloseTemplateModal}
+        initialData={editingTemplate}
       />
 
       <Modal
