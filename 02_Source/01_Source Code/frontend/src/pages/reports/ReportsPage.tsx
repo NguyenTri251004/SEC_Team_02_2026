@@ -13,7 +13,8 @@ import type { Dayjs } from "dayjs";
 
 import DashboardPage from "../dashboard/DashboardPage";
 import { SECTION_GAP, CARD_GAP, LOT_STATUS_TAG, TXN_TYPE_TAG } from "../../constants/theme";
-import { exportToCSV, exportToPDF } from "../../lib/exportUtils";
+import { exportToCSV } from "../../lib/exportUtils";
+// import { exportToPDF } from "../../lib/exportUtils"; // Commented out until jspdf is installed
 import { useInventoryReport, useTransactionReport, useAuditLog } from "../../hooks/useReportsData";
 import type { InventoryReportRow, TransactionReportRow, AuditLogRow } from "../../types";
 
@@ -165,7 +166,8 @@ export default function ReportsPage() {
   const handleExportPDF = () => {
     const data = getCurrentData();
     if (!data.length) { message.warning("No data to export"); return; }
-    exportToPDF(data, getCurrentCSVColumns(), getReportTitle(), `${reportType}-report`);
+    // exportToPDF(data, getCurrentCSVColumns(), getReportTitle(), `${reportType}-report`); // Commented out until jspdf is installed
+    message.info("PDF export is currently disabled. Please use CSV export.");
     message.success("Exported to PDF!");
   };
 

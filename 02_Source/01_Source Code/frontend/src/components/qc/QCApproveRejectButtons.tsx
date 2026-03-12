@@ -6,9 +6,10 @@ import { useApproveLot, useRejectLot } from "@/hooks/useQCData";
 
 interface QCApproveRejectButtonsProps {
   lotId: string;
+  showText?: boolean;
 }
 
-export function QCApproveRejectButtons({ lotId }: QCApproveRejectButtonsProps) {
+export function QCApproveRejectButtons({ lotId, showText = false }: QCApproveRejectButtonsProps) {
   const { mutateAsync: approveLot, isPending: isApproving } = useApproveLot();
   const { mutateAsync: rejectLot, isPending: isRejecting } = useRejectLot();
 
@@ -50,22 +51,27 @@ export function QCApproveRejectButtons({ lotId }: QCApproveRejectButtonsProps) {
           cancelText="Cancel"
         >
           <Button
-            type="text"
+            type={showText ? "primary" : "text"}
             size="small"
             icon={<CheckCircleOutlined />}
-            style={{ color: "#52c41a" }}
+            style={showText ? undefined : { color: "#52c41a" }}
             loading={isApproving}
-          />
+          >
+            {showText && "Approve"}
+          </Button>
         </Popconfirm>
 
         <Button
-          type="text"
+          type={showText ? "default" : "text"}
           size="small"
+          danger={showText}
           icon={<CloseCircleOutlined />}
-          style={{ color: "#ff4d4f" }}
+          style={showText ? undefined : { color: "#ff4d4f" }}
           loading={isRejecting}
           onClick={() => setRejectModalOpen(true)}
-        />
+        >
+          {showText && "Reject"}
+        </Button>
       </Space>
 
       <Modal

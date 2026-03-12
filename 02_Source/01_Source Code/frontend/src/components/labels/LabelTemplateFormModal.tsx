@@ -42,19 +42,29 @@ export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTe
         // Parse template_content to extract selected fields
         const selectedFields: string[] = [];
         MATERIAL_FIELDS.forEach(field => {
+          // Check if the field exists in template_content using the {{field}} pattern
           if (initialData.template_content.includes(`{{${field.value}}}`)) {
             selectedFields.push(field.value);
           }
         });
         
-        form.setFieldsValue({
-          template_name: initialData.template_name,
-          label_type: initialData.label_type,
-          width: initialData.width,
-          height: initialData.height,
-          selected_fields: selectedFields,
-        });
+        // Use setTimeout to ensure form is ready
+        setTimeout(() => {
+          // Reset form first to clear any previous values
+          form.resetFields();
+          
+          // Set form values with parsed data
+          // Convert width and height to numbers to ensure InputNumber accepts them
+          form.setFieldsValue({
+            template_name: initialData.template_name,
+            label_type: initialData.label_type,
+            width: Number(initialData.width),
+            height: Number(initialData.height),
+            selected_fields: selectedFields.length > 0 ? selectedFields : ['material_name', 'part_number', 'material_type'],
+          });
+        }, 0);
       } else {
+        // Creating new template - set default values
         form.resetFields();
         form.setFieldsValue({ 
           width: 4.0, 

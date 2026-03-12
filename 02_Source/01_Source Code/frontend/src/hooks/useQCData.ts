@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../services/api";
-import type { QCTest } from "../types";
+import api, { qcApi } from "../services/api";
+import type { QCTest, QCQueueItem } from "../types";
 
 const mockData: QCTest[] = [
   {
@@ -86,6 +86,7 @@ export const useCreateQCTest = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
+      queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
     },
   });
 };
@@ -119,6 +120,7 @@ export const useApproveLot = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
       queryClient.invalidateQueries({ queryKey: ["lots"] });
+      queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
     },
   });
 };
@@ -133,6 +135,18 @@ export const useRejectLot = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
       queryClient.invalidateQueries({ queryKey: ["lots"] });
+      queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
+    },
+  });
+};
+
+export const useQCQueue = (status?: string) => {
+  return useQuery({
+    queryKey: ["qc-queue", status],
+    queryFn: async (): Promise<QCQueueItem[]> => {
+      const params = status ? `?status=${status}` : "";
+      const response = await qcApi.getQueue(params);
+      return response.data || [];
     },
   });
 };

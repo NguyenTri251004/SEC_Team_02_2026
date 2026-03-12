@@ -12,7 +12,7 @@ const mockData: ProductionBatch[] = [
     unit_of_measure: "tablets",
     manufacture_date: "2026-01-20",
     expiration_date: "2028-01-20",
-    status: "Complete",
+    status: "Completed",
     created_date: "2026-01-20",
     modified_date: "2026-01-25",
     product_name: "Acetaminophen 500mg Tablets",

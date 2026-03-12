@@ -260,7 +260,14 @@ export const getQCStats = async (): Promise<QCStats> => {
 /**
  * Lấy hàng đợi QC: các lô đang ở trạng thái Quarantine, JOIN với materials
  */
-export const getQCQueue = async (): Promise<QCQueueItem[]> => {
+/**
+ * Lấy danh sách các lô đang chờ QC (status = 'Quarantine')
+ * với số lượng tests đã thực hiện và số tests đang chờ
+ */
+export const getQCQueue = async (status?: string): Promise<QCQueueItem[]> => {
+  const whereClause = status ? `WHERE il.status = $1` : `WHERE il.status IN ('Quarantine', 'Accepted', 'Rejected')`;
+  const params = status ? [status] : [];
+  
   const sql = `
     SELECT
       il.lot_id,
@@ -268,6 +275,7 @@ export const getQCQueue = async (): Promise<QCQueueItem[]> => {
       il.manufacturer_lot,
       il.manufacturer_name,
       il.material_id,
+      il.status,
       m.material_name,
       m.material_type,
       il.received_date,
@@ -280,16 +288,16 @@ export const getQCQueue = async (): Promise<QCQueueItem[]> => {
     FROM inventory_lots il
     JOIN materials m ON il.material_id = m.material_id
     LEFT JOIN qc_tests qt ON il.lot_id = qt.lot_id
-    WHERE il.status = 'Quarantine'
+    ${whereClause}
     GROUP BY
       il.lot_id, il.manufacturer_lot, il.manufacturer_name,
-      il.material_id, m.material_name, m.material_type,
+      il.material_id, il.status, m.material_name, m.material_type,
       il.received_date, il.expiration_date, il.quantity,
       il.unit_of_measure, il.storage_location
     ORDER BY il.received_date ASC
   `;
   type QueueRow = Omit<QCQueueItem, "pending_tests" | "total_tests"> & { pending_tests: string; total_tests: string };
-  const result = await pool.query<QueueRow>(sql);
+  const result = await pool.query<QueueRow>(sql, params);
   return result.rows.map((r) => ({
     ...r,
     pending_tests: parseInt(r.pending_tests, 10),

@@ -63,7 +63,7 @@ export interface QCStats {
   }[];
 }
 
-// Lot đang chờ QC (status='Quarantine')
+// Lot đang chờ QC (hoặc đã test)
 export interface QCQueueItem {
   lot_id: string;
   lot_number?: string;
@@ -72,6 +72,7 @@ export interface QCQueueItem {
   material_id: string;
   material_name: string;
   material_type: string;
+  status: string;
   received_date: Date;
   expiration_date?: Date;
   quantity: number;
