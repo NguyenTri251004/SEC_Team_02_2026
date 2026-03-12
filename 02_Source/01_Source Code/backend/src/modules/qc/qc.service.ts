@@ -141,9 +141,9 @@ export const createTest = async (input: CreateQCTestInput): Promise<QCTest> => {
     INSERT INTO qc_tests (
       test_id, lot_id, test_type, test_method,
       test_date, acceptance_criteria, result_status,
-      performed_by
+      performed_by, notes
     )
-    VALUES ($1, $2, $3, $4, $5, $6, 'Pending', $7)
+    VALUES ($1, $2, $3, $4, $5, $6, 'Pending', $7, $8)
     RETURNING *
   `;
 
@@ -155,6 +155,7 @@ export const createTest = async (input: CreateQCTestInput): Promise<QCTest> => {
     testDate,
     input.acceptance_criteria ?? null,
     input.performed_by,
+    input.notes ?? null,
   ]);
 
   return result.rows[0];

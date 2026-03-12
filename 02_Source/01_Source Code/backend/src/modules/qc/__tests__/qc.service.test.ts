@@ -163,7 +163,8 @@ describe("createTest", () => {
   const newTestRow = { ...sampleTest, result_status: "Pending" };
 
   it("creates a test and returns the row", async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [newTestRow] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ max_id: 'QC-015' }] }); // MAX test_id
+    mockQuery.mockResolvedValueOnce({ rows: [newTestRow] }); // INSERT
 
     const result = await qcService.createTest({
       lot_id: "lot-001",
@@ -176,7 +177,8 @@ describe("createTest", () => {
   });
 
   it("hardcodes result_status to Pending in the INSERT", async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [newTestRow] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ max_id: 'QC-015' }] }); // MAX test_id
+    mockQuery.mockResolvedValueOnce({ rows: [newTestRow] }); // INSERT
 
     await qcService.createTest({
       lot_id: "lot-001",
@@ -184,13 +186,14 @@ describe("createTest", () => {
       performed_by: "user-qc",
     });
 
-    const [sql] = mockQuery.mock.calls[0] as [string, unknown[]];
+    const [sql] = mockQuery.mock.calls[1] as [string, unknown[]];
     // The INSERT must hardcode 'Pending' — not use a parameter for result_status
     expect(sql).toContain("'Pending'");
   });
 
   it("uses today's date when test_date is not provided", async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [newTestRow] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ max_id: 'QC-015' }] }); // MAX test_id
+    mockQuery.mockResolvedValueOnce({ rows: [newTestRow] }); // INSERT
     const before = new Date().toISOString().slice(0, 10);
 
     await qcService.createTest({
@@ -199,14 +202,15 @@ describe("createTest", () => {
       performed_by: "user-qc",
     });
 
-    const [, params] = mockQuery.mock.calls[0] as [string, unknown[]];
+    const [, params] = mockQuery.mock.calls[1] as [string, unknown[]];
     // The 5th param (index 4) is test_date
     const testDate = (params[4] as string).slice(0, 10);
     expect(testDate).toBe(before);
   });
 
   it("accepts optional fields (test_method, acceptance_criteria, notes)", async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [newTestRow] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ max_id: 'QC-015' }] }); // MAX test_id
+    mockQuery.mockResolvedValueOnce({ rows: [newTestRow] }); // INSERT
 
     await qcService.createTest({
       lot_id: "lot-001",
@@ -217,7 +221,7 @@ describe("createTest", () => {
       notes: "Batch re-test",
     });
 
-    const [, params] = mockQuery.mock.calls[0] as [string, unknown[]];
+    const [, params] = mockQuery.mock.calls[1] as [string, unknown[]];
     expect(params).toContain("HPLC");
     expect(params).toContain(">99% purity");
     expect(params).toContain("Batch re-test");
