@@ -113,16 +113,17 @@ export const updateLot = async (
 ): Promise<InventoryLot | null> => {
   const result = await pool.query<InventoryLot>(
     `UPDATE inventory_lots
-     SET manufacturer_name     = COALESCE($1, manufacturer_name),
-         manufacturer_lot      = COALESCE($2, manufacturer_lot),
-         supplier_name         = COALESCE($3, supplier_name),
-         expiration_date       = COALESCE($4, expiration_date),
+     SET manufacturer_name      = COALESCE($1, manufacturer_name),
+         manufacturer_lot       = COALESCE($2, manufacturer_lot),
+         supplier_name          = COALESCE($3, supplier_name),
+         expiration_date        = COALESCE($4, expiration_date),
          in_use_expiration_date = COALESCE($5, in_use_expiration_date),
-         storage_location      = COALESCE($6, storage_location),
-         po_number             = COALESCE($7, po_number),
-         receiving_form_id     = COALESCE($8, receiving_form_id),
-         modified_date         = CURRENT_TIMESTAMP
-     WHERE lot_id = $9
+         storage_location       = COALESCE($6, storage_location),
+         po_number              = COALESCE($7, po_number),
+         receiving_form_id      = COALESCE($8, receiving_form_id),
+         quantity               = COALESCE($9, quantity),
+         modified_date          = CURRENT_TIMESTAMP
+     WHERE lot_id = $10
      RETURNING *`,
     [
       dto.manufacturer_name ?? null,
@@ -133,6 +134,7 @@ export const updateLot = async (
       dto.storage_location ?? null,
       dto.po_number ?? null,
       dto.receiving_form_id ?? null,
+      dto.quantity ?? null,
       id,
     ]
   );
