@@ -110,8 +110,22 @@ router.delete(
         return;
       }
       res.json({ success: true, message: "Đã xóa vật tư thành công" });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Lỗi xóa vật tư:", error);
+
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code: string }).code === "23503"
+      ) {
+        res.status(409).json({
+          success: false,
+          error: "Cannot delete this material because it is still referenced by one or more inventory lots.",
+        });
+        return;
+      }
+
       res.status(500).json({ success: false, error: "Không thể xóa vật tư" });
     }
   }

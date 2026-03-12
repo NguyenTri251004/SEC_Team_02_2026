@@ -199,7 +199,7 @@ describe('Admin Routes', () => {
         user_id: 'USR-003',
         username: 'newuser',
         email: 'newuser@test.com',
-        password: 'password123',
+        initial_password: 'password123',
         role: UserRole.VIEWER,
         is_active: true,
       };
@@ -248,7 +248,7 @@ describe('Admin Routes', () => {
         user_id: 'USR-003',
         username: 'newuser',
         email: 'invalidemail',
-        password: 'password123',
+        initial_password: 'password123',
         role: UserRole.VIEWER,
       };
 
@@ -266,7 +266,7 @@ describe('Admin Routes', () => {
         user_id: 'USR-003',
         username: 'admin',
         email: 'admin@test.com',
-        password: 'password123',
+        initial_password: 'password123',
         role: UserRole.VIEWER,
       };
 
@@ -288,7 +288,7 @@ describe('Admin Routes', () => {
         user_id: 'USR-003',
         username: 'newuser',
         email: 'newuser@test.com',
-        password: 'password123',
+        initial_password: 'password123',
         role: UserRole.VIEWER,
       };
 

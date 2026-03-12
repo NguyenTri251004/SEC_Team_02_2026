@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import axios from "axios";
 import { Modal, Form, Input, InputNumber, Select, message, Alert, Checkbox } from "antd";
 
 import { useCreateTemplate, useUpdateTemplate } from "@/hooks/useLabelsData";
@@ -116,14 +117,22 @@ export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTe
       
       onClose();
       form.resetFields();
-    } catch (error: any) {
-      if (error.response?.status === 409) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError<{ error?: string }>(error) && error.response?.status === 409) {
         message.error("Template already exists!");
-      } else if (error.response?.status === 400) {
-        message.error(error.response?.data?.error || "Invalid data");
-      } else if (error.name !== "ValidationError") {
-        message.error("An error occurred while saving template.");
+        return;
       }
+
+      if (axios.isAxiosError<{ error?: string }>(error) && error.response?.status === 400) {
+        message.error(error.response.data?.error ?? "Invalid data");
+        return;
+      }
+
+      if (error instanceof Error && error.name === "ValidationError") {
+        return;
+      }
+
+      message.error("An error occurred while saving template.");
     }
   };
 
@@ -190,7 +199,6 @@ export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTe
           name="selected_fields"
           label="Material Fields to Include"
           rules={[
-            { required: true, message: "Please select at least one field" },
             {
               type: "array",
               min: 1,

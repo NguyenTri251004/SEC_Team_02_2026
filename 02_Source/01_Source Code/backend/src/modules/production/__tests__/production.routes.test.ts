@@ -378,7 +378,7 @@ describe('Production Routes', () => {
         lot_id: 'LOT-001',
         planned_quantity: 10,
         unit_of_measure: 'kg',
-        added_by: 'USR-PROD',
+        added_by: 'production',
       });
     });
 

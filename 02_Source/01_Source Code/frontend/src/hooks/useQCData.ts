@@ -87,6 +87,8 @@ export const useCreateQCTest = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
       queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "stats"] });
     },
   });
 };
@@ -105,7 +107,13 @@ export const useUpdateTestResult = () => {
       return api.put(`/api/qc/tests/${testId}`, data);
     },
     onSuccess: () => {
+      // Invalidate QCPage hooks
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
+      queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
+      
+      // Invalidate dashboard hooks
+      queryClient.invalidateQueries({ queryKey: ["qc", "queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "stats"] });
     },
   });
 };
@@ -121,6 +129,8 @@ export const useApproveLot = () => {
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
       queryClient.invalidateQueries({ queryKey: ["lots"] });
       queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "stats"] });
     },
   });
 };
@@ -136,6 +146,8 @@ export const useRejectLot = () => {
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
       queryClient.invalidateQueries({ queryKey: ["lots"] });
       queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "stats"] });
     },
   });
 };

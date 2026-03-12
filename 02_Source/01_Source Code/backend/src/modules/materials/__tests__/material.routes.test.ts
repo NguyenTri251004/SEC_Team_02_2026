@@ -136,10 +136,9 @@ describe("POST /api/materials", () => {
   });
 
   it.each([
-    { field: "material_id", body: { part_number: "PN", material_name: "N", material_type: "T" } },
-    { field: "part_number", body: { material_id: "M", material_name: "N", material_type: "T" } },
-    { field: "material_name", body: { material_id: "M", part_number: "PN", material_type: "T" } },
-    { field: "material_type", body: { material_id: "M", part_number: "PN", material_name: "N" } },
+    { field: "part_number", body: { material_name: "N", material_type: "T" } },
+    { field: "material_name", body: { part_number: "PN", material_type: "T" } },
+    { field: "material_type", body: { part_number: "PN", material_name: "N" } },
   ])("400 - rejects when $field is missing", async ({ body }) => {
     const res = await request(app).post("/api/materials").send(body);
 

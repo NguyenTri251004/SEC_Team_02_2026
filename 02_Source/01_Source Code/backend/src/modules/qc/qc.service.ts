@@ -173,16 +173,14 @@ export const updateTestResult = async (
     SET test_result   = $1,
         result_status = $2,
         verified_by   = $3,
-        notes         = COALESCE($4, notes),
         modified_date = CURRENT_TIMESTAMP
-    WHERE test_id = $5
+    WHERE test_id = $4
     RETURNING *
   `;
   const result = await pool.query<QCTest>(sql, [
     input.test_result,
     input.result_status,
     input.verified_by,
-    input.notes ?? null,
     id,
   ]);
   return result.rows[0] ?? null;
@@ -312,6 +310,13 @@ export const approveLot = async (
   lotId: string,
   userId: string
 ): Promise<{ success: boolean; message: string }> => {
+  type TestSummaryRow = {
+    test_id: string;
+    test_type: QCTestType;
+    test_date: string;
+    result_status: QCResultStatus;
+  };
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -358,18 +363,42 @@ export const approveLot = async (
     }
 
     if (pendingTests > 0) {
+      const pendingDetails = await client.query<TestSummaryRow>(
+        `SELECT test_id, test_type, test_date::text, result_status
+         FROM qc_tests
+         WHERE lot_id = $1 AND result_status = 'Pending'
+         ORDER BY test_date ASC, test_id ASC`,
+        [lotId]
+      );
+
+      const pendingList = pendingDetails.rows
+        .map((row) => `${row.test_id} (${row.test_type}, ${row.test_date})`)
+        .join("; ");
+
       await client.query("ROLLBACK");
       return {
         success: false,
-        message: `Còn ${pendingTests} kiểm tra chưa có kết quả. Không thể phê duyệt.`,
+        message: `Còn ${pendingTests} kiểm tra chưa có kết quả. Không thể phê duyệt. Pending: ${pendingList}`,
       };
     }
 
     if (failTests > 0) {
+      const failedDetails = await client.query<TestSummaryRow>(
+        `SELECT test_id, test_type, test_date::text, result_status
+         FROM qc_tests
+         WHERE lot_id = $1 AND result_status = 'Fail'
+         ORDER BY test_date ASC, test_id ASC`,
+        [lotId]
+      );
+
+      const failedList = failedDetails.rows
+        .map((row) => `${row.test_id} (${row.test_type}, ${row.test_date})`)
+        .join("; ");
+
       await client.query("ROLLBACK");
       return {
         success: false,
-        message: `Có ${failTests} kiểm tra không đạt. Không thể phê duyệt.`,
+        message: `Có ${failTests} kiểm tra không đạt. Không thể phê duyệt. Failed: ${failedList}`,
       };
     }
 

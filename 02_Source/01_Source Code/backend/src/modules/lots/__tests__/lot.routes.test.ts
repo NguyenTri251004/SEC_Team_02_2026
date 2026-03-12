@@ -283,6 +283,7 @@ describe("lot.routes", () => {
   describe("PUT /api/lots/:id", () => {
     it("should return 200 on successful update", async () => {
       const updated = makeLot({ storage_location: "WH-NEW" });
+      mockedService.getLotById.mockResolvedValueOnce(makeLot() as any);
       mockedService.updateLot.mockResolvedValue(updated as any);
 
       const res = await request(app)
@@ -295,6 +296,7 @@ describe("lot.routes", () => {
     });
 
     it("should return 404 when lot not found", async () => {
+      mockedService.getLotById.mockResolvedValueOnce(makeLot() as any);
       mockedService.updateLot.mockResolvedValue(null);
 
       const res = await request(app)
@@ -306,6 +308,7 @@ describe("lot.routes", () => {
     });
 
     it("should return 500 on service error", async () => {
+      mockedService.getLotById.mockResolvedValueOnce(makeLot() as any);
       mockedService.updateLot.mockRejectedValue(new Error("DB error"));
 
       const res = await request(app)

@@ -5,6 +5,7 @@ export interface ProductionBatch {
   product_id: string;
   batch_number: string;
   batch_size: number;
+  component_count?: number;
   unit_of_measure: string;
   manufacture_date: string;
   expiration_date: string;

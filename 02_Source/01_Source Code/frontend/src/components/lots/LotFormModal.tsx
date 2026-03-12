@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import axios from "axios";
 import { Modal, Form, Input, InputNumber, Select, DatePicker, Switch, message } from "antd";
 import dayjs from "dayjs";
 
@@ -17,6 +18,7 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
   const { mutateAsync: saveLot, isPending } = useSaveLot();
   const { data: materials = [] } = useMaterials();
   const isEditing = !!initialData;
+  const isSample = Form.useWatch("is_sample", form);
 
   useEffect(() => {
     if (isOpen) {
@@ -58,18 +60,21 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
       message.success(`Lot ${isEditing ? "updated" : "created"} successfully!`);
       onClose();
     } catch (error: unknown) {
-      if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as { response?: { status?: number; data?: { error?: string } } };
-        if (axiosError.response?.status === 409) {
-          message.error("Lot ID already exists!");
-        } else if (axiosError.response?.status === 400) {
-          message.error(axiosError.response?.data?.error || "Invalid data");
-        } else {
-          message.error("An error occurred while saving.");
-        }
-      } else if (error && typeof error === "object" && "name" in error && (error as { name: string }).name !== "ValidationError") {
-        message.error("An error occurred while saving.");
+      if (axios.isAxiosError<{ error?: string }>(error) && error.response?.status === 409) {
+        message.error("Lot ID already exists!");
+        return;
       }
+
+      if (axios.isAxiosError<{ error?: string }>(error) && error.response?.status === 400) {
+        message.error(error.response.data?.error ?? "Invalid data");
+        return;
+      }
+
+      if (error instanceof Error && error.name === "ValidationError") {
+        return;
+      }
+
+      message.error("An error occurred while saving.");
     }
   };
 
@@ -201,7 +206,7 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
           </Form.Item>
         </div>
 
-        {form.getFieldValue("is_sample") && (
+        {isSample && (
           <Form.Item name="parent_lot_id" label="Parent Lot ID">
             <Input placeholder="Ex: LOT-001" />
           </Form.Item>

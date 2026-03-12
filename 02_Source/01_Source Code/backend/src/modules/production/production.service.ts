@@ -104,7 +104,15 @@ export const getAllBatches = async (
 
   const whereClause = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
   const result = await pool.query<BatchRow>(
-    `${BATCH_SELECT}${whereClause} ORDER BY pb.manufacture_date DESC, pb.created_date DESC`,
+    `SELECT pb.*,
+            m.material_name AS product_name,
+            COALESCE(COUNT(bc.component_id), 0)::int AS component_count
+     FROM production_batches pb
+     INNER JOIN materials m ON pb.product_id = m.material_id
+     LEFT JOIN batch_components bc ON pb.batch_id = bc.batch_id
+     ${whereClause}
+     GROUP BY pb.batch_id, m.material_name
+     ORDER BY pb.manufacture_date DESC, pb.created_date DESC`,
     params
   );
 
