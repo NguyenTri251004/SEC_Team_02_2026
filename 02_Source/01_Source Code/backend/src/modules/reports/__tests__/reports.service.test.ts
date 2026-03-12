@@ -119,17 +119,34 @@ describe("getInventoryReport", () => {
     expect(params).toContain("2026-06-01");
   });
 
+  it("filters by received date range", async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    await reportsService.getInventoryReport({
+      date_from: "2026-01-01",
+      date_to: "2026-03-31",
+    });
+
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toContain("DATE(l.received_date) >=");
+    expect(sql).toContain("DATE(l.received_date) <=");
+    expect(params).toContain("2026-01-01");
+    expect(params).toContain("2026-03-31");
+  });
+
   it("combines multiple filters", async () => {
     mockQuery.mockResolvedValueOnce({ rows: [] });
 
     await reportsService.getInventoryReport({
       status: "Accepted",
       material_id: "MAT001",
+      date_from: "2026-01-01",
+      date_to: "2026-12-31",
       expiring_before: "2026-12-31",
     });
 
     const [, params] = mockQuery.mock.calls[0];
-    expect(params).toHaveLength(3);
+    expect(params).toHaveLength(5);
   });
 });
 

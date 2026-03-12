@@ -55,6 +55,8 @@ async function queryInventoryTransactions<T extends QueryResultRow>(
 export async function getInventoryReport(filters?: {
   status?: string;
   material_id?: string;
+  date_from?: string;
+  date_to?: string;
   expiring_before?: string;
 }): Promise<InventoryReportRow[]> {
   const conditions: string[] = [];
@@ -68,6 +70,14 @@ export async function getInventoryReport(filters?: {
   if (filters?.material_id) {
     conditions.push(`l.material_id = $${i++}`);
     params.push(filters.material_id);
+  }
+  if (filters?.date_from) {
+    conditions.push(`DATE(l.received_date) >= $${i++}`);
+    params.push(filters.date_from);
+  }
+  if (filters?.date_to) {
+    conditions.push(`DATE(l.received_date) <= $${i++}`);
+    params.push(filters.date_to);
   }
   if (filters?.expiring_before) {
     conditions.push(`l.expiration_date <= $${i++}`);

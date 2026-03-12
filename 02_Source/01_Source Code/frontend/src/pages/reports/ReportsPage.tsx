@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { Card, Row, Col, Select, Button, Space, Statistic, Table, Tag, DatePicker, message, Spin } from "antd";
 import {
-  DownloadOutlined,
   FileExcelOutlined,
   FilePdfOutlined,
   BarChartOutlined,
@@ -242,11 +241,6 @@ export default function ReportsPage() {
           <Card
             title={getReportTitle()}
             size="small"
-            extra={
-              <Button type="link" icon={<DownloadOutlined />} size="small" onClick={handleExportCSV}>
-                Download CSV
-              </Button>
-            }
           >
             <Spin spinning={isLoading}>
               {reportType === "inventory" && (
