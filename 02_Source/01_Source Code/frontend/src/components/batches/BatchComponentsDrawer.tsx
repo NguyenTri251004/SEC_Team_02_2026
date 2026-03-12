@@ -54,20 +54,28 @@ export function BatchComponentsDrawer({ batch, onClose }: BatchComponentsDrawerP
       message.warning("Please select a lot and enter quantity");
       return;
     }
+    const selectedLot = acceptedLots.find((l) => l.lot_id === selectedLotId);
+    if (!selectedLot) {
+      message.error("Selected lot not found");
+      return;
+    }
     try {
       await addComponent({
         batchId: batch.batch_id,
         data: {
           lot_id: selectedLotId,
           planned_quantity: plannedQty,
+          unit_of_measure: selectedLot.unit_of_measure,
         },
       });
       message.success("Component added successfully!");
       setAddingComponent(false);
       setSelectedLotId(undefined);
       setPlannedQty(null);
-    } catch (error: any) {
-      message.error(error.response?.data?.error || "Failed to add component");
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Failed to add component";
+      const axiosErr = error as { response?: { data?: { error?: string } } };
+      message.error(axiosErr.response?.data?.error ?? msg);
     }
   };
 
