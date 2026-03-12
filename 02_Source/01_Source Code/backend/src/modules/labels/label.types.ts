@@ -25,6 +25,7 @@ export interface CreateTemplateInput {
   template_content: string;
   width: number;
   height: number;
+  created_by: string;
 }
 
 export interface UpdateTemplateInput {

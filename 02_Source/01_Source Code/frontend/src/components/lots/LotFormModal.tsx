@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import axios from "axios";
 import { Modal, Form, Input, InputNumber, Select, DatePicker, Switch, message } from "antd";
 import dayjs from "dayjs";
 
@@ -58,13 +59,21 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
       message.success(`Lot ${isEditing ? "updated" : "created"} successfully!`);
       onClose();
     } catch (error: unknown) {
-      if (error.response?.status === 409) {
+      if (axios.isAxiosError<{ error?: string }>(error) && error.response?.status === 409) {
         message.error("Lot ID already exists!");
-      } else if (error.response?.status === 400) {
-        message.error(error.response?.data?.error || "Invalid data");
-      } else if (error.name !== "ValidationError") {
-        message.error("An error occurred while saving.");
+        return;
       }
+
+      if (axios.isAxiosError<{ error?: string }>(error) && error.response?.status === 400) {
+        message.error(error.response.data?.error ?? "Invalid data");
+        return;
+      }
+
+      if (error instanceof Error && error.name === "ValidationError") {
+        return;
+      }
+
+      message.error("An error occurred while saving.");
     }
   };
 

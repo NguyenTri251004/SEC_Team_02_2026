@@ -89,6 +89,7 @@ router.post(
         template_content,
         width: width || 4.0,
         height: height || 2.0,
+        created_by: req.user?.user_id ?? 'unknown',
       });
       
       res.status(201).json({ success: true, data: template });

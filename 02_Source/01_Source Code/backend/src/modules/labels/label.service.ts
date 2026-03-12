@@ -66,8 +66,8 @@ export const getTemplateById = async (id: string): Promise<LabelTemplate | null>
 export const createTemplate = async (dto: CreateTemplateInput): Promise<LabelTemplate> => {
   const result = await pool.query<LabelTemplate>(
     `INSERT INTO label_templates
-       (template_id, template_name, label_type, template_content, width, height)
-     VALUES ($1, $2, $3, $4, $5, $6)
+       (template_id, template_name, label_type, template_content, width, height, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
     [
       dto.template_id,
@@ -76,6 +76,7 @@ export const createTemplate = async (dto: CreateTemplateInput): Promise<LabelTem
       dto.template_content,
       dto.width,
       dto.height,
+      dto.created_by,
     ]
   );
   await invalidateCache();
