@@ -94,6 +94,23 @@ INSERT INTO label_templates (template_id, template_name, label_type, template_co
    3.00, 2.00);
 
 -- ────────────────────────────────────────────────────────────
+-- 3b. GeneratedLabels (Nhan da tao)
+-- ────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS generated_labels (
+  label_id         VARCHAR(36)    PRIMARY KEY,
+  material_id      VARCHAR(20)    NOT NULL REFERENCES materials(material_id),
+  code_type        VARCHAR(10)    NOT NULL CHECK (code_type IN ('barcode', 'qrcode')),
+  code_data        TEXT           NOT NULL,
+  label_content    TEXT           NOT NULL,
+  created_by       VARCHAR(50)    NOT NULL,
+  created_date     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_generated_labels_material_id ON generated_labels (material_id);
+CREATE INDEX IF NOT EXISTS idx_generated_labels_created_date ON generated_labels (created_date);
+CREATE INDEX IF NOT EXISTS idx_generated_labels_code_type ON generated_labels (code_type);
+
+-- ────────────────────────────────────────────────────────────
 -- 4. InventoryLots (Lo hang)
 -- ────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS inventory_lots (
@@ -206,7 +223,6 @@ CREATE TABLE IF NOT EXISTS qc_tests (
                          CHECK (result_status IN ('Pass','Fail','Pending')),
   performed_by         VARCHAR(50)   NOT NULL,
   verified_by          VARCHAR(50),
-  notes                TEXT,
   created_date         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   modified_date        TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

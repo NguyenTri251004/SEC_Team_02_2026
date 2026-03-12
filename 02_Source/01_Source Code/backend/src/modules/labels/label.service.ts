@@ -1,5 +1,8 @@
 import pool from "../../shared/db/pool";
-import { LabelTemplate, CreateTemplateInput, UpdateTemplateInput, GenerateLabelInput, GeneratedLabel, LabelType } from "./label.types";
+import { LabelTemplate, CreateTemplateInput, UpdateTemplateInput, GenerateLabelInput, GeneratedLabel, LabelType, CodeType } from "./label.types";
+import crypto from "crypto";
+import QRCode from "qrcode";
+import bwipjs from "bwip-js";
 
 // Cache for labels
 const CACHE_KEY = "labels:templates:all";
@@ -124,88 +127,194 @@ export const deleteTemplate = async (id: string): Promise<boolean> => {
 };
 
 /**
- * Generate label data for a lot or batch
+ * Generate QR Code as base64 image
  */
-export const generateLabel = async (input: GenerateLabelInput): Promise<GeneratedLabel> => {
-  // Get the template
-  const templateResult = await pool.query<LabelTemplate>(
-    "SELECT * FROM label_templates WHERE template_id = $1",
-    [input.template_id]
+const generateQRCode = async (data: string): Promise<string> => {
+  try {
+    // Generate QR code as PNG data URL
+    const qrDataUrl = await QRCode.toDataURL(data, {
+      width: 300,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    });
+    return qrDataUrl;
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    throw new Error('Failed to generate QR code');
+  }
+};
+
+/**
+ * Generate Barcode as base64 image (PNG)
+ * @param data - Data to encode in barcode (should be short, e.g., material_id)
+ * @param displayText - Optional text to display below barcode (e.g., material name)
+ */
+const generateBarcode = async (data: string, displayText?: string): Promise<string> => {
+  try {
+    // Generate CODE128 barcode using bwip-js
+    const png = await bwipjs.toBuffer({
+      bcid: 'code128',        // Barcode type
+      text: data,             // Data to encode (only material_id)
+      scale: 3,               // 3x scaling factor
+      height: 12,             // Bar height, in millimeters
+      includetext: true,      // Show human-readable text below barcode
+      textxalign: 'center',   // Center the text
+      textsize: 11,           // Font size for readable text
+      textgaps: 0.5,          // Gap between bars and text
+      alttext: displayText    // Display this text instead (material name)
+    });
+    
+    // Convert PNG buffer to base64 data URL
+    const base64 = png.toString('base64');
+    return `data:image/png;base64,${base64}`;
+  } catch (error) {
+    console.error('Error generating barcode:', error);
+    throw new Error('Failed to generate barcode');
+  }
+};
+
+/**
+ * Generate label data for a material and save to database
+ */
+export const generateLabel = async (input: GenerateLabelInput, userId: string): Promise<GeneratedLabel> => {
+  // Get material information
+  const materialResult = await pool.query<any>(
+    `SELECT material_id, part_number, material_name, material_type, storage_conditions, specification_document
+     FROM materials
+     WHERE material_id = $1`,
+    [input.material_id]
   );
 
-  if (templateResult.rows.length === 0) {
-    throw new Error(`Template ${input.template_id} not found`);
+  if (materialResult.rows.length === 0) {
+    throw new Error(`Material ${input.material_id} not found`);
   }
 
-  const template = templateResult.rows[0];
-  const content: Record<string, unknown> = {};
+  const material = materialResult.rows[0];
 
-  // Generate label based on lot_id or batch_id
-  if (input.lot_id) {
-    // Get lot information with material details
-    const lotResult = await pool.query<any>(
-      `SELECT il.*, m.material_name, m.material_type, m.part_number
-       FROM inventory_lots il
-       JOIN materials m ON il.material_id = m.material_id
-       WHERE il.lot_id = $1`,
-      [input.lot_id]
+  // Prepare label content
+  const content: Record<string, unknown> = {
+    material_id: material.material_id,
+    part_number: material.part_number,
+    material_name: material.material_name,
+    material_type: material.material_type,
+    storage_conditions: material.storage_conditions || 'N/A',
+    specification_document: material.specification_document || 'N/A',
+    generated_date: new Date().toISOString(),
+  };
+
+  // Generate code data (barcode or QR code)
+  let generatedCode: string;
+
+  if (input.code_type === CodeType.QR_CODE) {
+    // For QR code, encode full JSON data
+    const qrPayload = JSON.stringify(content);
+    generatedCode = await generateQRCode(qrPayload);
+  } else {
+    // For barcode, only encode material_id (short & scannable)
+    // But display material name below for readability
+    generatedCode = await generateBarcode(
+      material.material_id,
+      `${material.part_number} - ${material.material_name}`
     );
-
-    if (lotResult.rows.length === 0) {
-      throw new Error(`Lot ${input.lot_id} not found`);
-    }
-
-    const lot = lotResult.rows[0];
-
-    // Populate label content with lot data
-    content.lot_id = lot.lot_id;
-    content.material_name = lot.material_name;
-    content.material_type = lot.material_type;
-    content.part_number = lot.part_number;
-    content.manufacturer_name = lot.manufacturer_name;
-    content.manufacturer_lot = lot.manufacturer_lot;
-    content.supplier_name = lot.supplier_name;
-    content.received_date = lot.received_date;
-    content.expiration_date = lot.expiration_date;
-    content.quantity = lot.quantity;
-    content.unit_of_measure = lot.unit_of_measure;
-    content.storage_location = lot.storage_location;
-    content.status = lot.status;
-  } else if (input.batch_id) {
-    // Get batch information with product details
-    const batchResult = await pool.query<any>(
-      `SELECT pb.*, m.material_name, m.material_type
-       FROM production_batches pb
-       JOIN materials m ON pb.product_id = m.material_id
-       WHERE pb.batch_id = $1`,
-      [input.batch_id]
-    );
-
-    if (batchResult.rows.length === 0) {
-      throw new Error(`Batch ${input.batch_id} not found`);
-    }
-
-    const batch = batchResult.rows[0];
-
-    // Populate label content with batch data
-    content.batch_id = batch.batch_id;
-    content.batch_number = batch.batch_number;
-    content.material_name = batch.material_name;
-    content.material_type = batch.material_type;
-    content.batch_size = batch.batch_size;
-    content.unit_of_measure = batch.unit_of_measure;
-    content.manufacture_date = batch.manufacture_date;
-    content.expiration_date = batch.expiration_date;
-    content.status = batch.status;
   }
+
+  // Save to database
+  const labelId = crypto.randomUUID();
+  const insertResult = await pool.query<any>(
+    `INSERT INTO generated_labels (label_id, material_id, code_type, code_data, label_content, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING *`,
+    [
+      labelId,
+      material.material_id,
+      input.code_type,
+      generatedCode,
+      JSON.stringify(content),
+      userId,
+    ]
+  );
+
+  const savedLabel = insertResult.rows[0];
 
   return {
-    template_id: template.template_id,
-    template_name: template.template_name,
-    label_type: template.label_type,
-    width: template.width,
-    height: template.height,
-    content,
-    generated_date: new Date(),
+    label_id: savedLabel.label_id,
+    material_id: material.material_id,
+    material_name: material.material_name,
+    part_number: material.part_number,
+    material_type: material.material_type,
+    code_type: savedLabel.code_type,
+    code_data: savedLabel.code_data,
+    label_content: content,
+    created_by: savedLabel.created_by,
+    created_date: savedLabel.created_date,
   };
+};
+
+/**
+ * Get all generated labels with material info
+ */
+export const getAllGeneratedLabels = async (): Promise<GeneratedLabel[]> => {
+  const result = await pool.query<any>(
+    `SELECT gl.*, m.material_name, m.part_number, m.material_type
+     FROM generated_labels gl
+     JOIN materials m ON gl.material_id = m.material_id
+     ORDER BY gl.created_date DESC`
+  );
+
+  return result.rows.map((row: any) => ({
+    label_id: row.label_id,
+    material_id: row.material_id,
+    material_name: row.material_name,
+    part_number: row.part_number,
+    material_type: row.material_type,
+    code_type: row.code_type,
+    code_data: row.code_data,
+    label_content: typeof row.label_content === 'string' ? JSON.parse(row.label_content) : row.label_content,
+    created_by: row.created_by,
+    created_date: row.created_date,
+  }));
+};
+
+/**
+ * Get a generated label by ID
+ */
+export const getGeneratedLabelById = async (labelId: string): Promise<GeneratedLabel | null> => {
+  const result = await pool.query<any>(
+    `SELECT gl.*, m.material_name, m.part_number, m.material_type
+     FROM generated_labels gl
+     JOIN materials m ON gl.material_id = m.material_id
+     WHERE gl.label_id = $1`,
+    [labelId]
+  );
+
+  if (result.rows.length === 0) return null;
+
+  const row = result.rows[0];
+  return {
+    label_id: row.label_id,
+    material_id: row.material_id,
+    material_name: row.material_name,
+    part_number: row.part_number,
+    material_type: row.material_type,
+    code_type: row.code_type,
+    code_data: row.code_data,
+    label_content: typeof row.label_content === 'string' ? JSON.parse(row.label_content) : row.label_content,
+    created_by: row.created_by,
+    created_date: row.created_date,
+  };
+};
+
+/**
+ * Delete a generated label
+ */
+export const deleteGeneratedLabel = async (labelId: string): Promise<boolean> => {
+  const result = await pool.query(
+    "DELETE FROM generated_labels WHERE label_id = $1",
+    [labelId]
+  );
+  return (result.rowCount ?? 0) > 0;
 };

@@ -35,18 +35,25 @@ export interface UpdateTemplateInput {
   height?: number;
 }
 
+export enum CodeType {
+  BARCODE = "barcode",
+  QR_CODE = "qrcode",
+}
+
 export interface GenerateLabelInput {
-  template_id: string;
-  lot_id?: string;
-  batch_id?: string;
+  material_id: string;
+  code_type: CodeType;
 }
 
 export interface GeneratedLabel {
-  template_id: string;
-  template_name: string;
-  label_type: LabelType;
-  width: number;
-  height: number;
-  content: Record<string, unknown>;
-  generated_date: Date;
+  label_id: string;
+  material_id: string;
+  material_name: string;
+  part_number: string;
+  material_type: string;
+  code_type: CodeType;
+  code_data: string; // base64 encoded image
+  label_content: Record<string, unknown>;
+  created_by: string;
+  created_date: Date;
 }
