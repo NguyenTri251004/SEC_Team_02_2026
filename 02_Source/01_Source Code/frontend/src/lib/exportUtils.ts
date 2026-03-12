@@ -1,5 +1,5 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+// import jsPDF from "jspdf";
+// import autoTable from "jspdf-autotable";
 
 export function exportToCSV(
   data: Record<string, unknown>[],
@@ -40,6 +40,8 @@ export function exportToCSV(
   URL.revokeObjectURL(url);
 }
 
+// Commented out until jspdf and jspdf-autotable are installed
+/*
 export function exportToPDF(
   data: Record<string, unknown>[],
   columns: { key: string; title: string }[],
@@ -70,3 +72,4 @@ export function exportToPDF(
 
   doc.save(`${filename}.pdf`);
 }
+*/

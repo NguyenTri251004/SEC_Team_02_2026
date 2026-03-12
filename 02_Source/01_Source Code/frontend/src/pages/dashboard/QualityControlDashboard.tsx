@@ -31,10 +31,8 @@ import {
   createLotIdColumn,
   createMaterialNameColumn,
   createMaterialTypeColumn,
-  createSupplierNameColumn,
   createReceivedDateColumn,
   createExpirationDateColumn,
-  createWaitTimeColumn,
   createTransactionTypeColumn,
   createQuantityColumn,
   createTransactionDateColumn,
@@ -69,47 +67,67 @@ const MOCK_STATS: QCStats = {
 const MOCK_QUEUE: QCQueueItem[] = [
   {
     lot_id: "LOT-055",
+    material_id: "MAT-001",
     material_name: "API-X",
     material_type: "API",
-    supplier_name: "Acme",
+    manufacturer_name: "Acme",
+    manufacturer_lot: "ML-001",
+    status: "Quarantine",
     quantity: 10,
     unit_of_measure: "kg",
+    storage_location: "A1",
     received_date: "2026-02-25",
     expiration_date: "2027-02-25",
-    wait_time_hours: 72,
+    pending_tests: 2,
+    total_tests: 5,
   },
   {
     lot_id: "LOT-058",
+    material_id: "MAT-002",
     material_name: "Excipient Y",
     material_type: "Excipient",
-    supplier_name: "Beta Inc",
+    manufacturer_name: "Beta Inc",
+    manufacturer_lot: "ML-002",
+    status: "Quarantine",
     quantity: 20,
     unit_of_measure: "kg",
+    storage_location: "B2",
     received_date: "2026-02-26",
     expiration_date: "2027-02-26",
-    wait_time_hours: 48,
+    pending_tests: 1,
+    total_tests: 3,
   },
   {
     lot_id: "LOT-061",
+    material_id: "MAT-003",
     material_name: "Container Z",
     material_type: "Container",
-    supplier_name: "Gamma",
+    manufacturer_name: "Gamma",
+    manufacturer_lot: "ML-003",
+    status: "Quarantine",
     quantity: 500,
     unit_of_measure: "ea",
+    storage_location: "C3",
     received_date: "2026-02-27",
     expiration_date: "2028-02-27",
-    wait_time_hours: 24,
+    pending_tests: 0,
+    total_tests: 2,
   },
   {
     lot_id: "LOT-062",
+    material_id: "MAT-004",
     material_name: "API-W",
     material_type: "API",
-    supplier_name: "Acme",
+    manufacturer_name: "Acme",
+    manufacturer_lot: "ML-004",
+    status: "Quarantine",
     quantity: 5,
     unit_of_measure: "kg",
+    storage_location: "A2",
     received_date: "2026-02-28",
     expiration_date: "2027-02-28",
-    wait_time_hours: 4,
+    pending_tests: 3,
+    total_tests: 4,
   },
 ];
 
@@ -232,14 +250,14 @@ export default function QualityControlDashboard() {
         count: stats.rejected_lots_active,
         link: "/lots?status=Rejected",
       });
-    const stale = queue.filter((q) => q.wait_time_hours >= 48).length;
+    const stale = queue.filter((q) => q.pending_tests > 0).length;
     if (stale > 0)
       a.push({
         id: "alt04",
         severity: "warning",
-        message: "Lots in quarantine > 48h",
+        message: "Lots with pending tests",
         count: stale,
-        link: "/qc?staleDays=2",
+        link: "/qc",
       });
     return a;
   }, [stats, queue]);
@@ -249,7 +267,6 @@ export default function QualityControlDashboard() {
     createLotIdColumn<QCQueueItem>(),
     createMaterialNameColumn<QCQueueItem>(),
     createMaterialTypeColumn<QCQueueItem>(),
-    createSupplierNameColumn<QCQueueItem>(),
     {
       title: "Qty",
       key: "qty",
@@ -259,7 +276,6 @@ export default function QualityControlDashboard() {
     },
     createReceivedDateColumn<QCQueueItem>(),
     createExpirationDateColumn<QCQueueItem>(),
-    createWaitTimeColumn<QCQueueItem>(),
   ];
 
   const txnColumns = [

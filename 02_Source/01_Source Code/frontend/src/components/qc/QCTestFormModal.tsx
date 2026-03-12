@@ -11,6 +11,7 @@ import type { QCTest } from "@/types";
 interface QCTestFormModalProps {
   isOpen: boolean;
   onClose: () => void;
+  prefilledLotId?: string | null;
 }
 
 const TEST_TYPES = [
@@ -22,7 +23,7 @@ const TEST_TYPES = [
   "Chemical",
 ];
 
-export function QCTestFormModal({ isOpen, onClose }: QCTestFormModalProps) {
+export function QCTestFormModal({ isOpen, onClose, prefilledLotId }: QCTestFormModalProps) {
   const [form] = Form.useForm();
   const { mutateAsync: createTest, isPending } = useCreateQCTest();
   const { data: lots = [] } = useLots();
@@ -35,11 +36,12 @@ export function QCTestFormModal({ isOpen, onClose }: QCTestFormModalProps) {
     if (isOpen) {
       form.resetFields();
       form.setFieldsValue({
+        lot_id: prefilledLotId || undefined,
         test_date: dayjs(),
         performed_by: performedBy,
       });
     }
-  }, [isOpen, form, performedBy]);
+  }, [isOpen, form, performedBy, prefilledLotId]);
 
   const handleOk = async () => {
     try {

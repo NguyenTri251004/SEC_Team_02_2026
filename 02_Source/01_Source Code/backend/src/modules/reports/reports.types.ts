@@ -1,4 +1,4 @@
-export type ReportType = "inventory" | "transactions" | "audit-log";
+export type ReportType = "inventory" | "transactions" | "audit-log" | "expiring";
 
 export interface ReportExportInput {
   type: ReportType;
@@ -23,6 +23,20 @@ export interface InventoryReportRow {
   is_sample: boolean;
   created_date: string;
   modified_date: string;
+}
+
+export interface ExpiringReportRow {
+  lot_id: string;
+  material_id: string;
+  material_name: string | null;
+  material_type: string | null;
+  supplier_name: string | null;
+  expiration_date: string;
+  days_to_expiry: number;
+  status: string;
+  quantity: number;
+  unit_of_measure: string;
+  storage_location: string | null;
 }
 
 export interface TransactionReportRow {

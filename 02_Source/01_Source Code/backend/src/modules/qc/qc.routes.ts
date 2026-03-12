@@ -118,14 +118,15 @@ router.put(
 
 // ─── QC Queue ─────────────────────────────────────────────────────────────────
 
-// GET /api/qc/queue — Danh sách lô đang chờ QC (status=Quarantine)
+// GET /api/qc/queue — Danh sách lô đang chờ QC (có thể filter theo status)
 router.get(
   "/queue",
   authenticateJWT,
   requirePermission("qc", "read"),
-  async (_req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     try {
-      const queue = await qcService.getQCQueue();
+      const status = req.query.status as string | undefined;
+      const queue = await qcService.getQCQueue(status);
       res.json({ success: true, data: queue, total: queue.length });
     } catch (error) {
       console.error("Lỗi lấy QC queue:", error);

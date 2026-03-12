@@ -361,7 +361,7 @@ export default function LabelsPage() {
       <LabelTemplateFormModal
         isOpen={templateModalOpen}
         onClose={handleCloseTemplateModal}
-        initialData={editingTemplate}
+        initialData={editingTemplate || null}
       />
 
       <Modal
