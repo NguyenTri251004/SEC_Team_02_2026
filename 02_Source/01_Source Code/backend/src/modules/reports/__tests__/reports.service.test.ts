@@ -305,6 +305,14 @@ describe("getReportData", () => {
     expect(result).toEqual([{ transaction_id: "T1" }]);
   });
 
+  it("dispatches to getExpiringReport for 'expiring' type", async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ lot_id: "L2", days_to_expiry: 5 }] });
+
+    const result = await reportsService.getReportData("expiring", { days: 7 });
+
+    expect(result).toEqual([{ lot_id: "L2", days_to_expiry: 5 }]);
+  });
+
   it("dispatches to getAuditLog for other types", async () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [] })

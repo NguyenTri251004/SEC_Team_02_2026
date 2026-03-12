@@ -2,10 +2,17 @@ import { QueryResultRow } from "pg";
 import pool from "../../shared/db/pool";
 import type {
   AuditLogRow,
+  ExpiringReportRow,
   InventoryReportRow,
   ReportType,
   TransactionReportRow,
 } from "./reports.types";
+
+type ReportDataRow =
+  | InventoryReportRow
+  | TransactionReportRow
+  | ExpiringReportRow
+  | AuditLogRow;
 
 type PgError = { code?: string };
 
@@ -144,7 +151,7 @@ export async function getTransactionReport(filters?: {
 
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
-  const rows = await queryInventoryTransactions<TransactionReportRow & { quantity: any }>(
+  const rows = await queryInventoryTransactions<TransactionReportRow & { quantity: number }>(
     `SELECT
         t.transaction_id,
         t.lot_id,
@@ -165,10 +172,44 @@ export async function getTransactionReport(filters?: {
   // If we are on legacy table, "lot_id" is actually "material_id".
   // Optionally enrich with materials if material_id filter is provided.
   if (filters?.material_id) {
-    return rows.filter((r: any) => r.lot_id === filters.material_id);
+    return rows.filter((row) => row.lot_id === filters.material_id);
   }
 
   return rows;
+}
+
+export async function getExpiringReport(filters?: {
+  days?: number | string;
+}): Promise<ExpiringReportRow[]> {
+  const parsedDays =
+    typeof filters?.days === "number"
+      ? filters.days
+      : Number.parseInt(String(filters?.days ?? "30"), 10);
+  const days = Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : 30;
+
+  const result = await pool.query<ExpiringReportRow>(
+    `SELECT
+        l.lot_id,
+        l.material_id,
+        m.material_name,
+        m.material_type,
+        l.supplier_name,
+        TO_CHAR(l.expiration_date, 'YYYY-MM-DD') AS expiration_date,
+        (l.expiration_date::date - CURRENT_DATE)::integer AS days_to_expiry,
+        l.status,
+        l.quantity::float8 AS quantity,
+        l.unit_of_measure,
+        l.storage_location
+     FROM inventory_lots l
+     LEFT JOIN materials m ON l.material_id = m.material_id
+     WHERE l.expiration_date >= CURRENT_DATE
+       AND l.expiration_date <= CURRENT_DATE + $1 * INTERVAL '1 day'
+       AND l.status IN ('Quarantine', 'Accepted')
+     ORDER BY l.expiration_date ASC, l.lot_id ASC`,
+    [days]
+  );
+
+  return result.rows;
 }
 
 export async function getAuditLog(filters?: {
@@ -247,13 +288,30 @@ export async function getAuditLog(filters?: {
 export async function getReportData(
   type: ReportType,
   filters?: Record<string, unknown>
-): Promise<Record<string, unknown>[]> {
+): Promise<ReportDataRow[]> {
   if (type === "inventory") {
-    return (await getInventoryReport(filters as any)) as any;
+    return await getInventoryReport(filters as {
+      status?: string;
+      material_id?: string;
+      expiring_before?: string;
+    });
   }
   if (type === "transactions") {
-    return (await getTransactionReport(filters as any)) as any;
+    return await getTransactionReport(filters as {
+      lot_id?: string;
+      material_id?: string;
+      date_from?: string;
+      date_to?: string;
+      transaction_type?: string;
+    });
   }
-  return (await getAuditLog(filters as any)) as any;
+  if (type === "expiring") {
+    return await getExpiringReport(filters as { days?: number | string });
+  }
+  return await getAuditLog(filters as {
+    lot_id?: string;
+    date_from?: string;
+    date_to?: string;
+  });
 }
 

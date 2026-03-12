@@ -24,6 +24,10 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
       if (initialData) {
         form.setFieldsValue({
           ...initialData,
+          quantity:
+            initialData.quantity !== undefined && initialData.quantity !== null
+              ? Number(initialData.quantity)
+              : undefined,
           received_date: dayjs(initialData.received_date),
           expiration_date: dayjs(initialData.expiration_date),
           in_use_expiration_date: initialData.in_use_expiration_date
@@ -53,7 +57,7 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
       await saveLot({ isEditing, data: payload });
       message.success(`Lot ${isEditing ? "updated" : "created"} successfully!`);
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.response?.status === 409) {
         message.error("Lot ID already exists!");
       } else if (error.response?.status === 400) {

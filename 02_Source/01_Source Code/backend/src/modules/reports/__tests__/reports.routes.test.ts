@@ -6,6 +6,7 @@
 import request from "supertest";
 import express, { Request, Response, NextFunction } from "express";
 import type {
+  ExpiringReportRow,
   InventoryReportRow,
   TransactionReportRow,
   AuditLogRow,
@@ -68,6 +69,20 @@ const sampleTransactionRow: TransactionReportRow = {
   performed_by: "user-inv-01",
   transaction_date: "2026-01-15T09:00:00Z",
   created_date: "2026-01-15T09:00:00Z",
+};
+
+const sampleExpiringRow: ExpiringReportRow = {
+  lot_id: "LOT-002",
+  material_id: "MAT-002",
+  material_name: "Lactose",
+  material_type: "Excipient",
+  supplier_name: "SupplierB",
+  expiration_date: "2026-03-25",
+  days_to_expiry: 14,
+  status: "Accepted",
+  quantity: 250,
+  unit_of_measure: "kg",
+  storage_location: "WH-B-02",
 };
 
 const sampleAuditLogRow: AuditLogRow = {
@@ -219,6 +234,10 @@ describe("POST /api/reports/export", () => {
     "Transaction ID,Lot ID,Type,Quantity,UOM,Reference ID,Performed By,Transaction Date,Notes\n" +
     "TXN-001,LOT-001,IN,500,kg,PO-2026-100,user-inv-01,2026-01-15T09:00:00Z,Initial receipt";
 
+  const expiringCsv =
+    "Lot ID,Material ID,Material Name,Material Type,Supplier,Expiration Date,Days to Expiry,Status,Quantity,UOM,Location\n" +
+    "LOT-002,MAT-002,Lactose,Excipient,SupplierB,2026-03-25,14,Accepted,250,kg,WH-B-02";
+
   const auditLogCsv =
     "Event Type,Event Date,Lot ID,Reference ID,Performed By,Notes,Details\n" +
     'transaction,2026-01-15T09:00:00Z,LOT-001,PO-2026-100,user-inv-01,Initial receipt,[object Object]';
@@ -255,6 +274,23 @@ describe("POST /api/reports/export", () => {
     );
     expect(res.text).toContain("Transaction ID");
     expect(res.text).toContain("TXN-001");
+  });
+
+  it("returns 200 CSV for expiring type", async () => {
+    svc.getReportData.mockResolvedValue([sampleExpiringRow]);
+    svc.exportToCSV.mockReturnValue(expiringCsv);
+
+    const res = await request(app)
+      .post("/api/reports/export")
+      .send({ type: "expiring", filters: { days: 30 } });
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/csv");
+    expect(res.headers["content-disposition"]).toContain(
+      "expiring-report.csv"
+    );
+    expect(res.text).toContain("Days to Expiry");
+    expect(res.text).toContain("LOT-002");
   });
 
   it("returns 200 CSV for audit-log type", async () => {
