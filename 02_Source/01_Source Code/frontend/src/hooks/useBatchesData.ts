@@ -142,6 +142,7 @@ export const useAddComponent = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["batch-components"] });
+      queryClient.invalidateQueries({ queryKey: ["batches"] });
     },
   });
 };

@@ -18,6 +18,7 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
   const { mutateAsync: saveLot, isPending } = useSaveLot();
   const { data: materials = [] } = useMaterials();
   const isEditing = !!initialData;
+  const isSample = Form.useWatch("is_sample", form);
 
   useEffect(() => {
     if (isOpen) {
@@ -205,7 +206,7 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
           </Form.Item>
         </div>
 
-        {form.getFieldValue("is_sample") && (
+        {isSample && (
           <Form.Item name="parent_lot_id" label="Parent Lot ID">
             <Input placeholder="Ex: LOT-001" />
           </Form.Item>
