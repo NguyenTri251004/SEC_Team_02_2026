@@ -420,6 +420,7 @@ describe("approveLot", () => {
       { rows: [] }, // BEGIN
       { rows: [{ status: "Quarantine" }] }, // SELECT status
       { rows: [{ total: "3", pending_count: "1", fail_count: "0" }] }, // 1 pending
+      { rows: [{ test_id: "QC-004", test_type: "Identity", test_date: "2026-02-03", result_status: "Pending" }] }, // pending details
       { rows: [] }, // ROLLBACK
     ]);
 
@@ -427,6 +428,7 @@ describe("approveLot", () => {
 
     expect(result.success).toBe(false);
     expect(result.message).toContain("1 kiểm tra chưa có kết quả");
+    expect(result.message).toContain("QC-004");
   });
 
   it("returns error when some tests failed", async () => {
@@ -434,6 +436,12 @@ describe("approveLot", () => {
       { rows: [] }, // BEGIN
       { rows: [{ status: "Quarantine" }] }, // SELECT status
       { rows: [{ total: "3", pending_count: "0", fail_count: "2" }] }, // 2 fail
+      {
+        rows: [
+          { test_id: "QC-007", test_type: "Potency", test_date: "2026-02-21", result_status: "Fail" },
+          { test_id: "QC-016", test_type: "Chemical", test_date: "2026-02-22", result_status: "Fail" },
+        ],
+      }, // fail details
       { rows: [] }, // ROLLBACK
     ]);
 
@@ -441,6 +449,7 @@ describe("approveLot", () => {
 
     expect(result.success).toBe(false);
     expect(result.message).toContain("2 kiểm tra không đạt");
+    expect(result.message).toContain("QC-007");
   });
 
   it("approves successfully when all tests pass", async () => {
