@@ -107,7 +107,11 @@ export const useUpdateTestResult = () => {
       return api.put(`/api/qc/tests/${testId}`, data);
     },
     onSuccess: () => {
+      // Invalidate QCPage hooks
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
+      queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
+      
+      // Invalidate dashboard hooks
       queryClient.invalidateQueries({ queryKey: ["qc", "queue"] });
       queryClient.invalidateQueries({ queryKey: ["qc", "stats"] });
     },
