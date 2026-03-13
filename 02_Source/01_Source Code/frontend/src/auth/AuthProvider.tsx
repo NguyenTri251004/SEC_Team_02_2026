@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Redirect to Keycloak login page
   const login = useCallback(() => {
-    keycloak.login();
+    keycloak.login({ redirectUri: window.location.origin });
   }, []);
 
   // Redirect to Keycloak logout endpoint and return to app root
