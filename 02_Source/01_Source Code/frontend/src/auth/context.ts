@@ -12,7 +12,7 @@ export interface AuthContextType {
   user: CurrentUser | null;
   switchRole: (role: UserRole) => void;
   token?: string;
-  //test commit
+  //test commit 2
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
