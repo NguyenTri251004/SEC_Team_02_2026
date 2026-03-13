@@ -32,7 +32,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // session. If they do, the app initialises as authenticated without a redirect.
     // If they don't, isAuthenticated stays false and the Login page is shown.
     keycloak
-      .init({ onLoad: "check-sso" })
+      .init({
+        onLoad: "check-sso",
+        silentCheckSsoRedirectUri: window.location.origin + "/silent-check-sso.html",
+      })
       .then((authenticated) => {
         if (authenticated && keycloak.tokenParsed) {
           const parsed = keycloak.tokenParsed as Record<string, unknown>;
@@ -73,7 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Redirect to Keycloak login page
   const login = useCallback(() => {
-    keycloak.login({ redirectUri: window.location.origin });
+    keycloak.login({ redirectUri: window.location.origin + "/" });
   }, []);
 
   // Redirect to Keycloak logout endpoint and return to app root
