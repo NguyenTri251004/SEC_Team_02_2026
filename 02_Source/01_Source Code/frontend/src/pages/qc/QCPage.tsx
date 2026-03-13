@@ -22,7 +22,9 @@ const LOT_STATUS_TAG: Record<string, { label: string; color: string }> = {
 
 export default function QCPage() {
   const { data: tests = [], isLoading: testsLoading } = useQCTests();
-  const { data: queueData = [], isLoading: queueLoading } = useQCQueue();
+  const { data: queueData = [], isLoading: queueLoading } = useQCQueue(
+    "Quarantine,Accepted,Rejected,Depleted",
+  );
 
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);

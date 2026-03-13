@@ -156,7 +156,7 @@ export const useQCQueue = (status?: string) => {
   return useQuery({
     queryKey: ["qc-queue", status],
     queryFn: async (): Promise<QCQueueItem[]> => {
-      const params = status ? `?status=${status}` : "";
+      const params = status ? `status=${encodeURIComponent(status)}` : undefined;
       const response = await qcApi.getQueue(params);
       return response.data || [];
     },

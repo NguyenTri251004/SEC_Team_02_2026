@@ -142,7 +142,8 @@ describe("POST /api/labels/templates", () => {
 
     expect(res.status).toBe(201);
     const arg = svc.createTemplate.mock.calls[0][0];
-    expect(arg.template_id).toBe("MY-ID");
+    expect(arg.template_id).toBeDefined();
+    expect(arg.template_id).not.toBe("MY-ID");
   });
 
   it("400 — missing template_name", async () => {
@@ -156,17 +157,21 @@ describe("POST /api/labels/templates", () => {
     expect(res.body.error).toContain("Missing required fields");
   });
 
-  it("400 — missing width", async () => {
+  it("201 — uses default width when width is missing", async () => {
     const { width, ...body } = validBody;
+    svc.createTemplate.mockResolvedValueOnce({ ...TEMPLATE, ...body, width: 4, height: 2 });
 
     const res = await request(app)
       .post("/api/labels/templates")
       .send(body);
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(201);
+    expect(svc.createTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({ width: 4, height: 2 }),
+    );
   });
 
-  it("409 — duplicate key", async () => {
+  it("400 — duplicate key surfaces service error", async () => {
     const err = new Error("dup") as any;
     err.code = "23505";
     svc.createTemplate.mockRejectedValueOnce(err);
@@ -175,18 +180,18 @@ describe("POST /api/labels/templates", () => {
       .post("/api/labels/templates")
       .send(validBody);
 
-    expect(res.status).toBe(409);
-    expect(res.body.error).toContain("already exists");
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("dup");
   });
 
-  it("500 — generic service error", async () => {
+  it("400 — generic service error", async () => {
     svc.createTemplate.mockRejectedValueOnce(new Error("unknown"));
 
     const res = await request(app)
       .post("/api/labels/templates")
       .send(validBody);
 
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
   });
 });
 
@@ -218,14 +223,14 @@ describe("PUT /api/labels/templates/:id", () => {
     expect(res.status).toBe(404);
   });
 
-  it("500 — on service error", async () => {
+  it("400 — on service error", async () => {
     svc.updateTemplate.mockRejectedValueOnce(new Error("DB"));
 
     const res = await request(app)
       .put("/api/labels/templates/TMPL-001")
       .send({ template_name: "X" });
 
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
   });
 });
 

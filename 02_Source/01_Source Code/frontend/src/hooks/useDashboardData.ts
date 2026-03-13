@@ -92,6 +92,16 @@ export function useQCQueue(query = "page=1&limit=20&sort=received_date:asc") {
   });
 }
 
+export function useRecentQCTests(
+  query = "limit=10&sort=test_date:desc",
+) {
+  return useQuery({
+    queryKey: ["qc", "tests", query],
+    queryFn: () => qcApi.listTests(query),
+    refetchInterval: 30_000,
+  });
+}
+
 // ── Lots ─────────────────────────────────────────────────────────
 
 export function useExpiringLots(

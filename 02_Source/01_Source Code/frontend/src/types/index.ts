@@ -90,6 +90,10 @@ export interface QCTest {
   verified_by: string | null;
   created_date: string;
   modified_date: string;
+  // joined fields
+  lot_number?: string;
+  material_name?: string;
+  material_type?: string;
 }
 
 export type BatchStatus = "Planned" | "In Progress" | "Completed" | "Rejected";

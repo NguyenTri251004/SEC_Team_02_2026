@@ -245,7 +245,18 @@ describe("Label Service", () => {
     it("should generate QR code label for a material", async () => {
       mockPool.query
         .mockResolvedValueOnce({ rows: [mockMaterial], rowCount: 1 }) // material query
-        .mockResolvedValueOnce({ rows: [{ label_id: "uuid-1" }], rowCount: 1 }); // insert query
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              label_id: "uuid-1",
+              code_type: CodeType.QR_CODE,
+              code_data: "data:image/png;base64,mockQRCodeData",
+              created_by: "user123",
+              created_date: new Date(),
+            },
+          ],
+          rowCount: 1,
+        }); // insert query
 
       const result = await labelService.generateLabel(
         {
@@ -267,7 +278,18 @@ describe("Label Service", () => {
     it("should generate barcode label for a material", async () => {
       mockPool.query
         .mockResolvedValueOnce({ rows: [mockMaterial], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [{ label_id: "uuid-2" }], rowCount: 1 });
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              label_id: "uuid-2",
+              code_type: CodeType.BARCODE,
+              code_data: "data:image/png;base64,bW9ja0JhcmNvZGVEYXRh",
+              created_by: "user123",
+              created_date: new Date(),
+            },
+          ],
+          rowCount: 1,
+        });
 
       const result = await labelService.generateLabel(
         {
@@ -321,7 +343,18 @@ describe("Label Service", () => {
       mockPool.query
         .mockResolvedValueOnce({ rows: [mockTemplate], rowCount: 1 }) // getTemplate
         .mockResolvedValueOnce({ rows: [mockLot], rowCount: 1 }) // getLot
-        .mockResolvedValueOnce({ rows: [{ label_id: "uuid-3", created_by: "user123", created_date: new Date() }], rowCount: 1 }); // insert
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              label_id: "uuid-3",
+              code_type: CodeType.QR_CODE,
+              code_data: "data:image/png;base64,mockQRCodeData",
+              created_by: "user123",
+              created_date: new Date(),
+            },
+          ],
+          rowCount: 1,
+        }); // insert
 
       const result = await labelService.generateLabelFromTemplate(
         {
@@ -356,7 +389,18 @@ describe("Label Service", () => {
       mockPool.query
         .mockResolvedValueOnce({ rows: [mockTemplate], rowCount: 1 }) // getTemplate
         .mockResolvedValueOnce({ rows: [mockBatch], rowCount: 1 }) // getBatch
-        .mockResolvedValueOnce({ rows: [{ label_id: "uuid-4", created_by: "user123", created_date: new Date() }], rowCount: 1 }); // insert
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              label_id: "uuid-4",
+              code_type: CodeType.BARCODE,
+              code_data: "data:image/png;base64,bW9ja0JhcmNvZGVEYXRh",
+              created_by: "user123",
+              created_date: new Date(),
+            },
+          ],
+          rowCount: 1,
+        }); // insert
 
       const result = await labelService.generateLabelFromTemplate(
         {
@@ -389,7 +433,18 @@ describe("Label Service", () => {
       mockPool.query
         .mockResolvedValueOnce({ rows: [mockTemplate], rowCount: 1 }) // getTemplate
         .mockResolvedValueOnce({ rows: [mockMaterial], rowCount: 1 }) // getMaterial
-        .mockResolvedValueOnce({ rows: [{ label_id: "uuid-5", created_by: "user123", created_date: new Date() }], rowCount: 1 }); // insert
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              label_id: "uuid-5",
+              code_type: CodeType.QR_CODE,
+              code_data: "data:image/png;base64,mockQRCodeData",
+              created_by: "user123",
+              created_date: new Date(),
+            },
+          ],
+          rowCount: 1,
+        }); // insert
 
       const result = await labelService.generateLabelFromTemplate(
         {

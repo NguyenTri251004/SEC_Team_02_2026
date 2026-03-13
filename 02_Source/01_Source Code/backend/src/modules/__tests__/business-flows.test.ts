@@ -296,6 +296,7 @@ describe("Cross-Module Business Flows", () => {
       const test = await qcService.createTest({
         lot_id: QC_TEST_IDENTITY.lot_id,
         test_type: QC_TEST_IDENTITY.test_type,
+        test_method: QC_TEST_IDENTITY.test_method,
         performed_by: QC_TEST_IDENTITY.performed_by,
       });
 

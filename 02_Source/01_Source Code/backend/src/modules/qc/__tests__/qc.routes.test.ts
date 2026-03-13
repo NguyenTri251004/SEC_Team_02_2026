@@ -86,10 +86,15 @@ const sampleQueueItem: QCQueueItem = {
 };
 
 const sampleStats: QCStats = {
+  pending_qc_lots: 2,
+  tests_pending_review: 5,
+  tests_unverified: 1,
+  rejected_lots_active: 1,
   pending_count: 5,
   pass_rate_30d: 80,
   total_tests_30d: 20,
   tests_by_type: [{ test_type: "Identity", count: 10, pass_count: 8 }],
+  activity_trend: [{ date: "2026-03-01", test_count: 4 }],
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -160,6 +165,7 @@ describe("POST /api/qc/tests", () => {
   const validBody = {
     lot_id: "lot-001",
     test_type: "Identity",
+    test_method: "FTIR",
     performed_by: "user-qc",
   };
 
@@ -186,16 +192,25 @@ describe("POST /api/qc/tests", () => {
   it("returns 400 when test_type is missing", async () => {
     const res = await request(app)
       .post("/api/qc/tests")
-      .send({ lot_id: "lot-001", performed_by: "user-qc" });
+      .send({ lot_id: "lot-001", test_method: "FTIR", performed_by: "user-qc" });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("test_type");
   });
 
+  it("returns 400 when test_method is missing", async () => {
+    const res = await request(app)
+      .post("/api/qc/tests")
+      .send({ lot_id: "lot-001", test_type: "Identity", performed_by: "user-qc" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("test_method");
+  });
+
   it("returns 400 when performed_by is missing", async () => {
     const res = await request(app)
       .post("/api/qc/tests")
-      .send({ lot_id: "lot-001", test_type: "Identity" });
+      .send({ lot_id: "lot-001", test_type: "Identity", test_method: "FTIR" });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("performed_by");

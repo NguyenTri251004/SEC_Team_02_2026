@@ -7,6 +7,7 @@ import type {
   InventorySummary,
   TransactionSummary,
   QCStats,
+  QCTest,
   QCQueueItem,
   ExpiringLot,
   InventoryLot,
@@ -142,6 +143,12 @@ export const qcApi = {
   getStats: (params?: string) =>
     apiRequest<ApiResponse<QCStats>>({
       url: `/api/qc/stats${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
+
+  listTests: (params?: string) =>
+    apiRequest<PaginatedResponse<QCTest>>({
+      url: `/api/qc/tests${params ? `?${params}` : ""}`,
       method: "GET",
     }),
 

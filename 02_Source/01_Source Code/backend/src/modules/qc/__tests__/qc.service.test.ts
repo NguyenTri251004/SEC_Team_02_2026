@@ -169,6 +169,7 @@ describe("createTest", () => {
     const result = await qcService.createTest({
       lot_id: "lot-001",
       test_type: "Identity",
+      test_method: "FTIR",
       performed_by: "user-qc",
     });
 
@@ -183,6 +184,7 @@ describe("createTest", () => {
     await qcService.createTest({
       lot_id: "lot-001",
       test_type: "Potency",
+      test_method: "Assay",
       performed_by: "user-qc",
     });
 
@@ -199,6 +201,7 @@ describe("createTest", () => {
     await qcService.createTest({
       lot_id: "lot-001",
       test_type: "Microbial",
+      test_method: "USP <61>",
       performed_by: "user-qc",
     });
 
@@ -208,7 +211,7 @@ describe("createTest", () => {
     expect(testDate).toBe(before);
   });
 
-  it("accepts optional fields (test_method, acceptance_criteria, notes)", async () => {
+  it("accepts optional acceptance_criteria while requiring schema-backed fields", async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ max_id: 'QC-015' }] }); // MAX test_id
     mockQuery.mockResolvedValueOnce({ rows: [newTestRow] }); // INSERT
 
@@ -218,13 +221,11 @@ describe("createTest", () => {
       performed_by: "user-qc",
       test_method: "HPLC",
       acceptance_criteria: ">99% purity",
-      notes: "Batch re-test",
     });
 
     const [, params] = mockQuery.mock.calls[1] as [string, unknown[]];
     expect(params).toContain("HPLC");
     expect(params).toContain(">99% purity");
-    expect(params).toContain("Batch re-test");
   });
 });
 
@@ -291,17 +292,26 @@ describe("getPendingTests", () => {
 // ═════════════════════════════════════════════════════════════════════════════
 describe("getQCStats", () => {
   it("calculates pass_rate correctly from 30-day data", async () => {
-    // Promise.all fires 3 queries
+    // Promise.all fires 7 queries
     mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: "5" }] }) // pending count
+      .mockResolvedValueOnce({ rows: [{ count: "2" }] }) // pending lots
+      .mockResolvedValueOnce({ rows: [{ count: "5" }] }) // pending tests
+      .mockResolvedValueOnce({ rows: [{ count: "1" }] }) // unverified tests
+      .mockResolvedValueOnce({ rows: [{ count: "3" }] }) // rejected lots
       .mockResolvedValueOnce({ rows: [{ total: "20", pass_count: "16" }] }) // rate
       .mockResolvedValueOnce({
         rows: [{ test_type: "Identity", count: "10", pass_count: "8" }],
-      }); // by type
+      }) // by type
+      .mockResolvedValueOnce({
+        rows: [{ date: "2026-03-01", test_count: "4" }],
+      }); // activity trend
 
     const stats = await qcService.getQCStats();
 
+    expect(stats.pending_qc_lots).toBe(2);
     expect(stats.pending_count).toBe(5);
+    expect(stats.tests_unverified).toBe(1);
+    expect(stats.rejected_lots_active).toBe(3);
     expect(stats.total_tests_30d).toBe(20);
     expect(stats.pass_rate_30d).toBe(80); // 16/20 * 100
     expect(stats.tests_by_type).toHaveLength(1);
@@ -310,26 +320,38 @@ describe("getQCStats", () => {
       count: 10,
       pass_count: 8,
     });
+    expect(stats.activity_trend).toEqual([
+      { date: "2026-03-01", test_count: 4 },
+    ]);
   });
 
   it("returns 0% pass rate when total tests is zero (no division by zero)", async () => {
     mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: "0" }] })
-      .mockResolvedValueOnce({ rows: [{ total: "0", pass_count: "0" }] })
-      .mockResolvedValueOnce({ rows: [] });
+      .mockResolvedValueOnce({ rows: [{ count: "0" }] }) // pending lots
+      .mockResolvedValueOnce({ rows: [{ count: "0" }] }) // pending tests
+      .mockResolvedValueOnce({ rows: [{ count: "0" }] }) // unverified tests
+      .mockResolvedValueOnce({ rows: [{ count: "0" }] }) // rejected lots
+      .mockResolvedValueOnce({ rows: [{ total: "0", pass_count: "0" }] }) // rate
+      .mockResolvedValueOnce({ rows: [] }) // by type
+      .mockResolvedValueOnce({ rows: [] }); // activity trend
 
     const stats = await qcService.getQCStats();
 
     expect(stats.pass_rate_30d).toBe(0);
     expect(stats.pending_count).toBe(0);
     expect(stats.tests_by_type).toEqual([]);
+    expect(stats.activity_trend).toEqual([]);
   });
 
   it("rounds pass_rate to nearest integer", async () => {
     mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: "0" }] })
+      .mockResolvedValueOnce({ rows: [{ count: "0" }] }) // pending lots
+      .mockResolvedValueOnce({ rows: [{ count: "0" }] }) // pending tests
+      .mockResolvedValueOnce({ rows: [{ count: "0" }] }) // unverified tests
+      .mockResolvedValueOnce({ rows: [{ count: "0" }] }) // rejected lots
       .mockResolvedValueOnce({ rows: [{ total: "3", pass_count: "2" }] }) // 66.67%
-      .mockResolvedValueOnce({ rows: [] });
+      .mockResolvedValueOnce({ rows: [] }) // by type
+      .mockResolvedValueOnce({ rows: [] }); // activity trend
 
     const stats = await qcService.getQCStats();
 

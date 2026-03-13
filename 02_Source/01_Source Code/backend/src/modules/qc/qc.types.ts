@@ -22,7 +22,6 @@ export interface QCTest {
   result_status: QCResultStatus;
   performed_by: string;
   verified_by?: string;
-  notes?: string;
   created_date: Date;
   modified_date: Date;
   // JOIN fields từ inventory_lots + materials
@@ -36,11 +35,10 @@ export interface QCTest {
 export interface CreateQCTestInput {
   lot_id: string;
   test_type: QCTestType;
-  test_method?: string;
+  test_method: string;
   test_date?: string; // ISO date string, default today
   acceptance_criteria?: string;
   performed_by: string;
-  notes?: string;
 }
 
 // Input để cập nhật kết quả QC test
@@ -48,11 +46,14 @@ export interface UpdateQCTestInput {
   test_result: string;
   result_status: QCResultStatus;
   verified_by: string;
-  notes?: string;
 }
 
 // Thống kê QC tổng hợp
 export interface QCStats {
+  pending_qc_lots: number;
+  tests_pending_review: number;
+  tests_unverified: number;
+  rejected_lots_active: number;
   pending_count: number;
   pass_rate_30d: number;       // Tỷ lệ Pass trong 30 ngày gần nhất (0-100)
   total_tests_30d: number;
@@ -60,6 +61,10 @@ export interface QCStats {
     test_type: QCTestType;
     count: number;
     pass_count: number;
+  }[];
+  activity_trend: {
+    date: string;
+    test_count: number;
   }[];
 }
 
