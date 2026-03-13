@@ -108,6 +108,9 @@ INSERT INTO label_templates (template_id, template_name, label_type, template_co
 CREATE TABLE IF NOT EXISTS generated_labels (
   label_id         VARCHAR(36)    PRIMARY KEY,
   material_id      VARCHAR(20)    NOT NULL REFERENCES materials(material_id),
+  entity_type      VARCHAR(20)    NOT NULL DEFAULT 'material'
+                      CHECK (entity_type IN ('material', 'lot', 'batch')),
+  entity_id        VARCHAR(36)    NOT NULL,
   code_type        VARCHAR(10)    NOT NULL CHECK (code_type IN ('barcode', 'qrcode')),
   code_data        TEXT           NOT NULL,
   label_content    TEXT           NOT NULL,
@@ -116,6 +119,8 @@ CREATE TABLE IF NOT EXISTS generated_labels (
 );
 
 CREATE INDEX IF NOT EXISTS idx_generated_labels_material_id ON generated_labels (material_id);
+CREATE INDEX IF NOT EXISTS idx_generated_labels_entity_type ON generated_labels (entity_type);
+CREATE INDEX IF NOT EXISTS idx_generated_labels_entity_id ON generated_labels (entity_id);
 CREATE INDEX IF NOT EXISTS idx_generated_labels_created_date ON generated_labels (created_date);
 CREATE INDEX IF NOT EXISTS idx_generated_labels_code_type ON generated_labels (code_type);
 
