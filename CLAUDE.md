@@ -29,11 +29,15 @@ All commands run from `02_Source/01_Source Code/`.
 
 ### Backend (`backend/`)
 ```bash
-npm install          # install deps
-npm run dev          # start dev server (ts-node) on :3000
-npm run build        # compile TypeScript to dist/
-npm start            # run compiled JS from dist/
-npm run watch        # tsc --watch
+npm install              # install deps
+npm run dev              # start dev server (ts-node) on :3000
+npm run build            # compile TypeScript to dist/
+npm start                # run compiled JS from dist/
+npm run watch            # tsc --watch
+npm test                 # run all Jest tests
+npm run test:watch       # Jest in watch mode
+npm run test:coverage    # Jest with coverage report
+npx jest path/to/test.ts # run a single test file
 ```
 
 ### Frontend (`frontend/`)
@@ -74,31 +78,43 @@ psql -U myuser -h localhost -d mydatabase -f db-init.sql   # init schema
 - **Infrastructure:** Docker Compose with health checks
 
 ### Backend Structure (`backend/src/`)
-Modular organization: each domain module has `*.routes.ts`, `*.service.ts`, `*.types.ts`.
-- `modules/materials/` - Materials CRUD
-- `modules/transactions/` - Inventory transactions (IN/OUT)
-- `modules/search/` - Elasticsearch full-text search
+Modular organization: each domain module has `*.routes.ts`, `*.service.ts`, `*.types.ts` and a `__tests__/` subdirectory.
+- `modules/admin/` - Admin user management and system stats (`/api/admin`)
+- `modules/auth/` - Auth routes (`/api/auth`)
+- `modules/dashboard/` - Aggregated dashboard data per role (`/api/dashboard`)
+- `modules/labels/` - Label template CRUD + barcode/QR generation via bwip-js and qrcode (`/api/labels`)
+- `modules/lots/` - Inventory lot lifecycle (Quarantine → Accepted/Rejected) (`/api/lots`)
+- `modules/materials/` - Materials catalog CRUD (`/api/materials`)
+- `modules/production/` - Production batches and component consumption (`/api/production`)
+- `modules/qc/` - QC tests, QC queue, lot approve/reject (`/api/qc`)
+- `modules/reports/` - Inventory, transaction and audit reports (`/api/reports`)
+- `modules/search/` - Elasticsearch full-text search (`/api/search`)
+- `modules/transactions/` - Inventory transactions (IN/OUT) (`/api/transactions`)
+- `modules/__tests__/` - Cross-module integration tests (warehouse-lifecycle, business-flows)
 - `security/auth.ts` - JWT authentication middleware
-- `security/rbac.ts` - Role-based access control
+- `security/rbac.ts` - Role-based access control (PERMISSIONS matrix mapping resource+action → allowed roles)
 - `shared/db/pool.ts` - PostgreSQL connection pool (supports `DATABASE_URL` or individual `DB_*` env vars)
 - `shared/cache/redis.ts` - Redis client (optional, app runs without it)
 - `shared/elasticsearch/client.ts` - Elasticsearch client (optional)
 
-API routes are mounted at `/api/materials`, `/api/transactions`, `/api/search`.
-
 ### Frontend Structure (`frontend/src/`)
-- `auth/` - Keycloak integration + AuthProvider context (demo mode with role switcher)
+- `auth/` - Keycloak integration + AuthProvider context (demo mode with role switcher via `BYPASS_KEYCLOAK`)
 - `components/layout/AppLayout.tsx` - Main layout with sidebar navigation
 - `components/dashboard/` - Reusable dashboard widgets (KpiCard, ChartCard, AlertPanel, DataTableCard)
+- `components/common/tables/columnFactories.tsx` - Shared TanStack React Table column factories
 - `pages/dashboard/` - Role-based dashboards: Admin, InventoryManager, QualityControl, Production
-- `pages/materials/` - Materials CRUD page
-- `services/api.ts` - Axios API client with Keycloak token interceptor, organized by domain (adminApi, dashboardApi, materialApi, transactionApi, qcApi, lotApi, productionApi, reportApi)
+- `pages/` - Full pages: batches, labels, lots, materials, qc, reports, transactions, users
+- `services/api.ts` - Axios API client with Keycloak token interceptor (auto-refresh on 401), organized by domain
 - `types/index.ts` - All TypeScript interfaces and API response types
 - `constants/roles.ts` - Role definitions and display config
 - `constants/theme.ts` - Ant Design theme configuration
-- `hooks/` - React Query hooks (useDashboardData, useMaterialsData)
+- `hooks/` - React Query hooks per domain: `useDashboardData`, `useMaterialsData`, `useTransactionsData`, `useLotsData`, `useQCData`, `useBatchesData`, `useLabelsData`, `useReportsData`, `useUsersData`
+- `lib/utils.ts` - General utility functions
+- `lib/exportUtils.ts` - PDF export helpers (jsPDF + jspdf-autotable)
 - `stores/uiStore.ts` - Zustand store for UI state (sidebar)
-- `router/index.tsx` - Route definitions with planned routes (many still point to NotFoundPage)
+- `router/index.tsx` - Route definitions
+
+Additional frontend dependencies: TanStack React Table (data grids), dayjs (date handling), lucide-react (icons), jsPDF (PDF export).
 
 Path alias: `@/*` maps to `src/*` (configured in vite.config.ts and tsconfig.json).
 
@@ -106,7 +122,9 @@ Path alias: `@/*` maps to `src/*` (configured in vite.config.ts and tsconfig.jso
 `admin`, `inventory_manager`, `quality_control`, `production`, `viewer` - each role gets a different dashboard view.
 
 ### Database Schema (db-init.sql)
-Current tables: `users`, `materials`, `transactions`. The frontend types suggest additional tables planned: `inventory_lots`, `qc_tests`, `production_batches`, `label_templates`.
+Implemented tables: `users`, `materials`, `inventory_lots`, `inventory_transactions`, `qc_tests`, `production_batches`, `batch_components`, `label_templates`.
+
+**Lot status workflow (core business rule):** `Quarantine` (on receipt) → `Accepted` (after QC approval) or `Rejected`. A lot must be `Accepted` before it can be added to a production batch. A batch must be `In Progress` before material can be consumed. Consuming material atomically updates `batch_components.actual_quantity`, decrements `inventory_lots.quantity` (possibly marking lot as `Depleted`), and inserts an `inventory_transactions` record.
 
 ## Coding Conventions
 
