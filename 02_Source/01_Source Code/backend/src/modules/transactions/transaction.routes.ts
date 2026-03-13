@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { randomUUID } from "crypto";
 import * as transactionService from "./transaction.service";
 import { authenticateJWT } from "../../security/auth";
 import { requirePermission } from "../../security/rbac";
@@ -92,7 +93,10 @@ router.post(
         return;
       }
 
-      const transaction = await transactionService.createTransaction(req.body);
+      const transaction = await transactionService.createTransaction({
+        ...req.body,
+        transaction_id: req.body.transaction_id ?? randomUUID(),
+      });
       res.status(201).json({ success: true, data: transaction });
     } catch (error: unknown) {
       console.error("Lỗi tạo giao dịch:", error);

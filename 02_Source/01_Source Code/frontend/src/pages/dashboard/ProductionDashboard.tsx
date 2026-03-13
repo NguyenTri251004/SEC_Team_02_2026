@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Row, Col, Space, Empty, Input, Select } from "antd";
+import { Row, Col, Space, Empty, Input } from "antd";
 import {
   CheckCircleOutlined,
   BuildOutlined,
@@ -38,127 +38,16 @@ import type {
   ProductionBatch,
   AlertItem,
 } from "../../types";
+import { useAuth } from "../../auth/context";
 
-/* ── Mock data ── */
-const MOCK_INV: InventorySummary = {
-  by_status: [
-    {
-      status: "Accepted",
-      lot_count: 2,
-      quantities_by_unit: [
-        { unit_of_measure: "kg", total_quantity: 420 },
-        { unit_of_measure: "ea", total_quantity: 200 },
-      ],
-    },
-    {
-      status: "Quarantine",
-      lot_count: 3,
-      quantities_by_unit: [{ unit_of_measure: "kg", total_quantity: 56 }],
-    },
-    {
-      status: "Rejected",
-      lot_count: 0,
-      quantities_by_unit: [{ unit_of_measure: "kg", total_quantity: 0 }],
-    },
-    {
-      status: "Depleted",
-      lot_count: 0,
-      quantities_by_unit: [{ unit_of_measure: "kg", total_quantity: 0 }],
-    },
-  ],
+const EMPTY_INV: InventorySummary = {
+  by_status: [],
 };
 
-const MOCK_TXN_SUMMARY: TransactionSummary = {
-  today_receipts: 12,
+const EMPTY_TXN_SUMMARY: TransactionSummary = {
+  today_receipts: 0,
   today_issues: 0,
 };
-
-const MOCK_TXN: InventoryTransaction[] = [
-  {
-    transaction_id: "T201",
-    lot_id: "MFR-2025-002",
-    transaction_type: "Usage",
-    quantity: -4.5,
-    unit_of_measure: "kg",
-    reference_id: "a299829f-9d45-4f27-98dd-668786be10e3",
-    notes: null,
-    performed_by: "prod1",
-    transaction_date: "2026-01-31T21:09:56Z",
-    created_date: "2026-01-31T21:09:56Z",
-    material_name: "Microcrystalline Cellulose",
-  },
-  {
-    transaction_id: "T202",
-    lot_id: "MFR-2025-001",
-    transaction_type: "Usage",
-    quantity: -2,
-    unit_of_measure: "kg",
-    reference_id: "a299829f-9d45-4f27-98dd-668786be10e3",
-    notes: null,
-    performed_by: "prod1",
-    transaction_date: "2026-01-31T21:09:27Z",
-    created_date: "2026-01-31T21:09:27Z",
-    material_name: "Vitamin D3 100K",
-  },
-  {
-    transaction_id: "T203",
-    lot_id: "MFR-2025-002",
-    transaction_type: "Receipt",
-    quantity: 10,
-    unit_of_measure: "kg",
-    reference_id: null,
-    notes: null,
-    performed_by: "System",
-    transaction_date: "2026-01-31T21:01:11Z",
-    created_date: "2026-01-31T21:01:11Z",
-    material_name: "Microcrystalline Cellulose",
-  },
-];
-
-const MOCK_BATCHES: ProductionBatch[] = [
-  {
-    batch_id: "B000",
-    product_id: "M000",
-    batch_number: "PB-2026-4401",
-    batch_size: 1200,
-    component_count: 3,
-    unit_of_measure: "units",
-    manufacture_date: "2026-02-01",
-    expiration_date: "2026-03-01",
-    status: "In Progress",
-    created_date: "2026-02-01",
-    modified_date: "2026-02-02",
-    product_name: "Omega 3 Softgel 1000mg",
-  },
-  {
-    batch_id: "B002",
-    product_id: "M002",
-    batch_number: "PB-2026-4402",
-    batch_size: 800,
-    component_count: 2,
-    unit_of_measure: "units",
-    manufacture_date: "2026-02-03",
-    expiration_date: "2026-03-03",
-    status: "In Progress",
-    created_date: "2026-02-03",
-    modified_date: "2026-02-03",
-    product_name: "Vitamin C Effervescent",
-  },
-  {
-    batch_id: "B001",
-    product_id: "M001",
-    batch_number: "PB-2026-4468",
-    batch_size: 1000,
-    component_count: 2,
-    unit_of_measure: "units",
-    manufacture_date: "2026-01-31",
-    expiration_date: "2026-02-07",
-    status: "Completed",
-    created_date: "2026-01-31",
-    modified_date: "2026-01-31",
-    product_name: "Vitamin D3 Softgel 1000IU",
-  },
-];
 
 interface QuarantineLotRow {
   lot_id: string;
@@ -168,51 +57,54 @@ interface QuarantineLotRow {
   expiration_date: string;
 }
 
-const MOCK_QUARANTINE_LOTS: QuarantineLotRow[] = [
-  {
-    lot_id: "Q-LOT-2026-001",
-    material_name: "Vitamin D3 100K",
-    quantity: 20,
-    unit_of_measure: "kg",
-    expiration_date: "2026-04-05",
-  },
-  {
-    lot_id: "Q-LOT-2026-002",
-    material_name: "Microcrystalline Cellulose",
-    quantity: 36,
-    unit_of_measure: "kg",
-    expiration_date: "2026-04-18",
-  },
-];
-
-const USE_SECTION_MOCK = true;
-
 export default function ProductionDashboard() {
+  const { user } = useAuth();
   const [batchSearch, setBatchSearch] = useState("");
-  const [batchStatusFilter, setBatchStatusFilter] = useState<
-    ProductionBatch["status"] | undefined
-  >("In Progress");
 
   const { data: invRes, isLoading: invLoading } = useInventorySummary();
   const { data: txnSumRes, isLoading: txnSumLoading } = useTransactionSummary();
   const { data: txnRes, isLoading: txnLoading } = useRecentTransactions();
   const { data: batchRes, isLoading: batchLoading } = useProductionBatches();
   const { data: completedBatchRes, isLoading: completedBatchLoading } =
-    useProductionBatches("status=Completed&sort=modified_date:desc&limit=1");
+    useProductionBatches("status=Complete&sort=modified_date:desc&limit=1");
   const { data: expRes } = useExpiringLots();
   const { data: quarantineLotsRes, isLoading: quarantineLotsLoading } = useLots(
     "status=Quarantine&sort=expiration_date:asc&limit=10",
   );
 
-  const invSummary = USE_SECTION_MOCK ? MOCK_INV : (invRes?.data ?? MOCK_INV);
-  const txnSummary = txnSumRes?.data ?? MOCK_TXN_SUMMARY;
-  const transactions = txnRes?.data ?? MOCK_TXN;
-  const batches = USE_SECTION_MOCK
-    ? MOCK_BATCHES
-    : (batchRes?.data ?? MOCK_BATCHES);
+  const invSummary = invRes?.data ?? EMPTY_INV;
+  const txnSummary = txnSumRes?.data ?? EMPTY_TXN_SUMMARY;
+  const transactions = useMemo<InventoryTransaction[]>(() => {
+    const currentUser = user;
+    const recentTransactions = txnRes?.data ?? [];
+
+    if (!currentUser) {
+      return [];
+    }
+
+    const currentUserIds = new Set(
+      [currentUser.user_id, currentUser.username]
+        .map((value) => value.trim().toLowerCase())
+        .filter((value) => value.length > 0),
+    );
+
+    return recentTransactions.filter((transaction) =>
+      currentUserIds.has(transaction.performed_by.trim().toLowerCase()),
+    );
+  }, [txnRes?.data, user]);
+  const batches = useMemo<ProductionBatch[]>(
+    () => batchRes?.data ?? [],
+    [batchRes?.data],
+  );
   const completedBatchCount = completedBatchRes?.total ?? 0;
   const expiringCount = expRes?.total ?? 0;
-  const loading = invLoading || txnSumLoading;
+  const loading =
+    invLoading ||
+    txnSumLoading ||
+    txnLoading ||
+    batchLoading ||
+    completedBatchLoading ||
+    quarantineLotsLoading;
 
   const acceptedStock = useStockByStatus(invSummary, "Accepted");
 
@@ -223,15 +115,13 @@ export default function ProductionDashboard() {
 
   const quarantineLotRows = useMemo<QuarantineLotRow[]>(
     () =>
-      USE_SECTION_MOCK
-        ? MOCK_QUARANTINE_LOTS
-        : (quarantineLotsRes?.data ?? []).map((lot) => ({
-            lot_id: lot.lot_id,
-            material_name: lot.material_name,
-            quantity: lot.quantity,
-            unit_of_measure: lot.unit_of_measure,
-            expiration_date: lot.expiration_date,
-          })),
+      (quarantineLotsRes?.data ?? []).map((lot) => ({
+        lot_id: lot.lot_id,
+        material_name: lot.material_name,
+        quantity: lot.quantity,
+        unit_of_measure: lot.unit_of_measure,
+        expiration_date: lot.expiration_date,
+      })),
     [quarantineLotsRes?.data],
   );
 
@@ -286,17 +176,13 @@ export default function ProductionDashboard() {
     const keyword = batchSearch.trim().toLowerCase();
 
     return batches.filter((batch) => {
-      const matchesKeyword =
+      return (
         keyword.length === 0 ||
         batch.batch_number.toLowerCase().includes(keyword) ||
-        (batch.product_name ?? "").toLowerCase().includes(keyword);
-
-      const matchesStatus =
-        !batchStatusFilter || batch.status === batchStatusFilter;
-
-      return matchesKeyword && matchesStatus;
+        (batch.product_name ?? "").toLowerCase().includes(keyword)
+      );
     });
-  }, [batchSearch, batchStatusFilter, batches]);
+  }, [batchSearch, batches]);
 
   const txnColumns = [
     createTransactionTypeColumn<InventoryTransaction>(),
@@ -462,19 +348,6 @@ export default function ProductionDashboard() {
                 onChange={(event) => setBatchSearch(event.target.value)}
                 style={{ width: 240 }}
               />
-              <Select<ProductionBatch["status"]>
-                allowClear
-                placeholder="Status"
-                value={batchStatusFilter}
-                onChange={(value) => setBatchStatusFilter(value)}
-                style={{ width: 170 }}
-                options={[
-                  { label: "Planned", value: "Planned" },
-                  { label: "In Progress", value: "In Progress" },
-                  { label: "Completed", value: "Completed" },
-                  { label: "Rejected", value: "Rejected" },
-                ]}
-              />
             </Space>
           }
           columns={batchColumns}
@@ -487,11 +360,7 @@ export default function ProductionDashboard() {
             emptyText: (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  batchStatusFilter
-                    ? `No batches ${batchStatusFilter.toLowerCase()}`
-                    : "No batches"
-                }
+                description="No batches"
               />
             ),
           }}

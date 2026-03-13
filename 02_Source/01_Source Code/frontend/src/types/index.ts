@@ -90,6 +90,10 @@ export interface QCTest {
   verified_by: string | null;
   created_date: string;
   modified_date: string;
+  // joined fields
+  lot_number?: string;
+  material_name?: string;
+  material_type?: string;
 }
 
 export type BatchStatus = "Planned" | "In Progress" | "Completed" | "Rejected";
@@ -119,6 +123,36 @@ export interface LabelTemplate {
   height: number;
   created_date: string;
   modified_date: string;
+}
+
+export type CodeType = "barcode" | "qrcode";
+export type EntityType = "material" | "lot" | "batch";
+
+export interface GenerateLabelInput {
+  material_id: string;
+  code_type: CodeType;
+}
+
+export interface GenerateLabelFromTemplateInput {
+  template_id: string;
+  entity_type: EntityType;
+  entity_id: string;
+  code_type: CodeType;
+}
+
+export interface GeneratedLabel {
+  label_id: string;
+  material_id: string;
+  material_name: string;
+  part_number: string;
+  material_type: string;
+  entity_type: EntityType;
+  entity_id: string;
+  code_type: CodeType;
+  code_data: string; // base64 encoded image
+  label_content: Record<string, unknown>;
+  created_by: string;
+  created_date: string;
 }
 
 export interface User {
@@ -207,14 +241,20 @@ export interface QCStats {
 
 export interface QCQueueItem {
   lot_id: string;
+  lot_number?: string;
+  manufacturer_lot: string;
+  manufacturer_name: string;
+  material_id: string;
   material_name: string;
   material_type: string;
-  supplier_name: string;
-  quantity: number;
-  unit_of_measure: string;
+  status: string;
   received_date: string;
   expiration_date: string;
-  wait_time_hours: number;
+  quantity: number;
+  unit_of_measure: string;
+  storage_location: string;
+  pending_tests: number;
+  total_tests: number;
 }
 
 export interface ExpiringLot {
@@ -228,10 +268,106 @@ export interface ExpiringLot {
   storage_location: string;
 }
 
+// ============================================================
+// Reports
+// ============================================================
+export interface InventoryReportRow {
+  lot_id: string;
+  material_id: string;
+  material_name: string | null;
+  material_type: string | null;
+  manufacturer_name: string;
+  manufacturer_lot: string;
+  supplier_name: string | null;
+  received_date: string;
+  expiration_date: string;
+  status: string;
+  quantity: number;
+  unit_of_measure: string;
+  storage_location: string | null;
+  po_number: string | null;
+  is_sample: boolean;
+  created_date: string;
+  modified_date: string;
+}
+
+export interface TransactionReportRow {
+  transaction_id: string;
+  lot_id: string;
+  transaction_type: string;
+  quantity: number;
+  unit_of_measure: string;
+  reference_id: string | null;
+  notes: string | null;
+  performed_by: string | null;
+  transaction_date: string;
+  created_date: string;
+  material_id?: string | null;
+  material_name?: string | null;
+}
+
+export interface AuditLogRow {
+  event_type: "transaction" | "lot_status_change";
+  event_date: string;
+  lot_id: string | null;
+  reference_id: string | null;
+  performed_by: string | null;
+  notes: string | null;
+  details: Record<string, unknown>;
+}
+
 export interface AlertItem {
   id: string;
   severity: "critical" | "high" | "warning";
   message: string;
   count: number;
   link: string;
+}
+
+// ============================================================
+// Reports
+// ============================================================
+export interface InventoryReportRow {
+  lot_id: string;
+  material_id: string;
+  material_name: string | null;
+  material_type: string | null;
+  manufacturer_name: string;
+  manufacturer_lot: string;
+  supplier_name: string | null;
+  received_date: string;
+  expiration_date: string;
+  status: string;
+  quantity: number;
+  unit_of_measure: string;
+  storage_location: string | null;
+  po_number: string | null;
+  is_sample: boolean;
+  created_date: string;
+  modified_date: string;
+}
+
+export interface TransactionReportRow {
+  transaction_id: string;
+  lot_id: string;
+  transaction_type: string;
+  quantity: number;
+  unit_of_measure: string;
+  reference_id: string | null;
+  notes: string | null;
+  performed_by: string | null;
+  transaction_date: string;
+  created_date: string;
+  material_id?: string | null;
+  material_name?: string | null;
+}
+
+export interface AuditLogRow {
+  event_type: "transaction" | "lot_status_change";
+  event_date: string;
+  lot_id: string | null;
+  reference_id: string | null;
+  performed_by: string | null;
+  notes: string | null;
+  details: Record<string, unknown>;
 }

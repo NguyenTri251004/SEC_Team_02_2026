@@ -164,10 +164,10 @@ describe("Cross-Module Business Flows", () => {
   // ==========================================================================
   describe("Flow 1: Material Receipt -> QC -> Approval", () => {
     it("Step 1: Create a lot - starts as Quarantine", async () => {
-      mockPool.query.mockResolvedValueOnce(toResult([LOT]));
+      mockPool.query.mockResolvedValueOnce(toResult([])); // generateLotId
+      mockPool.query.mockResolvedValueOnce(toResult([LOT])); // INSERT
 
       const result = await lotService.createLot({
-        lot_id: LOT.lot_id,
         material_id: LOT.material_id,
         manufacturer_name: LOT.manufacturer_name,
         manufacturer_lot: LOT.manufacturer_lot,
@@ -184,13 +184,13 @@ describe("Cross-Module Business Flows", () => {
       expect(result.status).toBe("Quarantine");
       expect(result.lot_id).toBe("LOT-BF-001");
 
-      const sql = mockPool.query.mock.calls[0][0] as string;
-      expect(sql).toContain("INSERT INTO inventory_lots");
+      const sql = mockPool.query.mock.calls[1][0] as string;
       expect(sql).toContain("'Quarantine'");
     });
 
     it("Step 2: Create QC tests for the lot - start as Pending", async () => {
-      mockPool.query.mockResolvedValueOnce(toResult([QC_TEST_IDENTITY]));
+      mockPool.query.mockResolvedValueOnce(toResult([{ max_id: 'QC-015' }])); // MAX test_id
+      mockPool.query.mockResolvedValueOnce(toResult([QC_TEST_IDENTITY])); // INSERT
 
       const test1 = await qcService.createTest({
         lot_id: QC_TEST_IDENTITY.lot_id,
@@ -204,7 +204,7 @@ describe("Cross-Module Business Flows", () => {
       expect(test1.result_status).toBe("Pending");
       expect(test1.lot_id).toBe("LOT-BF-001");
 
-      const sql = mockPool.query.mock.calls[0][0] as string;
+      const sql = mockPool.query.mock.calls[1][0] as string;
       expect(sql).toContain("INSERT INTO qc_tests");
       expect(sql).toContain("'Pending'");
     });
@@ -272,10 +272,10 @@ describe("Cross-Module Business Flows", () => {
   // ==========================================================================
   describe("Flow 2: Material Receipt -> QC -> Rejection", () => {
     it("Step 1: Create a lot (Quarantine)", async () => {
-      mockPool.query.mockResolvedValueOnce(toResult([LOT]));
+      mockPool.query.mockResolvedValueOnce(toResult([])); // generateLotId
+      mockPool.query.mockResolvedValueOnce(toResult([LOT])); // INSERT
 
       const result = await lotService.createLot({
-        lot_id: LOT.lot_id,
         material_id: LOT.material_id,
         manufacturer_name: LOT.manufacturer_name,
         manufacturer_lot: LOT.manufacturer_lot,
@@ -290,11 +290,13 @@ describe("Cross-Module Business Flows", () => {
     });
 
     it("Step 2: Create QC tests", async () => {
-      mockPool.query.mockResolvedValueOnce(toResult([QC_TEST_IDENTITY]));
+      mockPool.query.mockResolvedValueOnce(toResult([{ max_id: 'QC-015' }])); // MAX test_id
+      mockPool.query.mockResolvedValueOnce(toResult([QC_TEST_IDENTITY])); // INSERT
 
       const test = await qcService.createTest({
         lot_id: QC_TEST_IDENTITY.lot_id,
         test_type: QC_TEST_IDENTITY.test_type,
+        test_method: QC_TEST_IDENTITY.test_method,
         performed_by: QC_TEST_IDENTITY.performed_by,
       });
 
@@ -327,6 +329,9 @@ describe("Cross-Module Business Flows", () => {
         }
         if (text.includes("FROM qc_tests") && text.includes("COUNT")) {
           return toResult([{ total: "2", pending_count: "0", fail_count: "1" }]);
+        }
+        if (text.includes("result_status = 'Fail'")) {
+          return toResult([{ test_id: "QC-BF-002", test_type: "Potency", test_date: "2026-01-16", result_status: "Fail" }]);
         }
         throw new Error(`Unexpected query: ${text}`);
       });
@@ -397,6 +402,9 @@ describe("Cross-Module Business Flows", () => {
         }
         if (text.includes("FROM qc_tests") && text.includes("COUNT")) {
           return toResult([{ total: "3", pending_count: "2", fail_count: "0" }]);
+        }
+        if (text.includes("result_status = 'Pending'")) {
+          return toResult([{ test_id: "QC-BF-001", test_type: "Identity", test_date: "2026-01-16", result_status: "Pending" }]);
         }
         throw new Error(`Unexpected query: ${text}`);
       });

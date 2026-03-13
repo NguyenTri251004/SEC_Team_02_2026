@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import axios from "axios";
 import { Modal, Form, Input, InputNumber, Select, DatePicker, Switch, message } from "antd";
 import dayjs from "dayjs";
 
@@ -17,6 +18,7 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
   const { mutateAsync: saveLot, isPending } = useSaveLot();
   const { data: materials = [] } = useMaterials();
   const isEditing = !!initialData;
+  const isSample = Form.useWatch("is_sample", form);
 
   useEffect(() => {
     if (isOpen) {
@@ -24,6 +26,10 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
       if (initialData) {
         form.setFieldsValue({
           ...initialData,
+          quantity:
+            initialData.quantity !== undefined && initialData.quantity !== null
+              ? Number(initialData.quantity)
+              : undefined,
           received_date: dayjs(initialData.received_date),
           expiration_date: dayjs(initialData.expiration_date),
           in_use_expiration_date: initialData.in_use_expiration_date
@@ -53,14 +59,22 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
       await saveLot({ isEditing, data: payload });
       message.success(`Lot ${isEditing ? "updated" : "created"} successfully!`);
       onClose();
-    } catch (error: any) {
-      if (error.response?.status === 409) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError<{ error?: string }>(error) && error.response?.status === 409) {
         message.error("Lot ID already exists!");
-      } else if (error.response?.status === 400) {
-        message.error(error.response?.data?.error || "Invalid data");
-      } else if (error.name !== "ValidationError") {
-        message.error("An error occurred while saving.");
+        return;
       }
+
+      if (axios.isAxiosError<{ error?: string }>(error) && error.response?.status === 400) {
+        message.error(error.response.data?.error ?? "Invalid data");
+        return;
+      }
+
+      if (error instanceof Error && error.name === "ValidationError") {
+        return;
+      }
+
+      message.error("An error occurred while saving.");
     }
   };
 
@@ -192,7 +206,7 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
           </Form.Item>
         </div>
 
-        {form.getFieldValue("is_sample") && (
+        {isSample && (
           <Form.Item name="parent_lot_id" label="Parent Lot ID">
             <Input placeholder="Ex: LOT-001" />
           </Form.Item>

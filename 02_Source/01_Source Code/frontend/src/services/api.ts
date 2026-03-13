@@ -7,6 +7,7 @@ import type {
   InventorySummary,
   TransactionSummary,
   QCStats,
+  QCTest,
   QCQueueItem,
   ExpiringLot,
   InventoryLot,
@@ -15,6 +16,13 @@ import type {
   User,
   PaginatedResponse,
   ApiResponse,
+  InventoryReportRow,
+  TransactionReportRow,
+  AuditLogRow,
+  LabelTemplate,
+  GenerateLabelInput,
+  GenerateLabelFromTemplateInput,
+  GeneratedLabel,
 } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -138,6 +146,12 @@ export const qcApi = {
       method: "GET",
     }),
 
+  listTests: (params?: string) =>
+    apiRequest<PaginatedResponse<QCTest>>({
+      url: `/api/qc/tests${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
+
   getQueue: (params?: string) =>
     apiRequest<PaginatedResponse<QCQueueItem>>({
       url: `/api/qc/queue${params ? `?${params}` : ""}`,
@@ -183,6 +197,18 @@ export const productionApi = {
 // Reports
 // ────────────────────────────────────────────────────────────
 export const reportApi = {
+  getInventoryReport: async (filters?: Record<string, string>) => {
+    const res = await api.get("/api/reports/inventory", { params: filters });
+    return res.data as { data: InventoryReportRow[] };
+  },
+  getTransactionReport: async (filters?: Record<string, string>) => {
+    const res = await api.get("/api/reports/transactions", { params: filters });
+    return res.data as { data: TransactionReportRow[] };
+  },
+  getAuditLog: async (filters?: Record<string, string>) => {
+    const res = await api.get("/api/reports/audit-log", { params: filters });
+    return res.data as { data: AuditLogRow[] };
+  },
   exportReport: async (body: {
     type: string;
     filters: Record<string, unknown>;
@@ -192,6 +218,89 @@ export const reportApi = {
     });
     return res.data as Blob;
   },
+};
+
+// ────────────────────────────────────────────────────────────
+// Labels
+// ────────────────────────────────────────────────────────────
+export const labelApi = {
+  // Template operations
+  getAllTemplates: () =>
+    apiRequest<PaginatedResponse<LabelTemplate>>({
+      url: "/api/labels/templates",
+      method: "GET",
+    }),
+
+  getTemplateById: (id: string) =>
+    apiRequest<ApiResponse<LabelTemplate>>({
+      url: `/api/labels/templates/${id}`,
+      method: "GET",
+    }),
+
+  getTemplatesByLabelType: (labelType: string) =>
+    apiRequest<PaginatedResponse<LabelTemplate>>({
+      url: `/api/labels/templates/type/${labelType}`,
+      method: "GET",
+    }),
+
+  createTemplate: (data: {
+    template_name: string;
+    label_type: string;
+    template_content: string;
+    width?: number;
+    height?: number;
+  }) =>
+    apiRequest<ApiResponse<LabelTemplate>>({
+      url: "/api/labels/templates",
+      method: "POST",
+      data,
+    }),
+
+  updateTemplate: (id: string, data: Partial<LabelTemplate>) =>
+    apiRequest<ApiResponse<LabelTemplate>>({
+      url: `/api/labels/templates/${id}`,
+      method: "PUT",
+      data,
+    }),
+
+  deleteTemplate: (id: string) =>
+    apiRequest<ApiResponse<{ message: string }>>({
+      url: `/api/labels/templates/${id}`,
+      method: "DELETE",
+    }),
+
+  // Label generation operations
+  generateLabel: (data: GenerateLabelInput) =>
+    apiRequest<ApiResponse<GeneratedLabel>>({
+      url: "/api/labels/generate",
+      method: "POST",
+      data,
+    }),
+
+  generateLabelFromTemplate: (data: GenerateLabelFromTemplateInput) =>
+    apiRequest<ApiResponse<GeneratedLabel>>({
+      url: "/api/labels/generate-from-template",
+      method: "POST",
+      data,
+    }),
+
+  getAllLabels: () =>
+    apiRequest<PaginatedResponse<GeneratedLabel>>({
+      url: "/api/labels",
+      method: "GET",
+    }),
+
+  getLabelById: (id: string) =>
+    apiRequest<ApiResponse<GeneratedLabel>>({
+      url: `/api/labels/${id}`,
+      method: "GET",
+    }),
+
+  deleteLabel: (id: string) =>
+    apiRequest<ApiResponse<{ message: string }>>({
+      url: `/api/labels/${id}`,
+      method: "DELETE",
+    }),
 };
 
 export default api;

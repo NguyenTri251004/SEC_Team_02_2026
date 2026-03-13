@@ -129,17 +129,28 @@ export async function getTransactionSummary(): Promise<TransactionSummary> {
   );
 
   const trendRows = await queryInventoryTransactions<TransactionTrendPoint & { receipts: string; issues: string }>(
-    `SELECT
-        TO_CHAR(DATE(transaction_date), 'YYYY-MM-DD') AS date,
-        SUM(CASE WHEN transaction_type = 'Receipt' OR transaction_type = 'IN' THEN 1 ELSE 0 END)::text AS receipts,
-        SUM(CASE
-              WHEN transaction_type IN ('Usage', 'Disposal') OR transaction_type = 'OUT' THEN 1
-              ELSE 0
-            END)::text AS issues
-     FROM inventory_transactions
-     WHERE DATE(transaction_date) >= CURRENT_DATE - INTERVAL '6 day'
-     GROUP BY DATE(transaction_date)
-     ORDER BY DATE(transaction_date) ASC`,
+    `WITH date_series AS (
+        SELECT GENERATE_SERIES(CURRENT_DATE - INTERVAL '29 day', CURRENT_DATE, INTERVAL '1 day')::date AS day
+      ),
+      transaction_counts AS (
+        SELECT
+          DATE(transaction_date) AS day,
+          SUM(CASE WHEN transaction_type = 'Receipt' OR transaction_type = 'IN' THEN 1 ELSE 0 END)::integer AS receipts,
+          SUM(CASE
+                WHEN transaction_type IN ('Usage', 'Disposal') OR transaction_type = 'OUT' THEN 1
+                ELSE 0
+              END)::integer AS issues
+        FROM inventory_transactions
+        WHERE DATE(transaction_date) >= CURRENT_DATE - INTERVAL '29 day'
+        GROUP BY DATE(transaction_date)
+      )
+      SELECT
+        TO_CHAR(ds.day, 'YYYY-MM-DD') AS date,
+        COALESCE(tc.receipts, 0)::text AS receipts,
+        COALESCE(tc.issues, 0)::text AS issues
+      FROM date_series ds
+      LEFT JOIN transaction_counts tc ON tc.day = ds.day
+      ORDER BY ds.day ASC`,
     []
   );
 

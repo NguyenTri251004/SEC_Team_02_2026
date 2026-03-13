@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios";
 import { Button, Input, Popconfirm, message } from "antd";
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -30,7 +31,12 @@ export default function MaterialsPage() {
     try {
       await deleteMaterial(materialId);
       message.success('Material deleted successfully!');
-    } catch {
+    } catch (error: unknown) {
+      if (axios.isAxiosError<{ error?: string }>(error)) {
+        message.error(error.response?.data?.error ?? 'Failed to delete material.');
+        return;
+      }
+
       message.error('Failed to delete material.');
     }
   };

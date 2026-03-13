@@ -1,9 +1,15 @@
 import { Router, Request, Response } from "express";
 import * as qcService from "./qc.service";
+import type { QCResultStatus } from "./qc.types";
 import { authenticateJWT } from "../../security/auth";
 import { requirePermission } from "../../security/rbac";
 
 const router = Router();
+const QC_RESULT_STATUSES: QCResultStatus[] = ["Pass", "Fail", "Pending"];
+
+function isQCResultStatus(value: unknown): value is QCResultStatus {
+  return typeof value === "string" && QC_RESULT_STATUSES.includes(value as QCResultStatus);
+}
 
 // ─── QC Tests ─────────────────────────────────────────────────────────────────
 
@@ -18,7 +24,7 @@ router.get(
       const tests = await qcService.getAllTests({
         lot_id: lot_id as string | undefined,
         test_type: test_type as string | undefined,
-        result_status: result_status as any,
+        result_status: isQCResultStatus(result_status) ? result_status : undefined,
         performed_by: performed_by as string | undefined,
         from_date: from_date as string | undefined,
         to_date: to_date as string | undefined,
@@ -58,12 +64,12 @@ router.post(
   requirePermission("qc", "create"),
   async (req: Request, res: Response) => {
     try {
-      const { lot_id, test_type, performed_by } = req.body;
+      const { lot_id, test_type, test_method, performed_by } = req.body;
 
-      if (!lot_id || !test_type || !performed_by) {
+      if (!lot_id || !test_type || !test_method || !performed_by) {
         res.status(400).json({
           success: false,
-          error: "Thiếu thông tin bắt buộc: lot_id, test_type, performed_by",
+          error: "Thiếu thông tin bắt buộc: lot_id, test_type, test_method, performed_by",
         });
         return;
       }
@@ -118,14 +124,15 @@ router.put(
 
 // ─── QC Queue ─────────────────────────────────────────────────────────────────
 
-// GET /api/qc/queue — Danh sách lô đang chờ QC (status=Quarantine)
+// GET /api/qc/queue — Danh sách lô đang chờ QC (có thể filter theo status)
 router.get(
   "/queue",
   authenticateJWT,
   requirePermission("qc", "read"),
-  async (_req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     try {
-      const queue = await qcService.getQCQueue();
+      const status = req.query.status as string | undefined;
+      const queue = await qcService.getQCQueue(status);
       res.json({ success: true, data: queue, total: queue.length });
     } catch (error) {
       console.error("Lỗi lấy QC queue:", error);
@@ -157,9 +164,18 @@ router.get(
   "/stats",
   authenticateJWT,
   requirePermission("qc", "read"),
-  async (_req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     try {
-      const stats = await qcService.getQCStats();
+      const periodRaw = req.query.period;
+      const periodValue =
+        typeof periodRaw === "string" && /^(\d+)d$/.test(periodRaw)
+          ? Number.parseInt(periodRaw.slice(0, -1), 10)
+          : undefined;
+
+      const stats = await qcService.getQCStats({
+        periodDays: periodValue,
+        groupBy: "day",
+      });
       res.json({ success: true, data: stats });
     } catch (error) {
       console.error("Lỗi lấy thống kê QC:", error);
@@ -177,7 +193,7 @@ router.post(
   requirePermission("qc", "approve"),
   async (req: Request, res: Response) => {
     try {
-      const userId = (req.user as any)?.sub ?? (req.user as any)?.userId ?? "unknown";
+      const userId = req.user?.user_id ?? "unknown";
       const result = await qcService.approveLot(req.params.lotId, userId);
 
       if (!result.success) {
@@ -207,7 +223,7 @@ router.post(
         return;
       }
 
-      const userId = (req.user as any)?.sub ?? (req.user as any)?.userId ?? "unknown";
+      const userId = req.user?.user_id ?? "unknown";
       const result = await qcService.rejectLot(req.params.lotId, userId, reason.trim());
 
       if (!result.success) {

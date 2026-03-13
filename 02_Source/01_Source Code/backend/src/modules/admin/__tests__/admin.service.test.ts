@@ -19,7 +19,7 @@ function withNormalizedRole<T extends { role: UserRole }>(user: T): T {
 
 describe('Admin Service', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     // Setup default mock implementations
     mockRedis.get = jest.fn().mockResolvedValue(null);
     mockRedis.setEx = jest.fn().mockResolvedValue('OK');
@@ -241,16 +241,15 @@ describe('Admin Service', () => {
   describe('createUser', () => {
     it('should create a new user with hashed password', async () => {
       const input: CreateUserInput = {
-        user_id: 'USR-003',
         username: 'newuser',
         email: 'newuser@test.com',
-        password: 'password123',
+        initial_password: 'password123',
         role: UserRole.VIEWER,
         is_active: true,
       };
 
       const mockCreatedUser = {
-        user_id: input.user_id,
+        user_id: 'test-keycloak-uuid',
         username: input.username,
         email: input.email,
         role: input.role,
@@ -259,6 +258,14 @@ describe('Admin Service', () => {
         created_date: new Date(),
         modified_date: new Date(),
       };
+
+      // Mock Keycloak calls (token, create user, token again, get role, assign role)
+      jest.spyOn(global, 'fetch')
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'test-token' }), text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, headers: { get: () => 'http://keycloak:8080/admin/realms/inventory-management/users/test-keycloak-uuid' }, text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'test-token' }), text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'role-uuid', name: 'viewer' }), text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, text: async () => '' } as any);
 
       mockPool.query.mockResolvedValueOnce({
         rows: [mockCreatedUser],
@@ -274,29 +281,36 @@ describe('Admin Service', () => {
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO users'),
         expect.arrayContaining([
-          input.user_id,
+          expect.any(String), // keycloak_sub
           input.username,
           input.email,
-          expect.any(String), // Hashed password
           input.role,
           true,
         ])
       );
 
-      // Password should be hashed (not plain text)
+      // Password is managed by Keycloak — not stored in our DB
       const queryParams = (mockPool.query.mock.calls[0] as any)[1];
-      expect(queryParams[3]).not.toBe('password123');
-      expect(queryParams[3]).toHaveLength(64); // SHA256 hash length
+      expect(queryParams[0]).toBe('test-keycloak-uuid'); // keycloak_sub from Keycloak
+      expect(queryParams[3]).toBe(input.role); // role field, not a hash
+      expect(queryParams[4]).toBe(true); // is_active
     });
 
     it('should default is_active to true when not provided', async () => {
       const input: CreateUserInput = {
-        user_id: 'USR-004',
         username: 'anotheruser',
         email: 'another@test.com',
-        password: 'password123',
+        initial_password: 'password123',
         role: UserRole.PRODUCTION,
       };
+
+      // Mock Keycloak calls
+      jest.spyOn(global, 'fetch')
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'test-token' }), text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, headers: { get: () => 'http://keycloak/users/test-uuid-002' }, text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'test-token' }), text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'role-id', name: 'production' }), text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, text: async () => '' } as any);
 
       mockPool.query.mockResolvedValueOnce({
         rows: [{ ...input, is_active: true }],
@@ -309,17 +323,24 @@ describe('Admin Service', () => {
       await adminService.createUser(input);
 
       const queryParams = (mockPool.query.mock.calls[0] as any)[1];
-      expect(queryParams[5]).toBe(true); // is_active should default to true
+      expect(queryParams[4]).toBe(true); // is_active at index 4
     });
 
     it('should invalidate cache after creating user', async () => {
       const input: CreateUserInput = {
-        user_id: 'USR-005',
         username: 'test',
         email: 'test@test.com',
-        password: 'password',
+        initial_password: 'password',
         role: UserRole.VIEWER,
       };
+
+      // Mock Keycloak calls
+      jest.spyOn(global, 'fetch')
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'test-token' }), text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, headers: { get: () => 'http://keycloak/users/test-uuid-003' }, text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'test-token' }), text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'role-id', name: 'viewer' }), text: async () => '' } as any)
+        .mockResolvedValueOnce({ ok: true, text: async () => '' } as any);
 
       mockPool.query.mockResolvedValueOnce({
         rows: [input],

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../services/api";
-import type { QCTest } from "../types";
+import api, { qcApi } from "../services/api";
+import type { QCTest, QCQueueItem } from "../types";
 
 const mockData: QCTest[] = [
   {
@@ -86,6 +86,9 @@ export const useCreateQCTest = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
+      queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "stats"] });
     },
   });
 };
@@ -104,7 +107,13 @@ export const useUpdateTestResult = () => {
       return api.put(`/api/qc/tests/${testId}`, data);
     },
     onSuccess: () => {
+      // Invalidate QCPage hooks
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
+      queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
+      
+      // Invalidate dashboard hooks
+      queryClient.invalidateQueries({ queryKey: ["qc", "queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "stats"] });
     },
   });
 };
@@ -119,6 +128,9 @@ export const useApproveLot = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
       queryClient.invalidateQueries({ queryKey: ["lots"] });
+      queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "stats"] });
     },
   });
 };
@@ -133,6 +145,20 @@ export const useRejectLot = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["qc-tests"] });
       queryClient.invalidateQueries({ queryKey: ["lots"] });
+      queryClient.invalidateQueries({ queryKey: ["qc-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "queue"] });
+      queryClient.invalidateQueries({ queryKey: ["qc", "stats"] });
+    },
+  });
+};
+
+export const useQCQueue = (status?: string) => {
+  return useQuery({
+    queryKey: ["qc-queue", status],
+    queryFn: async (): Promise<QCQueueItem[]> => {
+      const params = status ? `status=${encodeURIComponent(status)}` : undefined;
+      const response = await qcApi.getQueue(params);
+      return response.data || [];
     },
   });
 };

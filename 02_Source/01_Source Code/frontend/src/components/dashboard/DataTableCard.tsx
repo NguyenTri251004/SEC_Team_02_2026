@@ -16,6 +16,7 @@ export interface DataTableCardProps<T extends object> extends Pick<
   | "onChange"
   | "rowSelection"
   | "locale"
+  | "expandable"
 > {
   /** Card heading */
   title: string;
@@ -40,6 +41,7 @@ function DataTableCardInner<T extends object>({
   onChange,
   rowSelection,
   locale,
+  expandable,
 }: DataTableCardProps<T>) {
   // Extract initial pageSize from pagination prop, default to 10
   const initialPageSize =
@@ -114,6 +116,7 @@ function DataTableCardInner<T extends object>({
         onChange={handleTableChange}
         rowSelection={rowSelection}
         locale={locale}
+        expandable={expandable}
       />
     </Card>
   );

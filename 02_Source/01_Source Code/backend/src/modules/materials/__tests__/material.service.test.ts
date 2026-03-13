@@ -172,7 +172,8 @@ describe("createMaterial", () => {
   };
 
   it("inserts material and returns the created row", async () => {
-    mockPool.query.mockResolvedValueOnce({ rows: [createdRow] });
+    mockPool.query.mockResolvedValueOnce({ rows: [] }); // generateMaterialId: no existing -> UUID based
+    mockPool.query.mockResolvedValueOnce({ rows: [createdRow] }); // INSERT
 
     const result = await materialService.createMaterial(createDto);
 
@@ -180,7 +181,7 @@ describe("createMaterial", () => {
     expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO materials"),
       [
-        createDto.material_id,
+        expect.any(String), // generated material_id
         createDto.part_number,
         createDto.material_name,
         createDto.material_type,
@@ -191,7 +192,8 @@ describe("createMaterial", () => {
   });
 
   it("invalidates cache after creation", async () => {
-    mockPool.query.mockResolvedValueOnce({ rows: [createdRow] });
+    mockPool.query.mockResolvedValueOnce({ rows: [] }); // generateMaterialId
+    mockPool.query.mockResolvedValueOnce({ rows: [createdRow] }); // INSERT
 
     await materialService.createMaterial(createDto);
 
@@ -199,7 +201,8 @@ describe("createMaterial", () => {
   });
 
   it("indexes material in Elasticsearch after creation", async () => {
-    mockPool.query.mockResolvedValueOnce({ rows: [createdRow] });
+    mockPool.query.mockResolvedValueOnce({ rows: [] }); // generateMaterialId
+    mockPool.query.mockResolvedValueOnce({ rows: [createdRow] }); // INSERT
 
     await materialService.createMaterial(createDto);
 
@@ -220,18 +223,20 @@ describe("createMaterial", () => {
       created_date: new Date(),
       modified_date: new Date(),
     };
-    mockPool.query.mockResolvedValueOnce({ rows: [minimalRow] });
+    mockPool.query.mockResolvedValueOnce({ rows: [] }); // generateMaterialId
+    mockPool.query.mockResolvedValueOnce({ rows: [minimalRow] }); // INSERT
 
     await materialService.createMaterial(minimalDto);
 
-    const [, params] = mockPool.query.mock.calls[0] as [string, unknown[]];
+    const [, params] = mockPool.query.mock.calls[1] as [string, unknown[]];
     // storage_conditions and specification_document should be null
     expect(params[4]).toBeNull();
     expect(params[5]).toBeNull();
   });
 
   it("still returns material even when Elasticsearch indexing fails", async () => {
-    mockPool.query.mockResolvedValueOnce({ rows: [createdRow] });
+    mockPool.query.mockResolvedValueOnce({ rows: [] }); // generateMaterialId
+    mockPool.query.mockResolvedValueOnce({ rows: [createdRow] }); // INSERT
     mockSearchService.indexMaterial.mockRejectedValueOnce(new Error("ES unavailable"));
 
     const result = await materialService.createMaterial(createDto);
@@ -240,7 +245,8 @@ describe("createMaterial", () => {
   });
 
   it("still returns material even when Redis cache invalidation fails", async () => {
-    mockPool.query.mockResolvedValueOnce({ rows: [createdRow] });
+    mockPool.query.mockResolvedValueOnce({ rows: [] }); // generateMaterialId
+    mockPool.query.mockResolvedValueOnce({ rows: [createdRow] }); // INSERT
     mockRedis.del.mockRejectedValueOnce(new Error("Redis unavailable"));
 
     const result = await materialService.createMaterial(createDto);

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button, Input, Tag, Space, Popconfirm, message } from "antd";
-import { PlusOutlined, SearchOutlined, EditOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
+import { Button, Input, Tag, Space } from "antd";
+import { PlusOutlined, SearchOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
@@ -8,23 +8,24 @@ import DashboardPage from "../dashboard/DashboardPage";
 import { DataTableCard } from "../../components/dashboard";
 import { LotFormModal } from "../../components/lots/LotFormModal";
 import { LotDetailDrawer } from "../../components/lots/LotDetailDrawer";
-import { useLots, useDeleteLot } from "../../hooks/useLotsData";
+import { useLots } from "../../hooks/useLotsData";
+//import { useLots, useDeleteLot } from "../../hooks/useLotsData";
 import { SECTION_GAP, LOT_STATUS_TAG } from "../../constants/theme";
 import type { InventoryLot } from "../../types";
 
 export default function LotsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: lots = [], isLoading } = useLots();
-  const { mutateAsync: deleteLot } = useDeleteLot();
+  // const { mutateAsync: deleteLot } = useDeleteLot();
 
-  const handleDelete = async (lotId: string) => {
-    try {
-      await deleteLot(lotId);
-      message.success("Lot deleted successfully!");
-    } catch {
-      message.error("Failed to delete lot.");
-    }
-  };
+  // const handleDelete = async (lotId: string) => {
+  //   try {
+  //     await deleteLot(lotId);
+  //     message.success("Lot deleted successfully!");
+  //   } catch {
+  //     message.error("Failed to delete lot.");
+  //   }
+  // };
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingLot, setEditingLot] = useState<InventoryLot | null>(null);
@@ -154,7 +155,7 @@ export default function LotsPage() {
             disabled={record.status !== "Quarantine"}
             title={record.status !== "Quarantine" ? "Only Quarantine lots can be edited" : undefined}
           />
-          <Popconfirm
+          {/* <Popconfirm
             title="Delete lot"
             description={`Are you sure you want to delete lot "${record.lot_id}"?`}
             onConfirm={() => handleDelete(record.lot_id)}
@@ -170,7 +171,7 @@ export default function LotsPage() {
               disabled={record.status !== "Quarantine"}
               icon={<DeleteOutlined />}
             />
-          </Popconfirm>
+          </Popconfirm> */}
         </Space>
       ),
     },

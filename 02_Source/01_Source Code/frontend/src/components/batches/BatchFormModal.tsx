@@ -1,5 +1,13 @@
 import { useEffect } from "react";
-import { Modal, Form, Input, InputNumber, Select, DatePicker, message } from "antd";
+import {
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  DatePicker,
+  message,
+} from "antd";
 import dayjs from "dayjs";
 
 import { useMaterials } from "@/hooks/useMaterialsData";
@@ -40,7 +48,7 @@ export function BatchFormModal({ isOpen, onClose }: BatchFormModalProps) {
       onClose();
     } catch (error: any) {
       if (error.response?.status === 409) {
-        message.error("Batch ID already exists!");
+        message.error("Batch ID/Number already exists!");
       } else if (error.response?.status === 400) {
         message.error(error.response?.data?.error || "Invalid data");
       } else if (error.name !== "ValidationError") {
@@ -76,7 +84,9 @@ export function BatchFormModal({ isOpen, onClose }: BatchFormModalProps) {
           />
         </Form.Item>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+        >
           <Form.Item
             name="batch_number"
             label="Batch Number"
@@ -97,7 +107,13 @@ export function BatchFormModal({ isOpen, onClose }: BatchFormModalProps) {
           </Form.Item>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: 16,
+          }}
+        >
           <Form.Item
             name="unit_of_measure"
             label="Unit"
@@ -127,9 +143,13 @@ export function BatchFormModal({ isOpen, onClose }: BatchFormModalProps) {
               { required: true, message: "Required" },
               ({ getFieldValue }) => ({
                 validator(_, value) {
-                  if (!value || !getFieldValue("manufacture_date")) return Promise.resolve();
-                  if (value.isAfter(getFieldValue("manufacture_date"))) return Promise.resolve();
-                  return Promise.reject(new Error("Must be after manufacture date"));
+                  if (!value || !getFieldValue("manufacture_date"))
+                    return Promise.resolve();
+                  if (value.isAfter(getFieldValue("manufacture_date")))
+                    return Promise.resolve();
+                  return Promise.reject(
+                    new Error("Must be after manufacture date"),
+                  );
                 },
               }),
             ]}
