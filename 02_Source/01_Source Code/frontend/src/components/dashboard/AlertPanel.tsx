@@ -1,7 +1,6 @@
 import { memo } from "react";
 import { Card, Tag, Badge, Empty, Typography } from "antd";
-import { WarningOutlined, RightOutlined } from "@ant-design/icons";
-import { Link } from "react-router-dom";
+import { WarningOutlined } from "@ant-design/icons";
 import type { AlertItem } from "../../types";
 import styles from "./dashboard.module.css";
 
@@ -24,7 +23,6 @@ export interface AlertPanelProps {
  */
 function AlertPanelInner({ alerts, loading = false }: AlertPanelProps) {
   const visible = alerts.slice(0, MAX_VISIBLE);
-  const hasMore = alerts.length > MAX_VISIBLE;
 
   return (
     <Card
@@ -72,20 +70,8 @@ function AlertPanelInner({ alerts, loading = false }: AlertPanelProps) {
                   </Typography.Text>
                 )}
               </div>
-              <div>
-                <Link to={item.link} className={styles.alertLink}>
-                  View <RightOutlined />
-                </Link>
-              </div>
             </div>
           ))}
-        </div>
-      )}
-      {hasMore && (
-        <div style={{ textAlign: "center", paddingTop: 8 }}>
-          <Link to="/lots?filter=alerts">
-            View all {alerts.length} alerts <RightOutlined />
-          </Link>
         </div>
       )}
     </Card>

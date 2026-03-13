@@ -182,10 +182,10 @@ describe("Warehouse Lifecycle Integration", () => {
   // ================================================================
   describe("Buoc 1: Tao Material", () => {
     it("tao material chi tac dong bang materials, khong anh huong lot hay transaction", async () => {
-      mockQuery.mockResolvedValueOnce(toResult([MATERIAL]));
+      mockQuery.mockResolvedValueOnce(toResult([])); // generateMaterialId
+      mockQuery.mockResolvedValueOnce(toResult([MATERIAL])); // INSERT
 
       const result = await materialService.createMaterial({
-        material_id: MATERIAL.material_id,
         part_number: MATERIAL.part_number,
         material_name: MATERIAL.material_name,
         material_type: MATERIAL.material_type,
@@ -193,9 +193,9 @@ describe("Warehouse Lifecycle Integration", () => {
         specification_document: MATERIAL.specification_document,
       });
 
-      // Chi co 1 query INSERT vao materials
-      expect(mockQuery).toHaveBeenCalledTimes(1);
-      const sql = mockQuery.mock.calls[0][0] as string;
+      // Co 2 query: generateMaterialId SELECT + INSERT vao materials
+      expect(mockQuery).toHaveBeenCalledTimes(2);
+      const sql = mockQuery.mock.calls[1][0] as string;
       expect(sql).toContain("INSERT INTO materials");
       // Khong co query nao toi inventory_lots hoac inventory_transactions
       expect(sql).not.toContain("inventory_lots");
@@ -211,10 +211,10 @@ describe("Warehouse Lifecycle Integration", () => {
   // ================================================================
   describe("Buoc 2: Tao Lot (gan voi Material)", () => {
     it("lot moi luon co status Quarantine, khong tu tao Transaction", async () => {
-      mockQuery.mockResolvedValueOnce(toResult([LOT]));
+      mockQuery.mockResolvedValueOnce(toResult([])); // generateLotId
+      mockQuery.mockResolvedValueOnce(toResult([LOT])); // INSERT
 
       const result = await lotService.createLot({
-        lot_id: LOT.lot_id,
         material_id: LOT.material_id,
         manufacturer_name: LOT.manufacturer_name,
         manufacturer_lot: LOT.manufacturer_lot,
@@ -228,9 +228,9 @@ describe("Warehouse Lifecycle Integration", () => {
         receiving_form_id: LOT.receiving_form_id,
       });
 
-      // Chi co 1 query INSERT lot, KHONG tao transaction Receipt kem theo
-      expect(mockQuery).toHaveBeenCalledTimes(1);
-      const sql = mockQuery.mock.calls[0][0] as string;
+      // Co 2 query: generateLotId SELECT + INSERT lot
+      expect(mockQuery).toHaveBeenCalledTimes(2);
+      const sql = mockQuery.mock.calls[1][0] as string;
       expect(sql).toContain("INSERT INTO inventory_lots");
       expect(sql).toContain("'Quarantine'");
       // Khong tu dong tao transaction
@@ -248,7 +248,8 @@ describe("Warehouse Lifecycle Integration", () => {
   describe("Buoc 3-4: QC Test lifecycle", () => {
     it("tao QC test voi status Pending, cap nhat Pass -> lot van khong tu doi status", async () => {
       // Buoc 3: Tao QC test -> Pending
-      mockQuery.mockResolvedValueOnce(toResult([QC_TEST]));
+      mockQuery.mockResolvedValueOnce(toResult([{ max_id: 'QC-015' }])); // MAX test_id
+      mockQuery.mockResolvedValueOnce(toResult([QC_TEST])); // INSERT
 
       const test = await qcService.createTest({
         lot_id: QC_TEST.lot_id,
@@ -263,7 +264,7 @@ describe("Warehouse Lifecycle Integration", () => {
       expect(test.lot_id).toBe("LOT-TEST-001");
 
       // Verify: chi INSERT vao qc_tests, KHONG UPDATE inventory_lots
-      const createSql = mockQuery.mock.calls[0][0] as string;
+      const createSql = mockQuery.mock.calls[1][0] as string;
       expect(createSql).toContain("INSERT INTO qc_tests");
       expect(createSql).not.toContain("inventory_lots");
 
@@ -674,6 +675,9 @@ describe("Warehouse Lifecycle Integration", () => {
           // 2 tests, 1 con Pending
           return toResult([{ total: "2", pending_count: "1", fail_count: "0" }]);
         }
+        if (text.includes("result_status = 'Pending'")) {
+          return toResult([{ test_id: "QC-TEST-001", test_type: "Identity", test_date: "2026-01-16", result_status: "Pending" }]);
+        }
         throw new Error(`Unexpected: ${text}`);
       });
       mockConnect.mockResolvedValueOnce(client);
@@ -699,6 +703,9 @@ describe("Warehouse Lifecycle Integration", () => {
         }
         if (text.includes("FROM qc_tests") && text.includes("COUNT")) {
           return toResult([{ total: "2", pending_count: "0", fail_count: "1" }]);
+        }
+        if (text.includes("result_status = 'Fail'")) {
+          return toResult([{ test_id: "QC-TEST-001", test_type: "Identity", test_date: "2026-01-16", result_status: "Fail" }]);
         }
         throw new Error(`Unexpected: ${text}`);
       });

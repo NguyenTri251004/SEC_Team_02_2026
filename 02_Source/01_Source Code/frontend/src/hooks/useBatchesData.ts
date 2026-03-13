@@ -136,12 +136,13 @@ export const useAddComponent = () => {
       data,
     }: {
       batchId: string;
-      data: { lot_id: string; planned_quantity: number };
+      data: { lot_id: string; planned_quantity: number; unit_of_measure: string };
     }) => {
       return api.post(`/api/production/batches/${batchId}/components`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["batch-components"] });
+      queryClient.invalidateQueries({ queryKey: ["batches"] });
     },
   });
 };

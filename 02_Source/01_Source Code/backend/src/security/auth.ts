@@ -91,6 +91,21 @@ export const authenticateJWT = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
+  // Bypass authentication in development if BYPASS_AUTH is set
+  if (process.env.BYPASS_AUTH === 'true') {
+    req.user = {
+      user_id: 'USR-001',
+      username: 'admin',
+      email: 'admin@ims.local',
+      roles: ['admin', 'inventory_manager', 'quality_control', 'production', 'viewer'],
+      realm_access: {
+        roles: ['admin', 'inventory_manager', 'quality_control', 'production', 'viewer'],
+      },
+    };
+    next();
+    return;
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {

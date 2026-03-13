@@ -20,13 +20,13 @@ CREATE TABLE IF NOT EXISTS users (
   -- NOTE: No password column — passwords are managed exclusively by Keycloak.
 );
 
--- Seed users (passwords managed by Keycloak; user_ids must match Keycloak subs in production)
+-- Seed users (user_ids match Keycloak subs defined in inventory-realm.json)
 INSERT INTO users (user_id, username, email, role, is_active, last_login) VALUES
-  ('USR-001', 'admin',          'admin@ims.local',    'Admin',            true,  '2026-03-09 08:30:00'),
-  ('USR-002', 'inv_manager',    'manager@ims.local',  'InventoryManager', true,  '2026-03-08 14:15:00'),
-  ('USR-003', 'qc_analyst',     'qc@ims.local',       'QualityControl',   true,  '2026-03-09 07:45:00'),
-  ('USR-004', 'operator1',      'operator@ims.local', 'Production',       true,  '2026-03-07 16:20:00'),
-  ('USR-005', 'report_viewer',  'viewer@ims.local',   'Viewer',           false, NULL);
+  ('11111111-1111-4111-8111-111111111111', 'admin',       'admin@ims.local',      'Admin',            true,  '2026-03-09 08:30:00'),
+  ('22222222-2222-4222-8222-222222222222', 'inv_manager', 'manager@ims.local',    'InventoryManager', true,  '2026-03-08 14:15:00'),
+  ('33333333-3333-4333-8333-333333333333', 'qc_user',     'qc@ims.local',         'QualityControl',   true,  '2026-03-09 07:45:00'),
+  ('44444444-4444-4444-8444-444444444444', 'prod_user',   'production@ims.local', 'Production',       true,  '2026-03-07 16:20:00'),
+  ('55555555-5555-4555-8555-555555555555', 'viewer',      'viewer@ims.local',     'Viewer',           false, NULL);
 
 -- ────────────────────────────────────────────────────────────
 -- 2. Materials (Nguyen vat lieu)
@@ -59,39 +59,65 @@ INSERT INTO materials (material_id, part_number, material_name, material_type, s
   ('MAT006', 'PART-10006', 'Ibuprofen API',           'API',              '15-25C, dry place',              'SPEC-IBU-001'),
   ('MAT007', 'PART-10007', 'Reference Standard Kit',  'Testing Material', '2-8C, refrigerated',             'SPEC-REF-001');
 
+
+
 -- ────────────────────────────────────────────────────────────
--- 3. LabelTemplates (Mau nhan)
+-- 3a. LabelTemplates (Mau nhan)
 -- ────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS label_templates (
-  template_id       VARCHAR(20)    PRIMARY KEY,
-  template_name     VARCHAR(100)   NOT NULL,
-  label_type        VARCHAR(30)    NOT NULL
-                      CHECK (label_type IN (
-                        'Raw Material','API','Sample','Intermediate','Finished Product','Status'
-                      )),
-  template_content  TEXT           NOT NULL,
-  width             DECIMAL(5,2)   NOT NULL,
-  height            DECIMAL(5,2)   NOT NULL,
-  created_date      TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  modified_date     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  template_id      VARCHAR(36)    PRIMARY KEY,
+  template_name    VARCHAR(100)   NOT NULL,
+  label_type       VARCHAR(50)    NOT NULL CHECK (label_type IN (
+                                    'Raw Material', 'Sample', 'Finished Product', 
+                                    'API', 'Status', 'Intermediate'
+                                  )),
+  template_content TEXT           NOT NULL,  -- JSON or HTML template with placeholders
+  width            DECIMAL(10,2)  DEFAULT 100.0,  -- in mm
+  height           DECIMAL(10,2)  DEFAULT 50.0,   -- in mm
+  description      TEXT,
+  is_active        BOOLEAN        DEFAULT true,
+  created_by       VARCHAR(50)    NOT NULL,
+  created_date     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modified_by      VARCHAR(50),
+  modified_date    TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO label_templates (template_id, template_name, label_type, template_content, width, height) VALUES
+CREATE INDEX IF NOT EXISTS idx_label_templates_type ON label_templates (label_type);
+CREATE INDEX IF NOT EXISTS idx_label_templates_active ON label_templates (is_active);
+
+INSERT INTO label_templates (template_id, template_name, label_type, template_content, width, height, description, is_active, created_by) VALUES
   ('TPL-001', 'Standard Raw Material Label', 'Raw Material',
    '{"fields":["lot_id","material_name","manufacturer_lot","received_date","expiration_date","quantity","storage_location"]}',
-   4.00, 2.00),
-  ('TPL-002', 'API Label',                   'API',
+   100.0, 50.0, 'Standard label for raw materials', true, 'admin'),
+  ('TPL-002', 'API Label', 'API',
    '{"fields":["lot_id","material_name","manufacturer_name","manufacturer_lot","received_date","expiration_date","quantity","storage_conditions"]}',
-   4.00, 3.00),
-  ('TPL-003', 'Status Label',                'Status',
+   100.0, 75.0, 'Label for API materials', true, 'admin'),
+  ('TPL-003', 'Status Label', 'Status',
    '{"fields":["lot_id","material_name","status","modified_date"]}',
-   3.00, 1.50),
-  ('TPL-004', 'Finished Product Label',      'Finished Product',
+   75.0, 37.5, 'Label for lot status indication', true, 'admin'),
+  ('TPL-004', 'Finished Product Label', 'Finished Product',
    '{"fields":["batch_number","product_name","manufacture_date","expiration_date","batch_size"]}',
-   4.00, 3.00),
-  ('TPL-005', 'Sample Label',                'Sample',
+   100.0, 75.0, 'Label for finished products', true, 'admin'),
+  ('TPL-005', 'Sample Label', 'Sample',
    '{"fields":["lot_id","material_name","is_sample","parent_lot_id","quantity"]}',
-   3.00, 2.00);
+   75.0, 50.0, 'Label for QC samples', true, 'admin');
+
+-- ────────────────────────────────────────────────────────────
+-- 3b. GeneratedLabels (Nhan da tao)
+-- ────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS generated_labels (
+  label_id         VARCHAR(36)    PRIMARY KEY,
+  material_id      VARCHAR(20)    NOT NULL REFERENCES materials(material_id),
+  code_type        VARCHAR(10)    NOT NULL CHECK (code_type IN ('barcode', 'qrcode')),
+  code_data        TEXT           NOT NULL,
+  label_content    TEXT           NOT NULL,
+  created_by       VARCHAR(50)    NOT NULL,
+  created_date     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_generated_labels_material_id ON generated_labels (material_id);
+CREATE INDEX IF NOT EXISTS idx_generated_labels_created_date ON generated_labels (created_date);
+CREATE INDEX IF NOT EXISTS idx_generated_labels_code_type ON generated_labels (code_type);
 
 -- ────────────────────────────────────────────────────────────
 -- 4. InventoryLots (Lo hang)
@@ -161,34 +187,34 @@ CREATE INDEX IF NOT EXISTS idx_txn_performed_by     ON inventory_transactions (p
 
 INSERT INTO inventory_transactions (transaction_id, lot_id, transaction_type, quantity, unit_of_measure, reference_id, notes, performed_by, transaction_date) VALUES
   -- LOT-001: received 500kg, then 50kg split for sample
-  ('TXN-001', 'LOT-001', 'Receipt',    500.000, 'kg',   'PO-2026-0100', 'Initial receipt from supplier',              'USR-004', '2026-01-15 09:30:00'),
-  ('TXN-002', 'LOT-001', 'Split',      -50.000, 'kg',   'LOT-003',      'Split sample for QC testing',                'USR-004', '2026-02-20 10:00:00'),
+  ('TXN-001', 'LOT-001', 'Receipt',    500.000, 'kg',   'PO-2026-0100', 'Initial receipt from supplier',              'prod_user',   '2026-01-15 09:30:00'),
+  ('TXN-002', 'LOT-001', 'Split',      -50.000, 'kg',   'LOT-003',      'Split sample for QC testing',                'prod_user',   '2026-02-20 10:00:00'),
 
   -- LOT-002: received 200kg
-  ('TXN-003', 'LOT-002', 'Receipt',    200.000, 'kg',   'PO-2026-0112', 'New MCC delivery',                           'USR-004', '2026-02-01 10:15:00'),
+  ('TXN-003', 'LOT-002', 'Receipt',    200.000, 'kg',   'PO-2026-0112', 'New MCC delivery',                           'prod_user',   '2026-02-01 10:15:00'),
 
   -- LOT-003: sample received from split
-  ('TXN-004', 'LOT-003', 'Receipt',     50.000, 'kg',   'LOT-001',      'Sample split from LOT-001',                  'USR-004', '2026-02-20 10:00:00'),
+  ('TXN-004', 'LOT-003', 'Receipt',     50.000, 'kg',   'LOT-001',      'Sample split from LOT-001',                  'prod_user',   '2026-02-20 10:00:00'),
 
   -- LOT-004: received, then used in production
-  ('TXN-005', 'LOT-004', 'Receipt',   1000.000, 'L',    'PO-2026-0098', 'Ethanol delivery',                           'USR-004', '2026-01-10 08:00:00'),
-  ('TXN-006', 'LOT-004', 'Usage',     -200.000, 'L',    'BATCH-001',    'Used in production batch B-2026-001',        'USR-004', '2026-01-22 14:00:00'),
+  ('TXN-005', 'LOT-004', 'Receipt',   1000.000, 'L',    'PO-2026-0098', 'Ethanol delivery',                           'prod_user',   '2026-01-10 08:00:00'),
+  ('TXN-006', 'LOT-004', 'Usage',     -200.000, 'L',    'BATCH-001',    'Used in production batch B-2026-001',        'prod_user',   '2026-01-22 14:00:00'),
 
   -- LOT-005: received containers
-  ('TXN-007', 'LOT-005', 'Receipt',   5000.000, 'each', 'PO-2026-0130', 'HDPE bottles delivery',                      'USR-004', '2026-02-15 11:00:00'),
+  ('TXN-007', 'LOT-005', 'Receipt',   5000.000, 'each', 'PO-2026-0130', 'HDPE bottles delivery',                      'prod_user',   '2026-02-15 11:00:00'),
 
   -- LOT-006: received
-  ('TXN-008', 'LOT-006', 'Receipt',    300.000, 'kg',   'PO-2026-0145', 'Ibuprofen API delivery',                     'USR-004', '2026-03-01 09:00:00'),
+  ('TXN-008', 'LOT-006', 'Receipt',    300.000, 'kg',   'PO-2026-0145', 'Ibuprofen API delivery',                     'prod_user',   '2026-03-01 09:00:00'),
 
   -- LOT-007: received caps
-  ('TXN-009', 'LOT-007', 'Receipt',   8000.000, 'each', 'PO-2026-0131', 'Caps delivery',                              'USR-004', '2026-02-20 13:00:00'),
+  ('TXN-009', 'LOT-007', 'Receipt',   8000.000, 'each', 'PO-2026-0131', 'Caps delivery',                              'prod_user',   '2026-02-20 13:00:00'),
 
   -- LOT-008: received, used fully, now depleted
-  ('TXN-010', 'LOT-008', 'Receipt',    100.000, 'kg',   'PO-2026-0080', 'MCC delivery (old batch)',                    'USR-004', '2026-01-05 09:00:00'),
-  ('TXN-011', 'LOT-008', 'Usage',     -100.000, 'kg',   'BATCH-001',    'Fully consumed in production',               'USR-004', '2026-01-25 16:00:00'),
+  ('TXN-010', 'LOT-008', 'Receipt',    100.000, 'kg',   'PO-2026-0080', 'MCC delivery (old batch)',                    'prod_user',   '2026-01-05 09:00:00'),
+  ('TXN-011', 'LOT-008', 'Usage',     -100.000, 'kg',   'BATCH-001',    'Fully consumed in production',               'prod_user',   '2026-01-25 16:00:00'),
 
   -- LOT-001: adjustment after inventory count
-  ('TXN-012', 'LOT-001', 'Adjustment',  0.000,  'kg',   NULL,           'Inventory count verified - no discrepancy',  'USR-002','2026-02-28 11:00:00');
+  ('TXN-012', 'LOT-001', 'Adjustment',  0.000,  'kg',   NULL,           'Inventory count verified - no discrepancy',  'inv_manager', '2026-02-28 11:00:00');
 
 -- ────────────────────────────────────────────────────────────
 -- 6. QCTests (Kiem tra chat luong)
@@ -216,35 +242,35 @@ CREATE INDEX IF NOT EXISTS idx_qc_test_date      ON qc_tests (test_date);
 
 INSERT INTO qc_tests (test_id, lot_id, test_type, test_method, test_date, test_result, acceptance_criteria, result_status, performed_by, verified_by) VALUES
   -- LOT-001: passed all tests -> Accepted
-  ('QC-001', 'LOT-001', 'Identity',  'HPLC Analysis',         '2026-01-16', '98.5% purity',       '>= 98.0% purity',       'Pass', 'USR-003', 'USR-001'),
-  ('QC-002', 'LOT-001', 'Potency',   'UV Spectroscopy',       '2026-01-16', '99.1% potency',      '>= 95.0% potency',      'Pass', 'USR-003', 'USR-001'),
-  ('QC-003', 'LOT-001', 'Microbial', 'USP <61> Bioburden',    '2026-01-17', '< 10 CFU/g',         '< 100 CFU/g',           'Pass', 'USR-003', 'USR-001'),
+  ('QC-001', 'LOT-001', 'Identity',  'HPLC Analysis',         '2026-01-16', '98.5% purity',       '>= 98.0% purity',       'Pass', 'qc_user', 'admin'),
+  ('QC-002', 'LOT-001', 'Potency',   'UV Spectroscopy',       '2026-01-16', '99.1% potency',      '>= 95.0% potency',      'Pass', 'qc_user', 'admin'),
+  ('QC-003', 'LOT-001', 'Microbial', 'USP <61> Bioburden',    '2026-01-17', '< 10 CFU/g',         '< 100 CFU/g',           'Pass', 'qc_user', 'admin'),
 
   -- LOT-002: pending QC (still in Quarantine)
-  ('QC-004', 'LOT-002', 'Identity',  'FTIR Spectroscopy',     '2026-02-03', NULL,                  'Match reference spectrum','Pending', 'USR-003', NULL),
-  ('QC-005', 'LOT-002', 'Physical',  'Particle Size Analysis','2026-02-03', NULL,                  '50-150 um',              'Pending', 'USR-003', NULL),
+  ('QC-004', 'LOT-002', 'Identity',  'FTIR Spectroscopy',     '2026-02-03', NULL,                  'Match reference spectrum','Pending', 'qc_user', NULL),
+  ('QC-005', 'LOT-002', 'Physical',  'Particle Size Analysis','2026-02-03', NULL,                  '50-150 um',              'Pending', 'qc_user', NULL),
 
   -- LOT-003: failed potency -> Rejected
-  ('QC-006', 'LOT-003', 'Identity',  'HPLC Analysis',         '2026-02-21', '97.2% purity',       '>= 98.0% purity',       'Pass',  'USR-003', 'USR-001'),
-  ('QC-007', 'LOT-003', 'Potency',   'UV Spectroscopy',       '2026-02-21', '85.2% potency',      '>= 95.0% potency',      'Fail',  'USR-003', 'USR-001'),
+  ('QC-006', 'LOT-003', 'Identity',  'HPLC Analysis',         '2026-02-21', '97.2% purity',       '>= 98.0% purity',       'Pass',  'qc_user', 'admin'),
+  ('QC-007', 'LOT-003', 'Potency',   'UV Spectroscopy',       '2026-02-21', '85.2% potency',      '>= 95.0% potency',      'Fail',  'qc_user', 'admin'),
 
   -- LOT-004: passed -> Accepted
-  ('QC-008', 'LOT-004', 'Identity',  'GC-MS Analysis',        '2026-01-11', '96.1% ethanol',      '>= 95.0%',              'Pass', 'USR-003', 'USR-001'),
-  ('QC-009', 'LOT-004', 'Chemical',  'Water Content (KF)',    '2026-01-11', '3.8% water',         '< 5.0%',               'Pass', 'USR-003', 'USR-001'),
+  ('QC-008', 'LOT-004', 'Identity',  'GC-MS Analysis',        '2026-01-11', '96.1% ethanol',      '>= 95.0%',              'Pass', 'qc_user', 'admin'),
+  ('QC-009', 'LOT-004', 'Chemical',  'Water Content (KF)',    '2026-01-11', '3.8% water',         '< 5.0%',               'Pass', 'qc_user', 'admin'),
 
   -- LOT-005: passed -> Accepted (container visual inspection)
-  ('QC-010', 'LOT-005', 'Physical',  'Visual Inspection',     '2026-02-16', 'No defects found',   'Zero visible defects',  'Pass', 'USR-003', 'USR-001'),
+  ('QC-010', 'LOT-005', 'Physical',  'Visual Inspection',     '2026-02-16', 'No defects found',   'Zero visible defects',  'Pass', 'qc_user', 'admin'),
 
   -- LOT-006: pending QC (still in Quarantine)
-  ('QC-011', 'LOT-006', 'Identity',  'HPLC Analysis',         '2026-03-02', NULL,                  '>= 98.0% purity',       'Pending', 'USR-003', NULL),
-  ('QC-012', 'LOT-006', 'Potency',   'UV Spectroscopy',       '2026-03-02', NULL,                  '>= 95.0% potency',      'Pending', 'USR-003', NULL),
-  ('QC-013', 'LOT-006', 'Microbial', 'USP <61> Bioburden',    '2026-03-03', NULL,                  '< 100 CFU/g',           'Pending', 'USR-003', NULL),
+  ('QC-011', 'LOT-006', 'Identity',  'HPLC Analysis',         '2026-03-02', NULL,                  '>= 98.0% purity',       'Pending', 'qc_user', NULL),
+  ('QC-012', 'LOT-006', 'Potency',   'UV Spectroscopy',       '2026-03-02', NULL,                  '>= 95.0% potency',      'Pending', 'qc_user', NULL),
+  ('QC-013', 'LOT-006', 'Microbial', 'USP <61> Bioburden',    '2026-03-03', NULL,                  '< 100 CFU/g',           'Pending', 'qc_user', NULL),
 
   -- LOT-007: passed -> Accepted (cap inspection)
-  ('QC-014', 'LOT-007', 'Physical',  'Torque Test',           '2026-02-21', '12 in-lb',           '10-15 in-lb',           'Pass', 'USR-003', 'USR-001'),
+  ('QC-014', 'LOT-007', 'Physical',  'Torque Test',           '2026-02-21', '12 in-lb',           '10-15 in-lb',           'Pass', 'qc_user', 'admin'),
 
   -- LOT-008: passed when it existed -> was Accepted, now Depleted
-  ('QC-015', 'LOT-008', 'Identity',  'FTIR Spectroscopy',     '2026-01-06', 'Match confirmed',    'Match reference spectrum','Pass', 'USR-003', 'USR-001');
+  ('QC-015', 'LOT-008', 'Identity',  'FTIR Spectroscopy',     '2026-01-06', 'Match confirmed',    'Match reference spectrum','Pass', 'qc_user', 'admin');
 
 -- ────────────────────────────────────────────────────────────
 -- 7. ProductionBatches (Lo san xuat)
@@ -293,9 +319,9 @@ CREATE INDEX IF NOT EXISTS idx_comp_lot_id   ON batch_components (lot_id);
 
 INSERT INTO batch_components (component_id, batch_id, lot_id, planned_quantity, actual_quantity, unit_of_measure, addition_date, added_by) VALUES
   -- BATCH-001 used LOT-001 (Acetaminophen) + LOT-008 (MCC) + LOT-004 (Ethanol)
-  ('COMP-001', 'BATCH-001', 'LOT-001',  50.000,  50.000, 'kg', '2026-01-22 08:00:00', 'USR-004'),
-  ('COMP-002', 'BATCH-001', 'LOT-008', 100.000, 100.000, 'kg', '2026-01-22 08:30:00', 'USR-004'),
-  ('COMP-003', 'BATCH-001', 'LOT-004', 200.000, 200.000, 'L',  '2026-01-22 09:00:00', 'USR-004');
+  ('COMP-001', 'BATCH-001', 'LOT-001',  50.000,  50.000, 'kg', '2026-01-22 08:00:00', 'prod_user'),
+  ('COMP-002', 'BATCH-001', 'LOT-008', 100.000, 100.000, 'kg', '2026-01-22 08:30:00', 'prod_user'),
+  ('COMP-003', 'BATCH-001', 'LOT-004', 200.000, 200.000, 'L',  '2026-01-22 09:00:00', 'prod_user');
 
 -- ============================================================
 -- End of schema initialization

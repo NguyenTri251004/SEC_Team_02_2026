@@ -173,7 +173,7 @@ describe("transaction.routes", () => {
       const callArg = svc.createTransaction.mock.calls[0][0];
       expect(callArg.transaction_id).toBeDefined();
       expect(typeof callArg.transaction_id).toBe("string");
-      expect(callArg.transaction_id.length).toBeGreaterThan(0);
+      expect(callArg.transaction_id!.length).toBeGreaterThan(0);
     });
 
     it("should return 201 using provided transaction_id when given", async () => {

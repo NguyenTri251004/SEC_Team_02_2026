@@ -145,11 +145,37 @@ router.put(
   requirePermission("lots", "update"),
   async (req: Request, res: Response) => {
     try {
+      const oldLot = await lotService.getLotById(req.params.id);
+      if (!oldLot) {
+        res.status(404).json({ success: false, error: "Khong tim thay lot" });
+        return;
+      }
+
       const lot = await lotService.updateLot(req.params.id, req.body);
       if (!lot) {
         res.status(404).json({ success: false, error: "Khong tim thay lot" });
         return;
       }
+
+      // Log Adjustment transaction if quantity changed
+      const newQty = req.body.quantity;
+      if (newQty !== undefined && Number(newQty) !== Number(oldLot.quantity)) {
+        const delta = Number(newQty) - Number(oldLot.quantity);
+        try {
+          await transactionService.createTransaction({
+            transaction_type: "Adjustment" as const,
+            lot_id: lot.lot_id,
+            quantity: delta,
+            unit_of_measure: lot.unit_of_measure,
+            reference_id: undefined,
+            notes: req.body.notes ?? `Manual quantity adjustment: ${oldLot.quantity} -> ${newQty}`,
+            performed_by: req.user?.username ?? "SYSTEM",
+          });
+        } catch (e) {
+          console.warn("Auto-log Adjustment transaction failed:", e);
+        }
+      }
+
       res.json({ success: true, data: lot });
     } catch (error) {
       console.error("Loi cap nhat lot:", error);

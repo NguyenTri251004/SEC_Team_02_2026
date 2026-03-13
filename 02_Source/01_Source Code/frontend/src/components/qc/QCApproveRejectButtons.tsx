@@ -1,26 +1,40 @@
 import { useState } from "react";
 import { Button, Popconfirm, Modal, Input, Space, message } from "antd";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import axios from "axios";
 
 import { useApproveLot, useRejectLot } from "@/hooks/useQCData";
 
 interface QCApproveRejectButtonsProps {
   lotId: string;
+  showText?: boolean;
 }
 
-export function QCApproveRejectButtons({ lotId }: QCApproveRejectButtonsProps) {
+export function QCApproveRejectButtons({ lotId, showText = false }: QCApproveRejectButtonsProps) {
   const { mutateAsync: approveLot, isPending: isApproving } = useApproveLot();
   const { mutateAsync: rejectLot, isPending: isRejecting } = useRejectLot();
 
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
+  const getErrorMessage = (error: unknown, fallback: string): string => {
+    if (axios.isAxiosError<{ error?: string }>(error)) {
+      return error.response?.data?.error ?? fallback;
+    }
+
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+
+    return fallback;
+  };
+
   const handleApprove = async () => {
     try {
       await approveLot({ lotId });
       message.success(`Lot ${lotId} approved successfully!`);
-    } catch (error: any) {
-      message.error(error.response?.data?.error || "Failed to approve lot");
+    } catch (error: unknown) {
+      message.error(getErrorMessage(error, "Failed to approve lot"));
     }
   };
 
@@ -34,14 +48,14 @@ export function QCApproveRejectButtons({ lotId }: QCApproveRejectButtonsProps) {
       message.success(`Lot ${lotId} rejected`);
       setRejectModalOpen(false);
       setRejectReason("");
-    } catch (error: any) {
-      message.error(error.response?.data?.error || "Failed to reject lot");
+    } catch (error: unknown) {
+      message.error(getErrorMessage(error, "Failed to reject lot"));
     }
   };
 
   return (
     <>
-      <Space size="small">
+      <Space size="small" style={{ whiteSpace: "nowrap" }}>
         <Popconfirm
           title="Approve this lot?"
           description={`Are you sure you want to approve lot ${lotId}?`}
@@ -50,22 +64,35 @@ export function QCApproveRejectButtons({ lotId }: QCApproveRejectButtonsProps) {
           cancelText="Cancel"
         >
           <Button
-            type="text"
+            type={showText ? "primary" : "text"}
             size="small"
             icon={<CheckCircleOutlined />}
-            style={{ color: "#52c41a" }}
+            style={
+              showText
+                ? { minWidth: 92 }
+                : { color: "#52c41a" }
+            }
             loading={isApproving}
-          />
+          >
+            {showText && "Approve"}
+          </Button>
         </Popconfirm>
 
         <Button
-          type="text"
+          type={showText ? "default" : "text"}
           size="small"
+          danger={showText}
           icon={<CloseCircleOutlined />}
-          style={{ color: "#ff4d4f" }}
+          style={
+            showText
+              ? { minWidth: 92 }
+              : { color: "#ff4d4f" }
+          }
           loading={isRejecting}
           onClick={() => setRejectModalOpen(true)}
-        />
+        >
+          {showText && "Reject"}
+        </Button>
       </Space>
 
       <Modal

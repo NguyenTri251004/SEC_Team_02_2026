@@ -74,7 +74,10 @@ router.post(
     try {
       const body = (req.body ?? {}) as ReportExportInput;
       const type = body.type as ReportType;
-      if (!type || !["inventory", "transactions", "audit-log"].includes(type)) {
+      if (
+        !type ||
+        !["inventory", "transactions", "audit-log", "expiring"].includes(type)
+      ) {
         res.status(400).json({ success: false, error: "type không hợp lệ" });
         return;
       }
@@ -97,6 +100,20 @@ router.post(
               { key: "po_number", header: "PO Number" },
               { key: "is_sample", header: "Is Sample" },
             ]
+          : type === "expiring"
+            ? [
+                { key: "lot_id", header: "Lot ID" },
+                { key: "material_id", header: "Material ID" },
+                { key: "material_name", header: "Material Name" },
+                { key: "material_type", header: "Material Type" },
+                { key: "supplier_name", header: "Supplier" },
+                { key: "expiration_date", header: "Expiration Date" },
+                { key: "days_to_expiry", header: "Days to Expiry" },
+                { key: "status", header: "Status" },
+                { key: "quantity", header: "Quantity" },
+                { key: "unit_of_measure", header: "UOM" },
+                { key: "storage_location", header: "Location" },
+              ]
           : type === "transactions"
             ? [
                 { key: "transaction_id", header: "Transaction ID" },

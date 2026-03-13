@@ -11,7 +11,7 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
      FROM inventory_transactions it
      LEFT JOIN inventory_lots il ON it.lot_id = il.lot_id
      LEFT JOIN materials m ON il.material_id = m.material_id
-     ORDER BY it.transaction_date DESC`
+     ORDER BY transaction_date DESC`
   );
   return result.rows as Transaction[];
 };

@@ -51,6 +51,8 @@ export interface UpdateLotDto {
   storage_location?: string;
   po_number?: string;
   receiving_form_id?: string;
+  quantity?: number;
+  notes?: string;
 }
 
 export interface UpdateLotStatusDto {

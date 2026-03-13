@@ -1,65 +1,49 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../services/api";
-import type { LabelTemplate } from "../types";
+import { labelApi } from "../services/api";
+import type { GenerateLabelInput, GenerateLabelFromTemplateInput, GeneratedLabel, LabelTemplate } from "../types";
 
-const mockData: LabelTemplate[] = [
-  {
-    template_id: "TPL-001",
-    template_name: "Standard Lot Label",
-    label_type: "QR Code",
-    template_content: '{"fields":["lot_id","material_name","expiration_date","quantity"]}',
-    width: 100,
-    height: 50,
-    created_date: "2026-01-10",
-    modified_date: "2026-01-10",
-  },
-  {
-    template_id: "TPL-002",
-    template_name: "Shipping Barcode",
-    label_type: "Barcode",
-    template_content: '{"fields":["lot_id","po_number","supplier_name"]}',
-    width: 150,
-    height: 30,
-    created_date: "2026-01-12",
-    modified_date: "2026-02-01",
-  },
-  {
-    template_id: "TPL-003",
-    template_name: "QC Sample Label",
-    label_type: "QR Code",
-    template_content: '{"fields":["lot_id","test_type","test_date","performed_by"]}',
-    width: 80,
-    height: 40,
-    created_date: "2026-02-05",
-    modified_date: "2026-02-05",
-  },
-];
+// ============================================================
+// Template Hooks
+// ============================================================
 
-export const useLabelTemplates = () => {
+// Get all label templates
+export const useTemplates = () => {
   return useQuery({
     queryKey: ["label-templates"],
     queryFn: async (): Promise<LabelTemplate[]> => {
-      try {
-        const response = await api.get("/api/labels/templates");
-        const data = response.data?.data || response.data;
-        if (!data || data.length === 0) return mockData;
-        return data;
-      } catch {
-        return mockData;
-      }
+      const response = await labelApi.getAllTemplates();
+      return response.data || [];
     },
   });
 };
 
-export const useSaveTemplate = () => {
+// Get template by ID
+export const useTemplate = (id: string | undefined) => {
+  return useQuery({
+    queryKey: ["label-template", id],
+    queryFn: async (): Promise<LabelTemplate> => {
+      if (!id) throw new Error("Template ID is required");
+      const response = await labelApi.getTemplateById(id);
+      return response.data;
+    },
+    enabled: !!id,
+  });
+};
+
+// Create new template
+export const useCreateTemplate = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ isEditing, data }: { isEditing: boolean; data: Partial<LabelTemplate> }) => {
-      if (isEditing) {
-        return api.put(`/api/labels/templates/${data.template_id}`, data);
-      }
-      return api.post("/api/labels/templates", data);
+    mutationFn: async (data: {
+      template_name: string;
+      label_type: string;
+      template_content: string;
+      width?: number;
+      height?: number;
+    }): Promise<LabelTemplate> => {
+      const response = await labelApi.createTemplate(data);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["label-templates"] });
@@ -67,15 +51,97 @@ export const useSaveTemplate = () => {
   });
 };
 
+// Update template
+export const useUpdateTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<LabelTemplate>;
+    }): Promise<LabelTemplate> => {
+      const response = await labelApi.updateTemplate(id, data);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["label-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["label-template", variables.id] });
+    },
+  });
+};
+
+// Delete template
 export const useDeleteTemplate = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (templateId: string) => {
-      return api.delete(`/api/labels/templates/${templateId}`);
+    mutationFn: async (id: string) => {
+      return labelApi.deleteTemplate(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["label-templates"] });
+    },
+  });
+};
+
+// ============================================================
+// Label Generation Hooks
+// ============================================================
+
+// Get all generated labels
+export const useGeneratedLabels = () => {
+  return useQuery({
+    queryKey: ["generated-labels"],
+    queryFn: async (): Promise<GeneratedLabel[]> => {
+      const response = await labelApi.getAllLabels();
+      return response.data || [];
+    },
+  });
+};
+
+// Generate new label (simple material-based)
+export const useGenerateLabel = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: GenerateLabelInput): Promise<GeneratedLabel> => {
+      const response = await labelApi.generateLabel(input);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["generated-labels"] });
+    },
+  });
+};
+
+// Generate label from template
+export const useGenerateLabelFromTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: GenerateLabelFromTemplateInput): Promise<GeneratedLabel> => {
+      const response = await labelApi.generateLabelFromTemplate(input);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["generated-labels"] });
+    },
+  });
+};
+
+// Delete generated label
+export const useDeleteLabel = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (labelId: string) => {
+      return labelApi.deleteLabel(labelId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["generated-labels"] });
     },
   });
 };

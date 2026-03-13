@@ -149,7 +149,7 @@ describe('Dashboard Service', () => {
   // getTransactionSummary
   // ---------------------------------------------------------------------------
   describe('getTransactionSummary', () => {
-    it('should return today counts and 7-day trend', async () => {
+    it('should return today counts and the transaction trend rows from the query result', async () => {
       // 1st call: today summary (goes through queryInventoryTransactions)
       mockPool.query
         .mockResolvedValueOnce({
@@ -172,6 +172,10 @@ describe('Dashboard Service', () => {
       expect(result.trend).toHaveLength(3);
       expect(result.trend![0]).toEqual({ date: '2026-03-03', receipts: 1, issues: 0 });
       expect(result.trend![2]).toEqual({ date: '2026-03-09', receipts: 4, issues: 2 });
+
+      const trendSql = mockPool.query.mock.calls[1][0] as string;
+      expect(trendSql).toContain("GENERATE_SERIES(CURRENT_DATE - INTERVAL '29 day'");
+      expect(trendSql).toContain("LEFT JOIN transaction_counts");
     });
 
     it('should default to 0 when today query returns no rows', async () => {

@@ -125,9 +125,17 @@ export function createDaysToExpiryColumn<
     dataIndex: "days_to_expiry" as keyof T,
     key: "days",
     sorter: (a: T, b: T) => a.days_to_expiry - b.days_to_expiry,
-    render: (v: number) => (
-      <Tag color={v <= 7 ? "red" : v <= 30 ? "orange" : "default"}>{v}d</Tag>
-    ),
+    render: (v: number) => {
+      if (!Number.isFinite(v)) {
+        return <Tag>-</Tag>;
+      }
+
+      return (
+        <Tag color={v <= 7 ? "red" : v <= 30 ? "orange" : "default"}>
+          {v}d
+        </Tag>
+      );
+    },
   };
 }
 
@@ -162,7 +170,7 @@ export function createBatchStatusColumn<T extends { status: string }>() {
     filters: [
       { text: "Planned", value: "Planned" },
       { text: "In Progress", value: "In Progress" },
-      { text: "Completed", value: "Completed" },
+      { text: "Completed", value: "Complete" },
       { text: "Rejected", value: "Rejected" },
     ],
     onFilter: (value: boolean | Key, record: T) =>

@@ -166,23 +166,25 @@ describe("lot.service", () => {
 
     it("should create a lot with status Quarantine", async () => {
       const createdLot = makeLot({ ...createDto, status: "Quarantine" });
-      mockQuery.mockResolvedValueOnce({ rows: [createdLot], rowCount: 1 } as any);
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as any); // generateLotId
+      mockQuery.mockResolvedValueOnce({ rows: [createdLot], rowCount: 1 } as any); // INSERT
 
       const result = await lotService.createLot(createDto);
 
       expect(result.status).toBe("Quarantine");
-      const sql = mockQuery.mock.calls[0][0] as string;
+      const sql = mockQuery.mock.calls[1][0] as string;
       expect(sql).toContain("'Quarantine'");
       expect(sql).toContain("INSERT INTO inventory_lots");
     });
 
     it("should pass all DTO fields to the query", async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [makeLot()], rowCount: 1 } as any);
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as any); // generateLotId
+      mockQuery.mockResolvedValueOnce({ rows: [makeLot()], rowCount: 1 } as any); // INSERT
 
       await lotService.createLot(createDto);
 
-      const params = mockQuery.mock.calls[0][1] as unknown[];
-      expect(params[0]).toBe("LOT-NEW");         // lot_id
+      const params = mockQuery.mock.calls[1][1] as unknown[];
+      expect(params[0]).toEqual(expect.any(String)); // lot_id (generated)
       expect(params[1]).toBe("MAT-001");          // material_id
       expect(params[2]).toBe("Pharma Corp");      // manufacturer_name
       expect(params[3]).toBe("MFG-2026-NEW");     // manufacturer_lot
@@ -190,11 +192,12 @@ describe("lot.service", () => {
     });
 
     it("should default optional fields to null/false", async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [makeLot()], rowCount: 1 } as any);
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as any); // generateLotId
+      mockQuery.mockResolvedValueOnce({ rows: [makeLot()], rowCount: 1 } as any); // INSERT
 
       await lotService.createLot(createDto);
 
-      const params = mockQuery.mock.calls[0][1] as unknown[];
+      const params = mockQuery.mock.calls[1][1] as unknown[];
       // in_use_expiration_date -> null
       expect(params[7]).toBeNull();
       // storage_location -> null
@@ -217,11 +220,12 @@ describe("lot.service", () => {
         po_number: "PO-999",
         receiving_form_id: "RF-001",
       };
-      mockQuery.mockResolvedValueOnce({ rows: [makeLot()], rowCount: 1 } as any);
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as any); // generateLotId
+      mockQuery.mockResolvedValueOnce({ rows: [makeLot()], rowCount: 1 } as any); // INSERT
 
       await lotService.createLot(dtoWithOptionals);
 
-      const params = mockQuery.mock.calls[0][1] as unknown[];
+      const params = mockQuery.mock.calls[1][1] as unknown[];
       expect(params[7]).toBe("2026-09-01");
       expect(params[10]).toBe("WH-B2");
       expect(params[11]).toBe(true);
@@ -271,7 +275,7 @@ describe("lot.service", () => {
       expect(params[0]).toBe("New Corp");     // manufacturer_name
       expect(params[1]).toBeNull();            // manufacturer_lot (not provided)
       expect(params[2]).toBeNull();            // supplier_name
-      expect(params[8]).toBe("LOT-001");       // id is last param
+      expect(params[9]).toBe("LOT-001");       // id is last param
     });
   });
 

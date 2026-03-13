@@ -58,7 +58,8 @@ export default function BatchesPage() {
       dataIndex: "component_count",
       key: "component_count",
       width: 110,
-      render: (v?: number) => v ?? "-",
+      render: (v?: number) => v ?? 0,
+      sorter: (a, b) => (a.component_count ?? 0) - (b.component_count ?? 0),
     },
     {
       title: "Status",

@@ -213,6 +213,7 @@ describe("createTransaction", () => {
 
   const createdRow: Transaction = {
     ...newDto,
+    transaction_id: newDto.transaction_id!,
     transaction_date: new Date("2026-03-09"),
     created_date: now,
   };
@@ -250,6 +251,7 @@ describe("createTransaction", () => {
 
     const minimalRow: Transaction = {
       ...minimalDto,
+      transaction_id: minimalDto.transaction_id!,
       unit_of_measure: undefined,
       reference_id: undefined,
       notes: undefined,
@@ -286,6 +288,7 @@ describe("createTransaction", () => {
 
       const row: Transaction = {
         ...dto,
+        transaction_id: dto.transaction_id!,
         transaction_date: now,
         created_date: now,
       };

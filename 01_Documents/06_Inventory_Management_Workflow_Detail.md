@@ -6,21 +6,23 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 
 ## TỔNG QUAN: Các Bảng Trong Hệ Thống
 
-| # | Bảng | Mô tả | Số cột |
-|---|------|-------|--------|
-| 1 | **Users** | Quản lý người dùng và phân quyền | 9 |
-| 2 | **Materials** | Dữ liệu master về nguyên vật liệu | 8 |
-| 3 | **LabelTemplates** | Mẫu nhãn in | 8 |
-| 4 | **InventoryLots** | Các lô hàng nhập kho | 18 |
-| 5 | **InventoryTransactions** | Lịch sử giao dịch kho | 10 |
-| 6 | **QCTests** | Kết quả kiểm tra chất lượng | 12 |
-| 7 | **ProductionBatches** | Lô sản xuất | 10 |
-| 8 | **BatchComponents** | Thành phần nguyên liệu của lô sản xuất | 10 |
+| #   | Bảng                      | Mô tả                                  | Số cột |
+| --- | ------------------------- | -------------------------------------- | ------ |
+| 1   | **Users**                 | Quản lý người dùng và phân quyền       | 9      |
+| 2   | **Materials**             | Dữ liệu master về nguyên vật liệu      | 8      |
+| 3   | **LabelTemplates**        | Mẫu nhãn in                            | 8      |
+| 4   | **InventoryLots**         | Các lô hàng nhập kho                   | 18     |
+| 5   | **InventoryTransactions** | Lịch sử giao dịch kho                  | 10     |
+| 6   | **QCTests**               | Kết quả kiểm tra chất lượng            | 12     |
+| 7   | **ProductionBatches**     | Lô sản xuất                            | 10     |
+| 8   | **BatchComponents**       | Thành phần nguyên liệu của lô sản xuất | 10     |
 
 ---
 
 # ═══════════════════════════════════════════════════════════════
+
 # PHASE 0: KHỞI TẠO DỮ LIỆU MASTER
+
 # ═══════════════════════════════════════════════════════════════
 
 ## STEP 0.1: Tạo User (Admin tạo tài khoản người dùng)
@@ -39,7 +41,6 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 │  │ user_id         │ 🆕 "a1b2c3d4-e5f6-7890-abcd-ef1234567890"              │  │
 │  │ username        │ 🆕 "jdoe"                                               │  │
 │  │ email           │ 🆕 "jdoe@example.com"                                   │  │
-│  │ password        │ 🆕 "$2b$10$..." (bcrypt hash)                          │  │
 │  │ role            │ 🆕 "InventoryManager"                                   │  │
 │  │ is_active       │ 🆕 true                                                 │  │
 │  │ last_login      │ 🆕 NULL                                                 │  │
@@ -52,13 +53,13 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 
 ### Tạo thêm các user khác:
 
-| user_id | username | role |
-|---------|----------|------|
-| user-uuid-001 | jdoe | InventoryManager |
-| user-uuid-002 | qc1 | QualityControl |
-| user-uuid-003 | qc_super | QualityControl |
-| user-uuid-004 | prod1 | Production |
-| user-uuid-005 | admin1 | Admin |
+| user_id       | username | role             |
+| ------------- | -------- | ---------------- |
+| user-uuid-001 | jdoe     | InventoryManager |
+| user-uuid-002 | qc1      | QualityControl   |
+| user-uuid-003 | qc_super | QualityControl   |
+| user-uuid-004 | prod1    | Production       |
+| user-uuid-005 | admin1   | Admin            |
 
 ---
 
@@ -182,10 +183,13 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 ---
 
 # ═══════════════════════════════════════════════════════════════
+
 # PHASE 1: NHẬN HÀNG (RECEIVING)
+
 # ═══════════════════════════════════════════════════════════════
 
 > **LUỒNG ĐÚNG THEO TÀI LIỆU:**
+>
 > ```
 > Materials ──────► InventoryLot ──────► InventoryTransaction ──────► Label
 >  (Master)         (Tạo Lot)            (Ghi nhận Receipt)        (Generate từ Lot)
@@ -284,8 +288,9 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 ### 📋 ACTION: SELECT từ `LabelTemplates` + Data từ `InventoryLots` + `Materials`
 
 > ⚠️ **LABEL ĐƯỢC GENERATE TỪ DỮ LIỆU CỦA LOT** (không phải từ Transaction!)
-> 
+>
 > Dữ liệu label bao gồm:
+>
 > - Từ **InventoryLots**: lot_id, manufacturer_lot, expiration_date, status, storage_location
 > - Từ **Materials** (qua JOIN): material_name, storage_conditions
 
@@ -354,7 +359,9 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 ---
 
 # ═══════════════════════════════════════════════════════════════
+
 # PHASE 2: KIỂM TRA CHẤT LƯỢNG (QC TESTING)
+
 # ═══════════════════════════════════════════════════════════════
 
 ## STEP 2.1: Tạo QC Test - Identity Test
@@ -560,7 +567,9 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 ---
 
 # ═══════════════════════════════════════════════════════════════
+
 # PHASE 3: TẠO LÔ SẢN XUẤT (PRODUCTION BATCH)
+
 # ═══════════════════════════════════════════════════════════════
 
 ## STEP 3.1: Tạo Production Batch
@@ -763,7 +772,9 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 ---
 
 # ═══════════════════════════════════════════════════════════════
+
 # PHASE 4: HOÀN THÀNH SẢN XUẤT (PRODUCTION COMPLETE)
+
 # ═══════════════════════════════════════════════════════════════
 
 ## STEP 4.1: Cập nhật Status → Complete
@@ -842,7 +853,9 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 ---
 
 # ═══════════════════════════════════════════════════════════════
+
 # FINAL: TRẠNG THÁI DATABASE CUỐI CÙNG
+
 # ═══════════════════════════════════════════════════════════════
 
 ```
@@ -929,18 +942,20 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 ---
 
 # ═══════════════════════════════════════════════════════════════
+
 # TỔNG HỢP: SƠ ĐỒ LUỒNG DỮ LIỆU HOÀN CHỈNH
+
 # ═══════════════════════════════════════════════════════════════
 
 ## Quy tắc quan trọng về Label Generation:
 
 > **⚠️ LABEL LUÔN ĐƯỢC GENERATE TỪ DỮ LIỆU CỦA LOT/BATCH, KHÔNG PHẢI TỪ TRANSACTION!**
 >
-> | Label Type | Data Source |
-> |------------|-------------|
-> | Raw Material | InventoryLot + Material |
-> | Status | InventoryLot (status field) |
-> | Finished Product | ProductionBatch + Material |
+> | Label Type       | Data Source                 |
+> | ---------------- | --------------------------- |
+> | Raw Material     | InventoryLot + Material     |
+> | Status           | InventoryLot (status field) |
+> | Finished Product | ProductionBatch + Material  |
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -1036,18 +1051,18 @@ Dựa trên [Inventory Management System Database Schema](https://nhbien.github.
 
 ## Tóm tắt thứ tự các bước:
 
-| # | Bước | Bảng | Action | Ghi chú |
-|---|------|------|--------|---------|
-| ① | Material reference | Materials → InventoryLots | FK | Lot tham chiếu Material |
-| ② | Record receipt | InventoryLots → Transactions | INSERT | Ghi nhận nhận hàng |
-| ③ | QC Testing | InventoryLots → QCTests | INSERT | Thực hiện test |
-| ④ | Update status | InventoryLots | UPDATE | Quarantine → Accepted |
-| ⑤ | Create batch | Materials → ProductionBatches | INSERT | product_id FK |
-| ⑥ | Add component | Lots + Batches → BatchComponents | INSERT | Link lot vào batch |
-| ⑦ | Update lot qty | InventoryLots | UPDATE | Trừ số lượng sử dụng |
-| ⑧ | Record usage | InventoryTransactions | INSERT | type=Usage |
-| ⑨ | Complete batch | ProductionBatches | UPDATE | status=Complete |
+| #   | Bước               | Bảng                             | Action | Ghi chú                 |
+| --- | ------------------ | -------------------------------- | ------ | ----------------------- |
+| ①   | Material reference | Materials → InventoryLots        | FK     | Lot tham chiếu Material |
+| ②   | Record receipt     | InventoryLots → Transactions     | INSERT | Ghi nhận nhận hàng      |
+| ③   | QC Testing         | InventoryLots → QCTests          | INSERT | Thực hiện test          |
+| ④   | Update status      | InventoryLots                    | UPDATE | Quarantine → Accepted   |
+| ⑤   | Create batch       | Materials → ProductionBatches    | INSERT | product_id FK           |
+| ⑥   | Add component      | Lots + Batches → BatchComponents | INSERT | Link lot vào batch      |
+| ⑦   | Update lot qty     | InventoryLots                    | UPDATE | Trừ số lượng sử dụng    |
+| ⑧   | Record usage       | InventoryTransactions            | INSERT | type=Usage              |
+| ⑨   | Complete batch     | ProductionBatches                | UPDATE | status=Complete         |
 
 ---
 
-*Document generated based on [Inventory Management System Database Schema](https://nhbien.github.io/inventory-mangement-system-database-schema/)*
+_Document generated based on [Inventory Management System Database Schema](https://nhbien.github.io/inventory-mangement-system-database-schema/)_

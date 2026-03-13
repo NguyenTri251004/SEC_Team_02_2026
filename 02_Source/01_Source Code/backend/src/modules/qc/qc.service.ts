@@ -20,6 +20,11 @@ export interface QCTestFilters {
   to_date?: string;
 }
 
+interface QCStatsOptions {
+  periodDays?: number;
+  groupBy?: "day";
+}
+
 /**
  * Lấy danh sách tất cả QC tests (có thể lọc), JOIN với lots và materials
  */
@@ -141,9 +146,9 @@ export const createTest = async (input: CreateQCTestInput): Promise<QCTest> => {
     INSERT INTO qc_tests (
       test_id, lot_id, test_type, test_method,
       test_date, acceptance_criteria, result_status,
-      performed_by, notes
+      performed_by
     )
-    VALUES ($1, $2, $3, $4, $5, $6, 'Pending', $7, $8)
+    VALUES ($1, $2, $3, $4, $5, $6, 'Pending', $7)
     RETURNING *
   `;
 
@@ -151,11 +156,10 @@ export const createTest = async (input: CreateQCTestInput): Promise<QCTest> => {
     testId,
     input.lot_id,
     input.test_type,
-    input.test_method ?? null,
+    input.test_method,
     testDate,
     input.acceptance_criteria ?? null,
     input.performed_by,
-    input.notes ?? null,
   ]);
 
   return result.rows[0];
@@ -173,16 +177,14 @@ export const updateTestResult = async (
     SET test_result   = $1,
         result_status = $2,
         verified_by   = $3,
-        notes         = COALESCE($4, notes),
         modified_date = CURRENT_TIMESTAMP
-    WHERE test_id = $5
+    WHERE test_id = $4
     RETURNING *
   `;
   const result = await pool.query<QCTest>(sql, [
     input.test_result,
     input.result_status,
     input.verified_by,
-    input.notes ?? null,
     id,
   ]);
   return result.rows[0] ?? null;
@@ -212,47 +214,91 @@ export const getPendingTests = async (): Promise<QCTest[]> => {
 /**
  * Thống kê QC: số pending, pass rate 30 ngày, phân loại theo type
  */
-export const getQCStats = async (): Promise<QCStats> => {
-  const [pendingResult, rateResult, byTypeResult] = await Promise.all([
-    // Số lượng pending
+export const getQCStats = async (
+  options: QCStatsOptions = {},
+): Promise<QCStats> => {
+  const periodDays = options.periodDays ?? 30;
+
+  const [pendingLotsResult, pendingTestsResult, unverifiedResult, rejectedLotsResult, rateResult, byTypeResult, activityTrendResult] = await Promise.all([
     pool.query<{ count: string }>(
-      `SELECT COUNT(*) AS count FROM qc_tests WHERE result_status = 'Pending'`
+      `SELECT COUNT(*) AS count
+       FROM inventory_lots
+       WHERE status = 'Quarantine'`
     ),
-    // Pass rate trong 30 ngày gần nhất
+    pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM qc_tests
+       WHERE result_status = 'Pending'`
+    ),
+    pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM qc_tests
+       WHERE result_status <> 'Pending'
+         AND verified_by IS NULL`
+    ),
+    pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM inventory_lots
+       WHERE status = 'Rejected'`
+    ),
     pool.query<{ total: string; pass_count: string }>(
       `SELECT
          COUNT(*) AS total,
-         SUM(CASE WHEN result_status = 'Pass' THEN 1 ELSE 0 END) AS pass_count
+         COALESCE(SUM(CASE WHEN result_status = 'Pass' THEN 1 ELSE 0 END), 0) AS pass_count
        FROM qc_tests
-       WHERE test_date >= NOW() - INTERVAL '30 days'
-         AND result_status <> 'Pending'`
+       WHERE test_date >= NOW() - ($1::int * INTERVAL '1 day')
+         AND result_status <> 'Pending'`,
+      [periodDays]
     ),
-    // Tests phân loại theo type (30 ngày)
     pool.query<{ test_type: string; count: string; pass_count: string }>(
       `SELECT
          test_type,
          COUNT(*) AS count,
-         SUM(CASE WHEN result_status = 'Pass' THEN 1 ELSE 0 END) AS pass_count
+         COALESCE(SUM(CASE WHEN result_status = 'Pass' THEN 1 ELSE 0 END), 0) AS pass_count
        FROM qc_tests
-       WHERE test_date >= NOW() - INTERVAL '30 days'
+       WHERE test_date >= NOW() - ($1::int * INTERVAL '1 day')
+         AND result_status <> 'Pending'
        GROUP BY test_type
-       ORDER BY count DESC`
+       ORDER BY COUNT(*) DESC`,
+      [periodDays]
+    ),
+    pool.query<{ date: string; test_count: string }>(
+      `SELECT
+         TO_CHAR(DATE_TRUNC('day', modified_date), 'YYYY-MM-DD') AS date,
+         COUNT(*) AS test_count
+       FROM qc_tests
+       WHERE modified_date >= NOW() - ($1::int * INTERVAL '1 day')
+         AND result_status IN ('Pass', 'Fail')
+       GROUP BY DATE_TRUNC('day', modified_date)
+       ORDER BY DATE_TRUNC('day', modified_date) ASC`,
+      [periodDays]
     ),
   ]);
 
-  const pendingCount = parseInt(pendingResult.rows[0]?.count ?? "0", 10);
+  const pendingLots = parseInt(pendingLotsResult.rows[0]?.count ?? "0", 10);
+  const pendingTests = parseInt(pendingTestsResult.rows[0]?.count ?? "0", 10);
+  const unverifiedTests = parseInt(unverifiedResult.rows[0]?.count ?? "0", 10);
+  const rejectedLots = parseInt(rejectedLotsResult.rows[0]?.count ?? "0", 10);
   const total30d = parseInt(rateResult.rows[0]?.total ?? "0", 10);
   const pass30d = parseInt(rateResult.rows[0]?.pass_count ?? "0", 10);
   const passRate = total30d > 0 ? Math.round((pass30d / total30d) * 100) : 0;
 
   return {
-    pending_count: pendingCount,
+    pending_qc_lots: pendingLots,
+    tests_pending_review: pendingTests,
+    tests_unverified: unverifiedTests,
+    rejected_lots_active: rejectedLots,
+    pending_count: pendingTests,
     pass_rate_30d: passRate,
     total_tests_30d: total30d,
-    tests_by_type: byTypeResult.rows.map((r) => ({
-      test_type: r.test_type as QCTestType,
-      count: parseInt(r.count, 10),
-      pass_count: parseInt(r.pass_count, 10),
+    tests_by_type: byTypeResult.rows.map((row) => ({
+      test_type: row.test_type as QCTestType,
+      count: parseInt(row.count, 10),
+      pass_count: parseInt(row.pass_count, 10),
+    })),
+    activity_trend: activityTrendResult.rows.map((row) => ({
+      date: row.date,
+      test_count: parseInt(row.test_count, 10),
     })),
   };
 };
@@ -260,7 +306,23 @@ export const getQCStats = async (): Promise<QCStats> => {
 /**
  * Lấy hàng đợi QC: các lô đang ở trạng thái Quarantine, JOIN với materials
  */
-export const getQCQueue = async (): Promise<QCQueueItem[]> => {
+/**
+ * Lấy danh sách các lô đang chờ QC (status = 'Quarantine')
+ * với số lượng tests đã thực hiện và số tests đang chờ
+ */
+export const getQCQueue = async (status?: string): Promise<QCQueueItem[]> => {
+  const statusList = status
+    ? status
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0)
+    : [];
+  const whereClause =
+    statusList.length > 0
+      ? `WHERE il.status = ANY($1::text[])`
+      : `WHERE il.status = 'Quarantine'`;
+  const params: [string[]] | [] = statusList.length > 0 ? [statusList] : [];
+  
   const sql = `
     SELECT
       il.lot_id,
@@ -268,6 +330,7 @@ export const getQCQueue = async (): Promise<QCQueueItem[]> => {
       il.manufacturer_lot,
       il.manufacturer_name,
       il.material_id,
+      il.status,
       m.material_name,
       m.material_type,
       il.received_date,
@@ -280,16 +343,16 @@ export const getQCQueue = async (): Promise<QCQueueItem[]> => {
     FROM inventory_lots il
     JOIN materials m ON il.material_id = m.material_id
     LEFT JOIN qc_tests qt ON il.lot_id = qt.lot_id
-    WHERE il.status = 'Quarantine'
+    ${whereClause}
     GROUP BY
       il.lot_id, il.manufacturer_lot, il.manufacturer_name,
-      il.material_id, m.material_name, m.material_type,
+      il.material_id, il.status, m.material_name, m.material_type,
       il.received_date, il.expiration_date, il.quantity,
       il.unit_of_measure, il.storage_location
     ORDER BY il.received_date ASC
   `;
   type QueueRow = Omit<QCQueueItem, "pending_tests" | "total_tests"> & { pending_tests: string; total_tests: string };
-  const result = await pool.query<QueueRow>(sql);
+  const result = await pool.query<QueueRow>(sql, params);
   return result.rows.map((r) => ({
     ...r,
     pending_tests: parseInt(r.pending_tests, 10),
@@ -304,6 +367,13 @@ export const approveLot = async (
   lotId: string,
   userId: string
 ): Promise<{ success: boolean; message: string }> => {
+  type TestSummaryRow = {
+    test_id: string;
+    test_type: QCTestType;
+    test_date: string;
+    result_status: QCResultStatus;
+  };
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -350,18 +420,42 @@ export const approveLot = async (
     }
 
     if (pendingTests > 0) {
+      const pendingDetails = await client.query<TestSummaryRow>(
+        `SELECT test_id, test_type, test_date::text, result_status
+         FROM qc_tests
+         WHERE lot_id = $1 AND result_status = 'Pending'
+         ORDER BY test_date ASC, test_id ASC`,
+        [lotId]
+      );
+
+      const pendingList = pendingDetails.rows
+        .map((row) => `${row.test_id} (${row.test_type}, ${row.test_date})`)
+        .join("; ");
+
       await client.query("ROLLBACK");
       return {
         success: false,
-        message: `Còn ${pendingTests} kiểm tra chưa có kết quả. Không thể phê duyệt.`,
+        message: `Còn ${pendingTests} kiểm tra chưa có kết quả. Không thể phê duyệt. Pending: ${pendingList}`,
       };
     }
 
     if (failTests > 0) {
+      const failedDetails = await client.query<TestSummaryRow>(
+        `SELECT test_id, test_type, test_date::text, result_status
+         FROM qc_tests
+         WHERE lot_id = $1 AND result_status = 'Fail'
+         ORDER BY test_date ASC, test_id ASC`,
+        [lotId]
+      );
+
+      const failedList = failedDetails.rows
+        .map((row) => `${row.test_id} (${row.test_type}, ${row.test_date})`)
+        .join("; ");
+
       await client.query("ROLLBACK");
       return {
         success: false,
-        message: `Có ${failTests} kiểm tra không đạt. Không thể phê duyệt.`,
+        message: `Có ${failTests} kiểm tra không đạt. Không thể phê duyệt. Failed: ${failedList}`,
       };
     }
 

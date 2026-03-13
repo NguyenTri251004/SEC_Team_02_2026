@@ -169,7 +169,7 @@ flyctl deploy --remote-only -a ims-backend-sec02     # build & deploy (takes ~1-
 - If TS errors occur, fix them before deploying
 - Fly.io app: `ims-backend-sec02`, region: Singapore (`sin`), image: node:22-slim
 - Secrets managed via `flyctl secrets set KEY=VALUE -a ims-backend-sec02`
-- Current secrets: `DATABASE_URL` (Supabase), `BYPASS_AUTH=true`, `PORT=3000`
+- Current secrets: `DATABASE_URL` (Supabase), `BYPASS_AUTH=false`, `PORT=3000`
 - Verify after deploy: `curl https://ims-backend-sec02.fly.dev/api/materials`
 - If DNS doesn't resolve locally, use: `curl --resolve ims-backend-sec02.fly.dev:443:66.241.125.199 https://ims-backend-sec02.fly.dev/api/materials`
 
