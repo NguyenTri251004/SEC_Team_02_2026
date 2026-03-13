@@ -42,9 +42,9 @@ export default function QCPage() {
 
   const pendingCount = tests.filter((t) => t.result_status === "Pending").length;
 
-  // Check how many lots are ready for approval (all tests completed and passed)
+  // Check how many Quarantine lots have completed QC tests and are awaiting a decision
   const readyForApprovalCount = filteredQueueData.filter(
-    (item) => item.total_tests > 0 && item.pending_tests === 0
+    (item) => item.status === "Quarantine" && item.total_tests > 0 && item.pending_tests === 0
   ).length;
 
   // Get tests for a specific lot
@@ -310,6 +310,7 @@ export default function QCPage() {
           dataSource={filteredQueueData}
           rowKey="lot_id"
           loading={queueLoading || testsLoading}
+          scroll={{ x: "max-content" }}
           pagination={{ pageSize: 10 }}
           expandable={{
             expandedRowRender,
