@@ -96,7 +96,7 @@ export interface QCTest {
   material_type?: string;
 }
 
-export type BatchStatus = "Planned" | "In Progress" | "Completed" | "Rejected";
+export type BatchStatus = "Planned" | "In Progress" | "Complete" | "Rejected";
 
 export interface ProductionBatch {
   batch_id: string;

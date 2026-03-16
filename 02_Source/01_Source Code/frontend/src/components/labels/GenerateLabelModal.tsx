@@ -6,9 +6,170 @@ import { useGenerateLabelFromTemplate, useTemplates } from "@/hooks/useLabelsDat
 import { useMaterials } from "@/hooks/useMaterialsData";
 import { useLots } from "@/hooks/useLotsData";
 import { useBatches } from "@/hooks/useBatchesData";
+import { BATCH_STATUS_TAG } from "@/constants/theme";
 import type { CodeType, EntityType, GeneratedLabel, LabelTemplate } from "@/types";
 
 const { Text, Title } = Typography;
+
+const DOWNLOAD_IMAGE_PADDING = 24;
+const DOWNLOAD_INFO_GAP = 18;
+const DOWNLOAD_LINE_HEIGHT = 20;
+const DOWNLOAD_FONT = '14px "Segoe UI", sans-serif';
+
+const normalizeJsonString = (value: string): string => {
+  const trimmedValue = value.trim();
+  const looksLikeJson =
+    (trimmedValue.startsWith("{") && trimmedValue.endsWith("}")) ||
+    (trimmedValue.startsWith("[") && trimmedValue.endsWith("]"));
+
+  if (!looksLikeJson) {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(JSON.parse(trimmedValue), null, 2);
+  } catch {
+    return value;
+  }
+};
+
+const formatLabelContentValue = (value: unknown): string => {
+  if (value === null || value === undefined) {
+    return "N/A";
+  }
+
+  if (typeof value === "string") {
+    return normalizeJsonString(value);
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  return JSON.stringify(value, null, 2);
+};
+
+const buildDownloadInfoLines = (label: GeneratedLabel): string[] => {
+  const baseLines = [
+    `Material ID: ${label.material_id}`,
+    `Part Number: ${label.part_number}`,
+    `Material Name: ${label.material_name}`,
+    `Material Type: ${label.material_type}`,
+    `Entity: ${label.entity_type.toUpperCase()} - ${label.entity_id}`,
+    `Code Type: ${label.code_type.toUpperCase()}`,
+  ];
+
+  const excludedKeys = new Set([
+    "material_id",
+    "part_number",
+    "material_name",
+    "material_type",
+    "entity_type",
+    "entity_id",
+    "generated_date",
+  ]);
+
+  const extraLines = Object.entries(label.label_content)
+    .filter(([key]) => !excludedKeys.has(key))
+    .flatMap(([key, value]) => {
+      const normalizedKey = key.replaceAll("_", " ");
+      const valueLines = formatLabelContentValue(value).split("\n");
+
+      return valueLines.map((line, index) =>
+        index === 0 ? `${normalizedKey}: ${line}` : `  ${line}`
+      );
+    });
+
+  return [...baseLines, ...extraLines];
+};
+
+const splitLongToken = (
+  ctx: CanvasRenderingContext2D,
+  token: string,
+  maxWidth: number
+): string[] => {
+  const chunks: string[] = [];
+  let currentChunk = "";
+
+  for (const char of token) {
+    const candidate = `${currentChunk}${char}`;
+    if (ctx.measureText(candidate).width <= maxWidth || currentChunk.length === 0) {
+      currentChunk = candidate;
+    } else {
+      chunks.push(currentChunk);
+      currentChunk = char;
+    }
+  }
+
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
+};
+
+const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
+  const sourceLines = text.split("\n");
+  const wrapped: string[] = [];
+
+  sourceLines.forEach((sourceLine) => {
+    if (!sourceLine) {
+      wrapped.push("");
+      return;
+    }
+
+    if (ctx.measureText(sourceLine).width <= maxWidth) {
+      wrapped.push(sourceLine);
+      return;
+    }
+
+    const words = sourceLine.split(" ");
+    let currentLine = "";
+
+    words.forEach((word) => {
+      const wordParts =
+        ctx.measureText(word).width > maxWidth ? splitLongToken(ctx, word, maxWidth) : [word];
+
+      wordParts.forEach((part) => {
+        const candidate = currentLine ? `${currentLine} ${part}` : part;
+
+        if (ctx.measureText(candidate).width <= maxWidth) {
+          currentLine = candidate;
+          return;
+        }
+
+        if (currentLine) {
+          wrapped.push(currentLine);
+        }
+        currentLine = part;
+      });
+    });
+
+    if (currentLine) {
+      wrapped.push(currentLine);
+    }
+  });
+
+  return wrapped;
+};
+
+const loadImage = (src: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new window.Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Unable to load label image"));
+    image.src = src;
+  });
+
+const downloadFromUrl = (url: string, filename: string) => {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
 interface GenerateLabelModalProps {
   isOpen: boolean;
@@ -36,6 +197,8 @@ export function GenerateLabelModal({ isOpen, onClose }: GenerateLabelModalProps)
     }
   }, [isOpen, form]);
 
+  const completedBatches = batches.filter((batch) => batch.status === "Complete");
+
   const handleTemplateChange = (templateId: string) => {
     const template = templates.find((t) => t.template_id === templateId);
     setSelectedTemplate(template || null);
@@ -61,6 +224,14 @@ export function GenerateLabelModal({ isOpen, onClose }: GenerateLabelModalProps)
         message.error("Please select a template");
         return;
       }
+
+      if (entityType === "batch") {
+        const selectedBatch = batches.find((batch) => batch.batch_id === values.entity_id);
+        if (!selectedBatch || selectedBatch.status !== "Complete") {
+          message.error("Only Completed batches are allowed for label generation.");
+          return;
+        }
+      }
       
       const input = {
         template_id: values.template_id,
@@ -79,16 +250,56 @@ export function GenerateLabelModal({ isOpen, onClose }: GenerateLabelModalProps)
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!generatedLabel) return;
 
-    const link = document.createElement("a");
-    link.href = generatedLabel.code_data;
-    link.download = `label-${generatedLabel.entity_type}-${generatedLabel.entity_id}-${generatedLabel.code_type}-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    message.success("Label downloaded!");
+    const filename = `label-${generatedLabel.entity_type}-${generatedLabel.entity_id}-${generatedLabel.code_type}-${Date.now()}.png`;
+
+    try {
+      const codeImage = await loadImage(generatedLabel.code_data);
+      const infoLines = buildDownloadInfoLines(generatedLabel);
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        throw new Error("Unable to initialize canvas");
+      }
+
+      ctx.font = DOWNLOAD_FONT;
+      const contentWidth = Math.max(codeImage.width, 420);
+      const wrappedLines = infoLines.flatMap((line) => wrapText(ctx, line, contentWidth));
+
+      canvas.width = contentWidth + DOWNLOAD_IMAGE_PADDING * 2;
+      canvas.height =
+        DOWNLOAD_IMAGE_PADDING +
+        codeImage.height +
+        DOWNLOAD_INFO_GAP +
+        wrappedLines.length * DOWNLOAD_LINE_HEIGHT +
+        DOWNLOAD_IMAGE_PADDING;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const imageX = (canvas.width - codeImage.width) / 2;
+      ctx.drawImage(codeImage, imageX, DOWNLOAD_IMAGE_PADDING);
+
+      ctx.fillStyle = "#111111";
+      ctx.font = DOWNLOAD_FONT;
+      ctx.textBaseline = "top";
+
+      const textStartY = DOWNLOAD_IMAGE_PADDING + codeImage.height + DOWNLOAD_INFO_GAP;
+      wrappedLines.forEach((line, index) => {
+        ctx.fillText(line, DOWNLOAD_IMAGE_PADDING, textStartY + index * DOWNLOAD_LINE_HEIGHT);
+      });
+
+      const outputDataUrl = canvas.toDataURL("image/png");
+      downloadFromUrl(outputDataUrl, filename);
+      message.success("Label downloaded with details!");
+    } catch {
+      downloadFromUrl(generatedLabel.code_data, filename);
+      message.warning("Downloaded original label image (without extra details).");
+    }
   };
 
   const handleClose = () => {
@@ -228,14 +439,20 @@ export function GenerateLabelModal({ isOpen, onClose }: GenerateLabelModalProps)
               name="entity_id"
               label="Select Production Batch"
               rules={[{ required: true, message: "Please select a batch" }]}
+              extra="Only batches with Completed status are available."
             >
               <Select
-                placeholder="Select production batch"
+                placeholder={
+                  completedBatches.length > 0
+                    ? "Select completed production batch"
+                    : "No completed batches available"
+                }
                 loading={batchesLoading}
-                options={batches.map((b) => ({
+                options={completedBatches.map((b) => ({
                   value: b.batch_id,
-                  label: `${b.batch_number} - ${b.status}`,
+                  label: `${b.batch_number} - ${BATCH_STATUS_TAG[b.status]?.label ?? b.status}`,
                 }))}
+                notFoundContent={batchesLoading ? "Loading..." : "No completed batches"}
                 showSearch
                 filterOption={(input, option) =>
                   (option?.label?.toString() || "").toLowerCase().includes(input.toLowerCase())

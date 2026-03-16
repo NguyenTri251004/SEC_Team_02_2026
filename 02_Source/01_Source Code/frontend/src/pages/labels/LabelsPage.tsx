@@ -48,6 +48,167 @@ const LABEL_TYPE_NAMES: Record<string, string> = {
   status: "Status",
 };
 
+const DOWNLOAD_IMAGE_PADDING = 24;
+const DOWNLOAD_INFO_GAP = 18;
+const DOWNLOAD_LINE_HEIGHT = 20;
+const DOWNLOAD_FONT = '14px "Segoe UI", sans-serif';
+
+const normalizeJsonString = (value: string): string => {
+  const trimmedValue = value.trim();
+  const looksLikeJson =
+    (trimmedValue.startsWith("{") && trimmedValue.endsWith("}")) ||
+    (trimmedValue.startsWith("[") && trimmedValue.endsWith("]"));
+
+  if (!looksLikeJson) {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(JSON.parse(trimmedValue), null, 2);
+  } catch {
+    return value;
+  }
+};
+
+const formatLabelContentValue = (value: unknown): string => {
+  if (value === null || value === undefined) {
+    return "N/A";
+  }
+
+  if (typeof value === "string") {
+    return normalizeJsonString(value);
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  return JSON.stringify(value, null, 2);
+};
+
+const buildDownloadInfoLines = (label: GeneratedLabel): string[] => {
+  const baseLines = [
+    `Material ID: ${label.material_id}`,
+    `Part Number: ${label.part_number}`,
+    `Material Name: ${label.material_name}`,
+    `Material Type: ${label.material_type}`,
+    `Entity: ${label.entity_type.toUpperCase()} - ${label.entity_id}`,
+    `Code Type: ${label.code_type.toUpperCase()}`,
+    `Created Date: ${dayjs(label.created_date).format("YYYY-MM-DD HH:mm")}`,
+  ];
+
+  const excludedKeys = new Set([
+    "material_id",
+    "part_number",
+    "material_name",
+    "material_type",
+    "entity_type",
+    "entity_id",
+    "generated_date",
+  ]);
+
+  const extraLines = Object.entries(label.label_content)
+    .filter(([key]) => !excludedKeys.has(key))
+    .flatMap(([key, value]) => {
+      const normalizedKey = key.replaceAll("_", " ");
+      const valueLines = formatLabelContentValue(value).split("\n");
+
+      return valueLines.map((line, index) =>
+        index === 0 ? `${normalizedKey}: ${line}` : `  ${line}`
+      );
+    });
+
+  return [...baseLines, ...extraLines];
+};
+
+const splitLongToken = (
+  ctx: CanvasRenderingContext2D,
+  token: string,
+  maxWidth: number
+): string[] => {
+  const chunks: string[] = [];
+  let currentChunk = "";
+
+  for (const char of token) {
+    const candidate = `${currentChunk}${char}`;
+    if (ctx.measureText(candidate).width <= maxWidth || currentChunk.length === 0) {
+      currentChunk = candidate;
+    } else {
+      chunks.push(currentChunk);
+      currentChunk = char;
+    }
+  }
+
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
+};
+
+const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
+  const sourceLines = text.split("\n");
+  const wrapped: string[] = [];
+
+  sourceLines.forEach((sourceLine) => {
+    if (!sourceLine) {
+      wrapped.push("");
+      return;
+    }
+
+    if (ctx.measureText(sourceLine).width <= maxWidth) {
+      wrapped.push(sourceLine);
+      return;
+    }
+
+    const words = sourceLine.split(" ");
+    let currentLine = "";
+
+    words.forEach((word) => {
+      const wordParts =
+        ctx.measureText(word).width > maxWidth ? splitLongToken(ctx, word, maxWidth) : [word];
+
+      wordParts.forEach((part) => {
+        const candidate = currentLine ? `${currentLine} ${part}` : part;
+
+        if (ctx.measureText(candidate).width <= maxWidth) {
+          currentLine = candidate;
+          return;
+        }
+
+        if (currentLine) {
+          wrapped.push(currentLine);
+        }
+        currentLine = part;
+      });
+    });
+
+    if (currentLine) {
+      wrapped.push(currentLine);
+    }
+  });
+
+  return wrapped;
+};
+
+const loadImage = (src: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new window.Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Unable to load label image"));
+    image.src = src;
+  });
+
+const downloadFromUrl = (url: string, filename: string) => {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 export default function LabelsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [templateSearchTerm, setTemplateSearchTerm] = useState("");
@@ -103,14 +264,55 @@ export default function LabelsPage() {
     }
   };
 
-  const handleDownload = (label: GeneratedLabel) => {
-    const link = document.createElement("a");
-    link.href = label.code_data;
-    link.download = `label-${label.material_id}-${label.code_type}-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    message.success("Label downloaded!");
+  const handleDownload = async (label: GeneratedLabel) => {
+    const filename = `label-${label.material_id}-${label.code_type}-${Date.now()}.png`;
+
+    try {
+      const codeImage = await loadImage(label.code_data);
+      const infoLines = buildDownloadInfoLines(label);
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        throw new Error("Unable to initialize canvas");
+      }
+
+      ctx.font = DOWNLOAD_FONT;
+      const contentWidth = Math.max(codeImage.width, 420);
+      const textMaxWidth = contentWidth;
+      const wrappedLines = infoLines.flatMap((line) => wrapText(ctx, line, textMaxWidth));
+
+      canvas.width = contentWidth + DOWNLOAD_IMAGE_PADDING * 2;
+      canvas.height =
+        DOWNLOAD_IMAGE_PADDING +
+        codeImage.height +
+        DOWNLOAD_INFO_GAP +
+        wrappedLines.length * DOWNLOAD_LINE_HEIGHT +
+        DOWNLOAD_IMAGE_PADDING;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const imageX = (canvas.width - codeImage.width) / 2;
+      ctx.drawImage(codeImage, imageX, DOWNLOAD_IMAGE_PADDING);
+
+      ctx.fillStyle = "#111111";
+      ctx.font = DOWNLOAD_FONT;
+      ctx.textBaseline = "top";
+
+      const textStartY = DOWNLOAD_IMAGE_PADDING + codeImage.height + DOWNLOAD_INFO_GAP;
+      wrappedLines.forEach((line, index) => {
+        ctx.fillText(line, DOWNLOAD_IMAGE_PADDING, textStartY + index * DOWNLOAD_LINE_HEIGHT);
+      });
+
+      const outputDataUrl = canvas.toDataURL("image/png");
+      downloadFromUrl(outputDataUrl, filename);
+      message.success("Label downloaded with details!");
+    } catch {
+      downloadFromUrl(label.code_data, filename);
+      message.warning("Downloaded original label image (without extra details).");
+    }
   };
 
   const filteredData = labels.filter(
