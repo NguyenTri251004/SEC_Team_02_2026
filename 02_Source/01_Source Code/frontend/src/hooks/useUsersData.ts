@@ -7,7 +7,7 @@ const mockData: User[] = [
     user_id: "USR-001",
     keycloak_sub: "kc-sub-001",
     email: "admin@ims.local",
-    username: "admin_user",
+    username: "admin123",
     role: "admin",
     is_active: true,
     created_at: "2026-01-01T00:00:00Z",

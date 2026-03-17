@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Seed users (user_ids match Keycloak subs defined in inventory-realm.json)
 INSERT INTO users (user_id, username, email, role, is_active, last_login) VALUES
-  ('11111111-1111-4111-8111-111111111111', 'admin',       'admin@ims.local',      'Admin',            true,  '2026-03-09 08:30:00'),
+  ('11111111-1111-4111-8111-111111111111', 'admin123',    'admin@ims.local',      'Admin',            true,  '2026-03-09 08:30:00'),
   ('22222222-2222-4222-8222-222222222222', 'inv_manager', 'manager@ims.local',    'InventoryManager', true,  '2026-03-08 14:15:00'),
   ('33333333-3333-4333-8333-333333333333', 'qc_user',     'qc@ims.local',         'QualityControl',   true,  '2026-03-09 07:45:00'),
   ('44444444-4444-4444-8444-444444444444', 'prod_user',   'production@ims.local', 'Production',       true,  '2026-03-07 16:20:00'),
@@ -88,19 +88,19 @@ CREATE INDEX IF NOT EXISTS idx_label_templates_active ON label_templates (is_act
 INSERT INTO label_templates (template_id, template_name, label_type, template_content, width, height, description, is_active, created_by) VALUES
   ('TPL-001', 'Standard Raw Material Label', 'Raw Material',
    '{"fields":["lot_id","material_name","manufacturer_lot","received_date","expiration_date","quantity","storage_location"]}',
-   100.0, 50.0, 'Standard label for raw materials', true, 'admin'),
+  100.0, 50.0, 'Standard label for raw materials', true, 'admin123'),
   ('TPL-002', 'API Label', 'API',
    '{"fields":["lot_id","material_name","manufacturer_name","manufacturer_lot","received_date","expiration_date","quantity","storage_conditions"]}',
-   100.0, 75.0, 'Label for API materials', true, 'admin'),
+  100.0, 75.0, 'Label for API materials', true, 'admin123'),
   ('TPL-003', 'Status Label', 'Status',
    '{"fields":["lot_id","material_name","status","modified_date"]}',
-   75.0, 37.5, 'Label for lot status indication', true, 'admin'),
+  75.0, 37.5, 'Label for lot status indication', true, 'admin123'),
   ('TPL-004', 'Finished Product Label', 'Finished Product',
    '{"fields":["batch_number","product_name","manufacture_date","expiration_date","batch_size"]}',
-   100.0, 75.0, 'Label for finished products', true, 'admin'),
+  100.0, 75.0, 'Label for finished products', true, 'admin123'),
   ('TPL-005', 'Sample Label', 'Sample',
    '{"fields":["lot_id","material_name","is_sample","parent_lot_id","quantity"]}',
-   75.0, 50.0, 'Label for QC samples', true, 'admin');
+  75.0, 50.0, 'Label for QC samples', true, 'admin123');
 
 -- ────────────────────────────────────────────────────────────
 -- 3b. GeneratedLabels (Nhan da tao)
@@ -247,24 +247,24 @@ CREATE INDEX IF NOT EXISTS idx_qc_test_date      ON qc_tests (test_date);
 
 INSERT INTO qc_tests (test_id, lot_id, test_type, test_method, test_date, test_result, acceptance_criteria, result_status, performed_by, verified_by) VALUES
   -- LOT-001: passed all tests -> Accepted
-  ('QC-001', 'LOT-001', 'Identity',  'HPLC Analysis',         '2026-01-16', '98.5% purity',       '>= 98.0% purity',       'Pass', 'qc_user', 'admin'),
-  ('QC-002', 'LOT-001', 'Potency',   'UV Spectroscopy',       '2026-01-16', '99.1% potency',      '>= 95.0% potency',      'Pass', 'qc_user', 'admin'),
-  ('QC-003', 'LOT-001', 'Microbial', 'USP <61> Bioburden',    '2026-01-17', '< 10 CFU/g',         '< 100 CFU/g',           'Pass', 'qc_user', 'admin'),
+  ('QC-001', 'LOT-001', 'Identity',  'HPLC Analysis',         '2026-01-16', '98.5% purity',       '>= 98.0% purity',       'Pass', 'qc_user', 'admin123'),
+  ('QC-002', 'LOT-001', 'Potency',   'UV Spectroscopy',       '2026-01-16', '99.1% potency',      '>= 95.0% potency',      'Pass', 'qc_user', 'admin123'),
+  ('QC-003', 'LOT-001', 'Microbial', 'USP <61> Bioburden',    '2026-01-17', '< 10 CFU/g',         '< 100 CFU/g',           'Pass', 'qc_user', 'admin123'),
 
   -- LOT-002: pending QC (still in Quarantine)
   ('QC-004', 'LOT-002', 'Identity',  'FTIR Spectroscopy',     '2026-02-03', NULL,                  'Match reference spectrum','Pending', 'qc_user', NULL),
   ('QC-005', 'LOT-002', 'Physical',  'Particle Size Analysis','2026-02-03', NULL,                  '50-150 um',              'Pending', 'qc_user', NULL),
 
   -- LOT-003: failed potency -> Rejected
-  ('QC-006', 'LOT-003', 'Identity',  'HPLC Analysis',         '2026-02-21', '97.2% purity',       '>= 98.0% purity',       'Pass',  'qc_user', 'admin'),
-  ('QC-007', 'LOT-003', 'Potency',   'UV Spectroscopy',       '2026-02-21', '85.2% potency',      '>= 95.0% potency',      'Fail',  'qc_user', 'admin'),
+  ('QC-006', 'LOT-003', 'Identity',  'HPLC Analysis',         '2026-02-21', '97.2% purity',       '>= 98.0% purity',       'Pass',  'qc_user', 'admin123'),
+  ('QC-007', 'LOT-003', 'Potency',   'UV Spectroscopy',       '2026-02-21', '85.2% potency',      '>= 95.0% potency',      'Fail',  'qc_user', 'admin123'),
 
   -- LOT-004: passed -> Accepted
-  ('QC-008', 'LOT-004', 'Identity',  'GC-MS Analysis',        '2026-01-11', '96.1% ethanol',      '>= 95.0%',              'Pass', 'qc_user', 'admin'),
-  ('QC-009', 'LOT-004', 'Chemical',  'Water Content (KF)',    '2026-01-11', '3.8% water',         '< 5.0%',               'Pass', 'qc_user', 'admin'),
+  ('QC-008', 'LOT-004', 'Identity',  'GC-MS Analysis',        '2026-01-11', '96.1% ethanol',      '>= 95.0%',              'Pass', 'qc_user', 'admin123'),
+  ('QC-009', 'LOT-004', 'Chemical',  'Water Content (KF)',    '2026-01-11', '3.8% water',         '< 5.0%',               'Pass', 'qc_user', 'admin123'),
 
   -- LOT-005: passed -> Accepted (container visual inspection)
-  ('QC-010', 'LOT-005', 'Physical',  'Visual Inspection',     '2026-02-16', 'No defects found',   'Zero visible defects',  'Pass', 'qc_user', 'admin'),
+  ('QC-010', 'LOT-005', 'Physical',  'Visual Inspection',     '2026-02-16', 'No defects found',   'Zero visible defects',  'Pass', 'qc_user', 'admin123'),
 
   -- LOT-006: pending QC (still in Quarantine)
   ('QC-011', 'LOT-006', 'Identity',  'HPLC Analysis',         '2026-03-02', NULL,                  '>= 98.0% purity',       'Pending', 'qc_user', NULL),
@@ -272,10 +272,10 @@ INSERT INTO qc_tests (test_id, lot_id, test_type, test_method, test_date, test_r
   ('QC-013', 'LOT-006', 'Microbial', 'USP <61> Bioburden',    '2026-03-03', NULL,                  '< 100 CFU/g',           'Pending', 'qc_user', NULL),
 
   -- LOT-007: passed -> Accepted (cap inspection)
-  ('QC-014', 'LOT-007', 'Physical',  'Torque Test',           '2026-02-21', '12 in-lb',           '10-15 in-lb',           'Pass', 'qc_user', 'admin'),
+  ('QC-014', 'LOT-007', 'Physical',  'Torque Test',           '2026-02-21', '12 in-lb',           '10-15 in-lb',           'Pass', 'qc_user', 'admin123'),
 
   -- LOT-008: passed when it existed -> was Accepted, now Depleted
-  ('QC-015', 'LOT-008', 'Identity',  'FTIR Spectroscopy',     '2026-01-06', 'Match confirmed',    'Match reference spectrum','Pass', 'qc_user', 'admin');
+  ('QC-015', 'LOT-008', 'Identity',  'FTIR Spectroscopy',     '2026-01-06', 'Match confirmed',    'Match reference spectrum','Pass', 'qc_user', 'admin123');
 
 -- ────────────────────────────────────────────────────────────
 -- 7. ProductionBatches (Lo san xuat)
