@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Modal, Form, Select, Radio, Button, message, Space, Image, Typography, Divider, Alert } from "antd";
 import { DownloadOutlined, QrcodeOutlined } from "@ant-design/icons";
+import axios from "axios";
 
 import { useGenerateLabelFromTemplate, useTemplates } from "@/hooks/useLabelsData";
 import { useMaterials } from "@/hooks/useMaterialsData";
@@ -243,10 +244,17 @@ export function GenerateLabelModal({ isOpen, onClose }: GenerateLabelModalProps)
       const result = await generateLabelFromTemplate(input);
       setGeneratedLabel(result);
       message.success("Label generated successfully!");
-    } catch (error: any) {
-      if (error.name !== "ValidationError") {
-        message.error(error.response?.data?.error || "Failed to generate label");
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === "ValidationError") {
+        return;
       }
+
+      if (axios.isAxiosError<{ error?: string }>(error)) {
+        message.error(error.response?.data?.error || "Failed to generate label");
+        return;
+      }
+
+      message.error("Failed to generate label");
     }
   };
 
@@ -506,10 +514,9 @@ export function GenerateLabelModal({ isOpen, onClose }: GenerateLabelModalProps)
           <div style={{ textAlign: "left", marginTop: "16px" }}>
             <Text strong>Entity ID:</Text> <Text code>{generatedLabel.entity_id}</Text>
             <Divider style={{ margin: "8px 0" }} />
-            <Text strong>Label Content:</Text>
           </div>
 
-          <div style={{ textAlign: "left", marginTop: "16px" }}>
+          <div style={{ textAlign: "left",  }}>
             <Text strong>Label Content:</Text>
             <pre
               style={{
