@@ -95,7 +95,7 @@ export const authenticateJWT = async (
   if (process.env.BYPASS_AUTH === 'true') {
     req.user = {
       user_id: 'USR-001',
-      username: 'admin',
+      username: 'admin123',
       email: 'admin@ims.local',
       roles: ['admin', 'inventory_manager', 'quality_control', 'production', 'viewer'],
       realm_access: {
