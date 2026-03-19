@@ -100,7 +100,10 @@ INSERT INTO label_templates (template_id, template_name, label_type, template_co
    100.0, 75.0, 'Label for finished products', true, 'admin'),
   ('TPL-005', 'Sample Label', 'Sample',
    '{"fields":["lot_id","material_name","is_sample","parent_lot_id","quantity"]}',
-   75.0, 50.0, 'Label for QC samples', true, 'admin');
+   75.0, 50.0, 'Label for QC samples', true, 'admin'),
+  ('TPL-006', 'Intermediate Product Label', 'Intermediate',
+   '{"fields":["batch_id","batch_number","product_name","manufacture_date","expiration_date","status"]}',
+   100.0, 62.5, 'Label for intermediate products', true, 'admin');
 
 -- ────────────────────────────────────────────────────────────
 -- 3b. GeneratedLabels (Nhan da tao)

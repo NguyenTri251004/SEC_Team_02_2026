@@ -9,6 +9,8 @@ import {
   UserRole,
   DB_ROLE_TO_API,
   API_ROLE_TO_DB,
+  ServiceHealth,
+  SystemHealth,
 } from "./admin.types";
 
 // ── Keycloak Admin API ──────────────────────────────────────────────────────────────────────────────
@@ -503,4 +505,100 @@ export const getAdminStats = async (): Promise<AdminStats> => {
   }
 
   return stats;
+};
+
+/**
+ * Get system health: ping DB, Redis, Elasticsearch with latency
+ */
+export const getSystemHealth = async (): Promise<SystemHealth> => {
+  const services: ServiceHealth[] = [];
+
+  // Check PostgreSQL
+  try {
+    const start = Date.now();
+    await pool.query("SELECT 1");
+    services.push({
+      name: "PostgreSQL",
+      status: "healthy",
+      latency_ms: Date.now() - start,
+    });
+  } catch (error) {
+    services.push({
+      name: "PostgreSQL",
+      status: "unhealthy",
+      latency_ms: null,
+      message: error instanceof Error ? error.message : "Connection failed",
+    });
+  }
+
+  // Check Redis
+  try {
+    const start = Date.now();
+    await redisClient.ping();
+    services.push({
+      name: "Redis",
+      status: "healthy",
+      latency_ms: Date.now() - start,
+    });
+  } catch (error) {
+    services.push({
+      name: "Redis",
+      status: "unhealthy",
+      latency_ms: null,
+      message: error instanceof Error ? error.message : "Connection failed",
+    });
+  }
+
+  // Check Elasticsearch
+  try {
+    const esUrl = process.env.ELASTICSEARCH_URL ?? "http://localhost:9200";
+    const start = Date.now();
+    const res = await fetch(`${esUrl}/_cluster/health`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    const latency = Date.now() - start;
+    if (res.ok) {
+      const data = (await res.json()) as { status: string };
+      services.push({
+        name: "Elasticsearch",
+        status: data.status === "red" ? "degraded" : "healthy",
+        latency_ms: latency,
+        message: `Cluster status: ${data.status}`,
+      });
+    } else {
+      services.push({
+        name: "Elasticsearch",
+        status: "unhealthy",
+        latency_ms: latency,
+        message: `HTTP ${res.status}`,
+      });
+    }
+  } catch (error) {
+    services.push({
+      name: "Elasticsearch",
+      status: "unhealthy",
+      latency_ms: null,
+      message: error instanceof Error ? error.message : "Connection failed",
+    });
+  }
+
+  // Determine overall status
+  const hasUnhealthy = services.some((s) => s.status === "unhealthy");
+  const hasDegraded = services.some((s) => s.status === "degraded");
+  // PostgreSQL is critical - if it's down, overall is unhealthy
+  const dbService = services.find((s) => s.name === "PostgreSQL");
+  const overall =
+    dbService?.status === "unhealthy"
+      ? "unhealthy"
+      : hasUnhealthy
+        ? "degraded"
+        : hasDegraded
+          ? "degraded"
+          : "healthy";
+
+  return {
+    overall,
+    services,
+    timestamp: new Date().toISOString(),
+  };
 };

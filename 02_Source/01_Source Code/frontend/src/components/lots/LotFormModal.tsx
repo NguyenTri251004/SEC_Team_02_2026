@@ -4,7 +4,7 @@ import { Modal, Form, Input, InputNumber, Select, DatePicker, Switch, message } 
 import dayjs from "dayjs";
 
 import { useMaterials } from "@/hooks/useMaterialsData";
-import { useSaveLot } from "@/hooks/useLotsData";
+import { useSaveLot, useParentLots } from "@/hooks/useLotsData";
 import type { InventoryLot } from "@/types";
 
 interface LotFormModalProps {
@@ -17,6 +17,7 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
   const [form] = Form.useForm();
   const { mutateAsync: saveLot, isPending } = useSaveLot();
   const { data: materials = [] } = useMaterials();
+  const { data: parentLots = [] } = useParentLots();
   const isEditing = !!initialData;
   const isSample = Form.useWatch("is_sample", form);
 
@@ -207,8 +208,17 @@ export function LotFormModal({ isOpen, onClose, initialData }: LotFormModalProps
         </div>
 
         {isSample && (
-          <Form.Item name="parent_lot_id" label="Parent Lot ID">
-            <Input placeholder="Ex: LOT-001" />
+          <Form.Item name="parent_lot_id" label="Parent Lot">
+            <Select
+              showSearch
+              allowClear
+              placeholder="Select parent lot"
+              optionFilterProp="label"
+              options={parentLots.map((l) => ({
+                value: l.lot_id,
+                label: `${l.lot_id} — ${l.material_name ?? l.material_id}`,
+              }))}
+            />
           </Form.Item>
         )}
       </Form>

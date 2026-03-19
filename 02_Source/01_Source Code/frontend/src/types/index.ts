@@ -96,7 +96,7 @@ export interface QCTest {
   material_type?: string;
 }
 
-export type BatchStatus = "Planned" | "In Progress" | "Completed" | "Rejected";
+export type BatchStatus = "Planned" | "In Progress" | "Complete" | "Rejected";
 
 export interface ProductionBatch {
   batch_id: string;
@@ -112,6 +112,43 @@ export interface ProductionBatch {
   modified_date: string;
   // joined fields
   product_name?: string;
+}
+
+export interface BatchComponent {
+  component_id: string;
+  batch_id: string;
+  lot_id: string;
+  planned_quantity: number;
+  actual_quantity: number | null;
+  unit_of_measure: string;
+  addition_date: string | null;
+  added_by: string | null;
+  material_id?: string;
+  material_name?: string;
+  manufacturer_lot?: string;
+  lot_status?: string;
+  lot_expiration_date?: string;
+  lot_quantity?: number;
+}
+
+export interface ProductionTraceabilityItem {
+  component_id: string;
+  lot_id: string;
+  planned_quantity: number;
+  actual_quantity: number | null;
+  unit_of_measure: string;
+  addition_date: string | null;
+  material_id: string;
+  material_name: string;
+  manufacturer_lot: string;
+  supplier_name: string;
+  expiration_date: string;
+  lot_status: string;
+  transaction_id: string | null;
+  transaction_quantity: number | null;
+  transaction_date: string | null;
+  reference_id: string | null;
+  notes: string | null;
 }
 
 export interface LabelTemplate {
@@ -325,49 +362,17 @@ export interface AlertItem {
 }
 
 // ============================================================
-// Reports
+// Health Monitoring
 // ============================================================
-export interface InventoryReportRow {
-  lot_id: string;
-  material_id: string;
-  material_name: string | null;
-  material_type: string | null;
-  manufacturer_name: string;
-  manufacturer_lot: string;
-  supplier_name: string | null;
-  received_date: string;
-  expiration_date: string;
-  status: string;
-  quantity: number;
-  unit_of_measure: string;
-  storage_location: string | null;
-  po_number: string | null;
-  is_sample: boolean;
-  created_date: string;
-  modified_date: string;
+export interface ServiceHealth {
+  name: string;
+  status: "healthy" | "unhealthy" | "degraded";
+  latency_ms: number | null;
+  message?: string;
 }
 
-export interface TransactionReportRow {
-  transaction_id: string;
-  lot_id: string;
-  transaction_type: string;
-  quantity: number;
-  unit_of_measure: string;
-  reference_id: string | null;
-  notes: string | null;
-  performed_by: string | null;
-  transaction_date: string;
-  created_date: string;
-  material_id?: string | null;
-  material_name?: string | null;
-}
-
-export interface AuditLogRow {
-  event_type: "transaction" | "lot_status_change";
-  event_date: string;
-  lot_id: string | null;
-  reference_id: string | null;
-  performed_by: string | null;
-  notes: string | null;
-  details: Record<string, unknown>;
+export interface SystemHealth {
+  overall: "healthy" | "unhealthy" | "degraded";
+  services: ServiceHealth[];
+  timestamp: string;
 }

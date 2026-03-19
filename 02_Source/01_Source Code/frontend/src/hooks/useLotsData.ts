@@ -134,3 +134,18 @@ export const useDeleteLot = () => {
     },
   });
 };
+
+export const useParentLots = () => {
+  return useQuery({
+    queryKey: ["lots", "parent-candidates"],
+    queryFn: async (): Promise<InventoryLot[]> => {
+      try {
+        const response = await api.get("/api/lots?status=Accepted&is_sample=false");
+        const data = response.data?.data || response.data;
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
+    },
+  });
+};

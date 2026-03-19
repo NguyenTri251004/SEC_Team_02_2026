@@ -111,6 +111,16 @@ export const updateLot = async (
   id: string,
   dto: UpdateLotDto
 ): Promise<InventoryLot | null> => {
+  // Enforce: only Quarantine lots can be edited
+  const current = await pool.query<{ status: string }>(
+    "SELECT status FROM inventory_lots WHERE lot_id = $1",
+    [id]
+  );
+  if (current.rows.length === 0) return null;
+  if (current.rows[0].status !== "Quarantine") {
+    throw new Error(`Only lots in Quarantine status can be edited. Current status: ${current.rows[0].status}`);
+  }
+
   const result = await pool.query<InventoryLot>(
     `UPDATE inventory_lots
      SET manufacturer_name      = COALESCE($1, manufacturer_name),
@@ -192,6 +202,16 @@ export const getLotsByMaterial = async (materialId: string): Promise<InventoryLo
 };
 
 export const deleteLot = async (id: string): Promise<boolean> => {
+  // Enforce: only Quarantine lots can be deleted
+  const current = await pool.query<{ status: string }>(
+    "SELECT status FROM inventory_lots WHERE lot_id = $1",
+    [id]
+  );
+  if (current.rows.length === 0) return false;
+  if (current.rows[0].status !== "Quarantine") {
+    throw new Error(`Only lots in Quarantine status can be deleted. Current status: ${current.rows[0].status}`);
+  }
+
   const result = await pool.query(
     `DELETE FROM inventory_lots WHERE lot_id = $1`,
     [id]

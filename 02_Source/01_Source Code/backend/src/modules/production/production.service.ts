@@ -205,30 +205,130 @@ export const updateBatchStatus = async (
   id: string,
   status: BatchStatus
 ): Promise<ProductionBatch | null> => {
-  const currentResult = await pool.query<ProductionBatch>(
-    "SELECT * FROM production_batches WHERE batch_id = $1",
-    [id]
-  );
+  const client = await getClient();
 
-  const currentBatch = currentResult.rows[0];
-  if (!currentBatch) {
-    return null;
-  }
+  try {
+    await client.query("BEGIN");
 
-  const allowedStatuses = VALID_BATCH_TRANSITIONS[currentBatch.status];
-  if (!allowedStatuses.includes(status)) {
-    throw new Error(
-      `Invalid status transition: ${currentBatch.status} -> ${status}. Allowed: ${allowedStatuses.join(", ") || "none"}`
+    const currentResult = await client.query<ProductionBatch>(
+      "SELECT * FROM production_batches WHERE batch_id = $1 FOR UPDATE",
+      [id]
     );
-  }
 
-  await pool.query(
-    `UPDATE production_batches
-     SET status = $1,
-         modified_date = CURRENT_TIMESTAMP
-     WHERE batch_id = $2`,
-    [status, id]
-  );
+    const currentBatch = currentResult.rows[0];
+    if (!currentBatch) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    const allowedStatuses = VALID_BATCH_TRANSITIONS[currentBatch.status];
+    if (!allowedStatuses.includes(status)) {
+      throw new Error(
+        `Invalid status transition: ${currentBatch.status} -> ${status}. Allowed: ${allowedStatuses.join(", ") || "none"}`
+      );
+    }
+
+    // When completing a batch, verify all components consumed and create finished product lot
+    if (status === "Complete") {
+      // Check all components have been consumed (no NULL actual_quantity)
+      const uncomsumedResult = await client.query<{ cnt: string }>(
+        `SELECT COUNT(*) AS cnt FROM batch_components
+         WHERE batch_id = $1 AND actual_quantity IS NULL`,
+        [id]
+      );
+      const uncomsumedCount = parseInt(uncomsumedResult.rows[0].cnt, 10);
+      if (uncomsumedCount > 0) {
+        throw new Error(
+          "All components must be consumed before completing the batch"
+        );
+      }
+
+      // Auto-generate lot_id using LOT-XXX sequence pattern
+      const lotSeqResult = await client.query<{ max_id: string | null }>(
+        `SELECT lot_id AS max_id FROM inventory_lots
+         WHERE lot_id ~ '^LOT-[0-9]+$'
+         ORDER BY LENGTH(lot_id) DESC, lot_id DESC
+         LIMIT 1`
+      );
+      const lastLotId = lotSeqResult.rows[0]?.max_id;
+      let newLotId: string;
+      if (lastLotId) {
+        const num = parseInt(lastLotId.replace(/^LOT-/, ""), 10);
+        newLotId = `LOT-${String(num + 1).padStart(3, "0")}`;
+      } else {
+        newLotId = `LOT-001`;
+      }
+
+      // INSERT finished product into inventory_lots
+      await client.query(
+        `INSERT INTO inventory_lots
+           (lot_id, material_id, quantity, status, manufacturer_name, manufacturer_lot, supplier_name, received_date, expiration_date, unit_of_measure)
+         VALUES ($1, $2, $3, 'Quarantine', 'Internal Production', $4, 'Internal', CURRENT_DATE, $5, $6)`,
+        [
+          newLotId,
+          currentBatch.product_id,
+          currentBatch.batch_size,
+          currentBatch.batch_number,
+          currentBatch.expiration_date,
+          currentBatch.unit_of_measure,
+        ]
+      );
+
+      // INSERT receipt transaction for the finished product lot
+      await client.query<InventoryTransactionRow>(
+        `INSERT INTO inventory_transactions
+           (transaction_id, lot_id, transaction_type, quantity, unit_of_measure, reference_id, notes, performed_by, transaction_date)
+         VALUES ($1, $2, 'Receipt', $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)`,
+        [
+          randomUUID(),
+          newLotId,
+          currentBatch.batch_size,
+          currentBatch.unit_of_measure,
+          currentBatch.batch_id,
+          `Finished product output from batch ${currentBatch.batch_number}`,
+          "system",
+        ]
+      );
+    }
+
+    await client.query(
+      `UPDATE production_batches
+       SET status = $1,
+           modified_date = CURRENT_TIMESTAMP
+       WHERE batch_id = $2`,
+      [status, id]
+    );
+
+    await client.query("COMMIT");
+
+    // Auto-generate Finished Product label (non-blocking)
+    if (status === "Complete") {
+      try {
+        const { getTemplatesByLabelType, generateLabelFromTemplate } = await import("../labels/label.service");
+        const { LabelType, EntityType, CodeType } = await import("../labels/label.types");
+        const fpTemplates = await getTemplatesByLabelType(LabelType.FINISHED_PRODUCT);
+        if (fpTemplates.length > 0) {
+          await generateLabelFromTemplate(
+            {
+              template_id: fpTemplates[0].template_id,
+              entity_type: EntityType.BATCH,
+              entity_id: id,
+              code_type: CodeType.QR_CODE,
+            },
+            "system"
+          );
+          console.log(`[Production] Auto-generated Finished Product label for batch ${id}`);
+        }
+      } catch (labelError) {
+        console.warn(`[Production] Auto-label generation failed for batch ${id}:`, labelError);
+      }
+    }
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 
   return getBatchById(id);
 };

@@ -179,7 +179,9 @@ router.put(
       res.json({ success: true, data: lot });
     } catch (error) {
       console.error("Loi cap nhat lot:", error);
-      res.status(500).json({ success: false, error: "Khong the cap nhat lot" });
+      const msg = error instanceof Error ? error.message : "Khong the cap nhat lot";
+      const status = msg.includes("Only lots in Quarantine") ? 400 : 500;
+      res.status(status).json({ success: false, error: msg });
     }
   }
 );
@@ -250,7 +252,9 @@ router.delete(
       res.json({ success: true, message: "Da xoa lot thanh cong" });
     } catch (error) {
       console.error("Loi xoa lot:", error);
-      res.status(500).json({ success: false, error: "Khong the xoa lot" });
+      const msg = error instanceof Error ? error.message : "Khong the xoa lot";
+      const status = msg.includes("Only lots in Quarantine") ? 400 : 500;
+      res.status(status).json({ success: false, error: msg });
     }
   }
 );

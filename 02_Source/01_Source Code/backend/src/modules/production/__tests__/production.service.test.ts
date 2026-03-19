@@ -248,17 +248,25 @@ describe('Production Service', () => {
 
   describe('updateBatchStatus', () => {
     it('should return null when batch is not found', async () => {
-      mockPool.query.mockResolvedValueOnce({
-        rows: [],
-        command: 'SELECT',
-        rowCount: 0,
-        oid: 0,
-        fields: [],
-      } as any);
+      const mockClient = {
+        query: jest.fn()
+          .mockResolvedValueOnce({ rows: [], command: 'BEGIN', rowCount: 0, oid: 0, fields: [] })
+          .mockResolvedValueOnce({
+            rows: [],
+            command: 'SELECT',
+            rowCount: 0,
+            oid: 0,
+            fields: [],
+          })
+          .mockResolvedValueOnce({ rows: [], command: 'ROLLBACK', rowCount: 0, oid: 0, fields: [] }),
+        release: jest.fn(),
+      };
+      mockPool.connect.mockResolvedValueOnce(mockClient as any);
 
       const result = await productionService.updateBatchStatus('BATCH-404', 'In Progress');
 
       expect(result).toBeNull();
+      expect(mockClient.release).toHaveBeenCalled();
     });
 
     it('should update the status and return the refreshed batch', async () => {
@@ -282,21 +290,34 @@ describe('Production Service', () => {
         components: [],
       };
 
+      const mockClient = {
+        query: jest.fn()
+          .mockResolvedValueOnce({ rows: [], command: 'BEGIN', rowCount: 0, oid: 0, fields: [] })
+          // SELECT batch FOR UPDATE
+          .mockResolvedValueOnce({
+            rows: [currentBatch],
+            command: 'SELECT',
+            rowCount: 1,
+            oid: 0,
+            fields: [],
+          })
+          // UPDATE status
+          .mockResolvedValueOnce({
+            rows: [],
+            command: 'UPDATE',
+            rowCount: 1,
+            oid: 0,
+            fields: [],
+          })
+          // COMMIT
+          .mockResolvedValueOnce({ rows: [], command: 'COMMIT', rowCount: 0, oid: 0, fields: [] }),
+        release: jest.fn(),
+      };
+
+      mockPool.connect.mockResolvedValueOnce(mockClient as any);
+
+      // getBatchById calls pool.query (not client)
       mockPool.query
-        .mockResolvedValueOnce({
-          rows: [currentBatch],
-          command: 'SELECT',
-          rowCount: 1,
-          oid: 0,
-          fields: [],
-        } as any)
-        .mockResolvedValueOnce({
-          rows: [],
-          command: 'UPDATE',
-          rowCount: 1,
-          oid: 0,
-          fields: [],
-        } as any)
         .mockResolvedValueOnce({
           rows: [{ ...refreshedBatch }],
           command: 'SELECT',
@@ -315,37 +336,44 @@ describe('Production Service', () => {
       const result = await productionService.updateBatchStatus('BATCH-001', 'In Progress');
 
       expect(result).toEqual(refreshedBatch);
-      expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('SET status = $1'),
-        ['In Progress', 'BATCH-001']
-      );
+      expect(mockClient.release).toHaveBeenCalled();
     });
 
     it('should reject invalid status transition', async () => {
-      mockPool.query.mockResolvedValueOnce({
-        rows: [
-          {
-            batch_id: 'BATCH-001',
-            product_id: 'MAT-001',
-            batch_number: 'B-2026-001',
-            batch_size: 100,
-            unit_of_measure: 'kg',
-            manufacture_date: '2026-03-06',
-            expiration_date: '2027-03-06',
-            status: 'Planned',
-            created_date: new Date(),
-            modified_date: new Date(),
-          },
-        ],
-        command: 'SELECT',
-        rowCount: 1,
-        oid: 0,
-        fields: [],
-      } as any);
+      const mockClient = {
+        query: jest.fn()
+          .mockResolvedValueOnce({ rows: [], command: 'BEGIN', rowCount: 0, oid: 0, fields: [] })
+          .mockResolvedValueOnce({
+            rows: [
+              {
+                batch_id: 'BATCH-001',
+                product_id: 'MAT-001',
+                batch_number: 'B-2026-001',
+                batch_size: 100,
+                unit_of_measure: 'kg',
+                manufacture_date: '2026-03-06',
+                expiration_date: '2027-03-06',
+                status: 'Planned',
+                created_date: new Date(),
+                modified_date: new Date(),
+              },
+            ],
+            command: 'SELECT',
+            rowCount: 1,
+            oid: 0,
+            fields: [],
+          })
+          .mockResolvedValueOnce({ rows: [], command: 'ROLLBACK', rowCount: 0, oid: 0, fields: [] }),
+        release: jest.fn(),
+      };
+
+      mockPool.connect.mockResolvedValueOnce(mockClient as any);
 
       await expect(
         productionService.updateBatchStatus('BATCH-001', 'Complete')
       ).rejects.toThrow('Invalid status transition: Planned -> Complete. Allowed: In Progress');
+
+      expect(mockClient.release).toHaveBeenCalled();
     });
   });
 

@@ -156,7 +156,7 @@ services:
       redis:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     networks:
       - ims-network
 

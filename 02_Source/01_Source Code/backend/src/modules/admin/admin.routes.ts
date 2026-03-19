@@ -300,4 +300,25 @@ router.get("/stats", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/admin/health
+ * Get system health status (DB, Redis, Elasticsearch)
+ */
+router.get("/health", async (req: Request, res: Response) => {
+  try {
+    const health = await adminService.getSystemHealth();
+    const httpStatus = health.overall === "healthy" ? 200 : health.overall === "degraded" ? 200 : 503;
+    res.status(httpStatus).json({
+      success: true,
+      data: health,
+    });
+  } catch (error) {
+    console.error("Lỗi lấy system health:", error);
+    res.status(500).json({
+      success: false,
+      error: "Không thể lấy trạng thái hệ thống",
+    });
+  }
+});
+
 export default router;

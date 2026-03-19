@@ -241,6 +241,9 @@ describe("lot.service", () => {
   describe("updateLot", () => {
     it("should update lot and return updated record", async () => {
       const updated = makeLot({ storage_location: "WH-C3" });
+      // First call: status check (must be Quarantine)
+      mockQuery.mockResolvedValueOnce({ rows: [{ status: "Quarantine" }], rowCount: 1 } as any);
+      // Second call: the UPDATE
       mockQuery.mockResolvedValueOnce({ rows: [updated], rowCount: 1 } as any);
 
       const result = await lotService.updateLot("LOT-001", {
@@ -248,13 +251,14 @@ describe("lot.service", () => {
       });
 
       expect(result).toEqual(updated);
-      const sql = mockQuery.mock.calls[0][0] as string;
+      const sql = mockQuery.mock.calls[1][0] as string;
       expect(sql).toContain("UPDATE inventory_lots");
       expect(sql).toContain("COALESCE");
       expect(sql).toContain("RETURNING *");
     });
 
     it("should return null when lot not found", async () => {
+      // Status check returns empty rows -> returns null
       mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as any);
 
       const result = await lotService.updateLot("NONEXISTENT", {
@@ -265,13 +269,16 @@ describe("lot.service", () => {
     });
 
     it("should pass null for fields not in the DTO", async () => {
+      // First call: status check
+      mockQuery.mockResolvedValueOnce({ rows: [{ status: "Quarantine" }], rowCount: 1 } as any);
+      // Second call: the UPDATE
       mockQuery.mockResolvedValueOnce({ rows: [makeLot()], rowCount: 1 } as any);
 
       await lotService.updateLot("LOT-001", {
         manufacturer_name: "New Corp",
       });
 
-      const params = mockQuery.mock.calls[0][1] as unknown[];
+      const params = mockQuery.mock.calls[1][1] as unknown[];
       expect(params[0]).toBe("New Corp");     // manufacturer_name
       expect(params[1]).toBeNull();            // manufacturer_lot (not provided)
       expect(params[2]).toBeNull();            // supplier_name

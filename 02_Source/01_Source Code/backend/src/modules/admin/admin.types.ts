@@ -89,3 +89,22 @@ export interface GetUsersFilters {
   is_active?: boolean;
   search?: string; // Search by username or email
 }
+
+/**
+ * Individual service health status
+ */
+export interface ServiceHealth {
+  name: string;
+  status: "healthy" | "unhealthy" | "degraded";
+  latency_ms: number | null;
+  message?: string;
+}
+
+/**
+ * Overall system health
+ */
+export interface SystemHealth {
+  overall: "healthy" | "unhealthy" | "degraded";
+  services: ServiceHealth[];
+  timestamp: string;
+}

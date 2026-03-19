@@ -13,6 +13,8 @@ import type {
   InventoryLot,
   InventoryTransaction,
   ProductionBatch,
+  BatchComponent,
+  ProductionTraceabilityItem,
   User,
   PaginatedResponse,
   ApiResponse,
@@ -23,6 +25,7 @@ import type {
   GenerateLabelInput,
   GenerateLabelFromTemplateInput,
   GeneratedLabel,
+  SystemHealth,
 } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -93,6 +96,12 @@ export const adminApi = {
   getUsers: (params?: string) =>
     apiRequest<PaginatedResponse<User>>({
       url: `/api/admin/users${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
+
+  getHealth: () =>
+    apiRequest<ApiResponse<SystemHealth>>({
+      url: "/api/admin/health",
       method: "GET",
     }),
 };
@@ -189,6 +198,32 @@ export const productionApi = {
   getBatches: (params?: string) =>
     apiRequest<PaginatedResponse<ProductionBatch>>({
       url: `/api/production/batches${params ? `?${params}` : ""}`,
+      method: "GET",
+    }),
+
+  getBatchById: (id: string) =>
+    apiRequest<ApiResponse<ProductionBatch>>({
+      url: `/api/production/batches/${id}`,
+      method: "GET",
+    }),
+
+  updateBatchStatus: (id: string, status: string) =>
+    apiRequest<ApiResponse<ProductionBatch>>({
+      url: `/api/production/batches/${id}/status`,
+      method: "PATCH",
+      data: { status },
+    }),
+
+  consumeMaterial: (batchId: string, componentId: string, actualQuantity: number) =>
+    apiRequest<ApiResponse<BatchComponent>>({
+      url: `/api/production/batches/${batchId}/components/${componentId}/consume`,
+      method: "POST",
+      data: { actual_quantity: actualQuantity },
+    }),
+
+  getTraceability: (batchId: string) =>
+    apiRequest<ApiResponse<ProductionTraceabilityItem[]>>({
+      url: `/api/production/batches/${batchId}/traceability`,
       method: "GET",
     }),
 };

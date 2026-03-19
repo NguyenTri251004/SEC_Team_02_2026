@@ -36,6 +36,14 @@ export function useAdminUsers(query = "sort=last_login_at:desc&limit=10") {
   });
 }
 
+export function useAdminHealth() {
+  return useQuery({
+    queryKey: ["admin", "health"],
+    queryFn: () => adminApi.getHealth(),
+    refetchInterval: 30_000,
+  });
+}
+
 // ── Inventory ────────────────────────────────────────────────────
 
 export function useInventorySummary() {

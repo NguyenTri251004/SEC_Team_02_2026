@@ -9,26 +9,24 @@ import {
   InputNumber,
   Table,
   Divider,
+  Modal,
+  Popconfirm,
   message,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
-import { useBatchComponents, useAddComponent } from "@/hooks/useBatchesData";
+import {
+  useBatchComponents,
+  useAddComponent,
+  useUpdateBatchStatus,
+  useConsumeMaterial,
+  useTraceability,
+} from "@/hooks/useBatchesData";
 import { useLots } from "@/hooks/useLotsData";
 import { BATCH_STATUS_TAG } from "@/constants/theme";
-import type { ProductionBatch } from "@/types";
-
-interface BatchComponent {
-  component_id: string;
-  batch_id: string;
-  lot_id: string;
-  planned_quantity: number;
-  actual_quantity: number | null;
-  unit_of_measure: string;
-  lot_material_name?: string;
-}
+import type { ProductionBatch, BatchComponent, ProductionTraceabilityItem } from "@/types";
 
 interface BatchComponentsDrawerProps {
   batch: ProductionBatch | null;
@@ -38,16 +36,24 @@ interface BatchComponentsDrawerProps {
 export function BatchComponentsDrawer({ batch, onClose }: BatchComponentsDrawerProps) {
   const { data: components = [], isLoading } = useBatchComponents(batch?.batch_id ?? null);
   const { mutateAsync: addComponent, isPending: isAdding } = useAddComponent();
+  const { mutateAsync: updateStatus, isPending: isUpdatingStatus } = useUpdateBatchStatus();
+  const { mutateAsync: consumeMaterial, isPending: isConsuming } = useConsumeMaterial();
   const { data: lots = [] } = useLots();
+  const { data: traceability = [], isLoading: traceLoading } = useTraceability(
+    batch?.status === "In Progress" || batch?.status === "Complete" ? batch?.batch_id ?? null : null
+  );
 
   const [addingComponent, setAddingComponent] = useState(false);
   const [selectedLotId, setSelectedLotId] = useState<string | undefined>(undefined);
   const [plannedQty, setPlannedQty] = useState<number | null>(null);
+  const [consumeModal, setConsumeModal] = useState<{ componentId: string; lotQty: number; plannedQty: number } | null>(null);
+  const [consumeQty, setConsumeQty] = useState<number | null>(null);
 
   if (!batch) return null;
 
   const acceptedLots = lots.filter((l) => l.status === "Accepted");
   const statusCfg = BATCH_STATUS_TAG[batch.status];
+  const isReadOnly = batch.status === "Complete" || batch.status === "Rejected";
 
   const handleAddComponent = async () => {
     if (!selectedLotId || !plannedQty) {
@@ -79,6 +85,33 @@ export function BatchComponentsDrawer({ batch, onClose }: BatchComponentsDrawerP
     }
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    try {
+      await updateStatus({ batchId: batch.batch_id, status: newStatus });
+      message.success(`Batch status updated to ${newStatus}`);
+    } catch (error: unknown) {
+      const axiosErr = error as { response?: { data?: { error?: string } } };
+      message.error(axiosErr.response?.data?.error ?? "Failed to update status");
+    }
+  };
+
+  const handleConsume = async () => {
+    if (!consumeModal || !consumeQty) return;
+    try {
+      await consumeMaterial({
+        batchId: batch.batch_id,
+        componentId: consumeModal.componentId,
+        actualQuantity: consumeQty,
+      });
+      message.success("Material consumed successfully!");
+      setConsumeModal(null);
+      setConsumeQty(null);
+    } catch (error: unknown) {
+      const axiosErr = error as { response?: { data?: { error?: string } } };
+      message.error(axiosErr.response?.data?.error ?? "Failed to consume material");
+    }
+  };
+
   const componentColumns: ColumnsType<BatchComponent> = [
     {
       title: "Lot ID",
@@ -88,8 +121,8 @@ export function BatchComponentsDrawer({ batch, onClose }: BatchComponentsDrawerP
     },
     {
       title: "Material",
-      dataIndex: "lot_material_name",
-      key: "lot_material_name",
+      dataIndex: "material_name",
+      key: "material_name",
       ellipsis: true,
       render: (v: string | undefined) => v ?? "-",
     },
@@ -97,20 +130,69 @@ export function BatchComponentsDrawer({ batch, onClose }: BatchComponentsDrawerP
       title: "Planned Qty",
       dataIndex: "planned_quantity",
       key: "planned_quantity",
-      width: 120,
+      width: 110,
     },
     {
       title: "Actual Qty",
       dataIndex: "actual_quantity",
       key: "actual_quantity",
-      width: 120,
-      render: (v: number | null) => v ?? <span style={{ color: "#bbb" }}>-</span>,
+      width: 110,
+      render: (v: number | null) =>
+        v != null ? <Tag color="green">{v}</Tag> : <span style={{ color: "#bbb" }}>-</span>,
     },
     {
       title: "Unit",
       dataIndex: "unit_of_measure",
       key: "unit_of_measure",
-      width: 80,
+      width: 70,
+    },
+    ...(batch.status === "In Progress"
+      ? [
+          {
+            title: "Action",
+            key: "action",
+            width: 100,
+            render: (_: unknown, record: BatchComponent) =>
+              record.actual_quantity != null ? (
+                <Tag color="blue">Consumed</Tag>
+              ) : (
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => {
+                    setConsumeModal({
+                      componentId: record.component_id,
+                      lotQty: record.lot_quantity ?? 9999,
+                      plannedQty: record.planned_quantity,
+                    });
+                    setConsumeQty(record.planned_quantity);
+                  }}
+                >
+                  Consume
+                </Button>
+              ),
+          } as ColumnsType<BatchComponent>[number],
+        ]
+      : []),
+  ];
+
+  const traceColumns: ColumnsType<ProductionTraceabilityItem> = [
+    { title: "Material", dataIndex: "material_name", key: "material_name", ellipsis: true },
+    { title: "Lot ID", dataIndex: "lot_id", key: "lot_id", width: 110 },
+    { title: "Planned", dataIndex: "planned_quantity", key: "planned_quantity", width: 90 },
+    {
+      title: "Actual",
+      dataIndex: "actual_quantity",
+      key: "actual_quantity",
+      width: 90,
+      render: (v: number | null) => v ?? "-",
+    },
+    {
+      title: "Transaction Date",
+      dataIndex: "transaction_date",
+      key: "transaction_date",
+      width: 150,
+      render: (v: string | null) => (v ? dayjs(v).format("YYYY-MM-DD HH:mm") : "-"),
     },
   ];
 
@@ -119,7 +201,7 @@ export function BatchComponentsDrawer({ batch, onClose }: BatchComponentsDrawerP
       title={`Batch Components: ${batch.batch_id}`}
       open={!!batch}
       onClose={onClose}
-      width={700}
+      width={750}
     >
       <Descriptions column={2} bordered size="small">
         <Descriptions.Item label="Batch ID">{batch.batch_id}</Descriptions.Item>
@@ -139,9 +221,56 @@ export function BatchComponentsDrawer({ batch, onClose }: BatchComponentsDrawerP
         </Descriptions.Item>
       </Descriptions>
 
+      {/* Status Action Buttons */}
+      {!isReadOnly && (
+        <div style={{ margin: "16px 0" }}>
+          <Space>
+            {batch.status === "Planned" && (
+              <Popconfirm
+                title="Start Production"
+                description="Are you sure you want to start production for this batch?"
+                onConfirm={() => handleStatusChange("In Progress")}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Button type="primary" icon={<PlayCircleOutlined />} loading={isUpdatingStatus}>
+                  Start Production
+                </Button>
+              </Popconfirm>
+            )}
+            {batch.status === "In Progress" && (
+              <>
+                <Popconfirm
+                  title="Complete Batch"
+                  description="Are you sure? All components must be consumed."
+                  onConfirm={() => handleStatusChange("Complete")}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Button type="primary" icon={<CheckCircleOutlined />} loading={isUpdatingStatus}>
+                    Complete
+                  </Button>
+                </Popconfirm>
+                <Popconfirm
+                  title="Reject Batch"
+                  description="Are you sure you want to reject this batch?"
+                  onConfirm={() => handleStatusChange("Rejected")}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Button danger icon={<CloseCircleOutlined />} loading={isUpdatingStatus}>
+                    Reject
+                  </Button>
+                </Popconfirm>
+              </>
+            )}
+          </Space>
+        </div>
+      )}
+
       <Divider>Components (Lots Used)</Divider>
 
-      {!addingComponent ? (
+      {!isReadOnly && !addingComponent && (
         <Button
           type="dashed"
           icon={<PlusOutlined />}
@@ -150,7 +279,9 @@ export function BatchComponentsDrawer({ batch, onClose }: BatchComponentsDrawerP
         >
           Add Component
         </Button>
-      ) : (
+      )}
+
+      {addingComponent && (
         <div
           style={{
             display: "grid",
@@ -209,8 +340,48 @@ export function BatchComponentsDrawer({ batch, onClose }: BatchComponentsDrawerP
         size="small"
         loading={isLoading}
         pagination={false}
-        scroll={{ x: 500 }}
+        scroll={{ x: 600 }}
       />
+
+      {/* Consume Material Modal */}
+      <Modal
+        title="Consume Material"
+        open={!!consumeModal}
+        onOk={handleConsume}
+        onCancel={() => {
+          setConsumeModal(null);
+          setConsumeQty(null);
+        }}
+        confirmLoading={isConsuming}
+      >
+        <div style={{ marginBottom: 16 }}>
+          Enter the actual quantity consumed:
+        </div>
+        <InputNumber
+          style={{ width: "100%" }}
+          min={0.001}
+          max={consumeModal?.lotQty}
+          value={consumeQty}
+          onChange={(v) => setConsumeQty(v)}
+          placeholder="Actual quantity"
+        />
+      </Modal>
+
+      {/* Traceability Section */}
+      {(batch.status === "In Progress" || batch.status === "Complete") && (
+        <>
+          <Divider>Production Traceability</Divider>
+          <Table<ProductionTraceabilityItem>
+            columns={traceColumns}
+            dataSource={traceability}
+            rowKey={(r) => `${r.component_id}-${r.transaction_id ?? "pending"}`}
+            size="small"
+            loading={traceLoading}
+            pagination={false}
+            scroll={{ x: 500 }}
+          />
+        </>
+      )}
     </Drawer>
   );
 }

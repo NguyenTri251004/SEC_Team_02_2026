@@ -30,6 +30,56 @@ const MATERIAL_FIELDS = [
   { value: "created_date", label: "Created Date" },
 ];
 
+const LOT_FIELDS = [
+  { value: "lot_id", label: "Lot ID" },
+  { value: "material_name", label: "Material Name" },
+  { value: "manufacturer_name", label: "Manufacturer" },
+  { value: "manufacturer_lot", label: "Manufacturer Lot" },
+  { value: "received_date", label: "Received Date" },
+  { value: "expiration_date", label: "Expiration Date" },
+  { value: "quantity", label: "Quantity" },
+  { value: "unit_of_measure", label: "Unit of Measure" },
+  { value: "storage_location", label: "Storage Location" },
+  { value: "status", label: "Status" },
+  { value: "storage_conditions", label: "Storage Conditions" },
+];
+
+const BATCH_FIELDS = [
+  { value: "batch_id", label: "Batch ID" },
+  { value: "batch_number", label: "Batch Number" },
+  { value: "product_name", label: "Product Name" },
+  { value: "batch_size", label: "Batch Size" },
+  { value: "unit_of_measure", label: "Unit of Measure" },
+  { value: "manufacture_date", label: "Manufacture Date" },
+  { value: "expiration_date", label: "Expiration Date" },
+  { value: "status", label: "Status" },
+];
+
+function getFieldsForLabelType(labelType: string | undefined) {
+  if (!labelType) return MATERIAL_FIELDS;
+  switch (labelType) {
+    case "Raw Material":
+    case "API":
+    case "Sample":
+      return LOT_FIELDS;
+    case "Intermediate":
+    case "Finished Product":
+      return BATCH_FIELDS;
+    case "Status":
+      return [...LOT_FIELDS, ...BATCH_FIELDS.filter((f) => !LOT_FIELDS.some((lf) => lf.value === f.value))];
+    default:
+      return MATERIAL_FIELDS;
+  }
+}
+
+function getFieldLabels(fields: { value: string; label: string }[]): Record<string, string> {
+  const labels: Record<string, string> = {};
+  for (const f of fields) {
+    labels[f.value] = f.label;
+  }
+  return labels;
+}
+
 export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTemplateFormModalProps) {
   const [form] = Form.useForm();
   const { mutateAsync: createTemplate, isPending: isCreating } = useCreateTemplate();
@@ -37,65 +87,63 @@ export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTe
   const isEditing = !!initialData;
   const isPending = isCreating || isUpdating;
 
+  const watchedLabelType = Form.useWatch("label_type", form);
+  const availableFields = getFieldsForLabelType(watchedLabelType);
+
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        // Parse template_content to extract selected fields
+        const allFields = [...MATERIAL_FIELDS, ...LOT_FIELDS, ...BATCH_FIELDS];
         const selectedFields: string[] = [];
-        MATERIAL_FIELDS.forEach(field => {
-          // Check if the field exists in template_content using the {{field}} pattern
+        allFields.forEach((field) => {
           if (initialData.template_content.includes(`{{${field.value}}}`)) {
             selectedFields.push(field.value);
           }
         });
-        
-        // Use setTimeout to ensure form is ready
+
         setTimeout(() => {
-          // Reset form first to clear any previous values
           form.resetFields();
-          
-          // Set form values with parsed data
-          // Convert width and height to numbers to ensure InputNumber accepts them
           form.setFieldsValue({
             template_name: initialData.template_name,
             label_type: initialData.label_type,
             width: Number(initialData.width),
             height: Number(initialData.height),
-            selected_fields: selectedFields.length > 0 ? selectedFields : ['material_name', 'part_number', 'material_type'],
+            selected_fields:
+              selectedFields.length > 0 ? selectedFields : ["material_name"],
           });
         }, 0);
       } else {
-        // Creating new template - set default values
         form.resetFields();
-        form.setFieldsValue({ 
-          width: 4.0, 
+        form.setFieldsValue({
+          width: 4.0,
           height: 2.0,
-          selected_fields: ['material_name', 'part_number', 'material_type']
+          selected_fields: ["material_name"],
         });
       }
     }
   }, [isOpen, initialData, form]);
 
+  // Reset selected_fields when label_type changes (only in create mode)
+  useEffect(() => {
+    if (isOpen && watchedLabelType && !initialData) {
+      const defaultFields = getFieldsForLabelType(watchedLabelType);
+      form.setFieldsValue({
+        selected_fields: [defaultFields[0]?.value].filter(Boolean),
+      });
+    }
+  }, [watchedLabelType, isOpen, initialData, form]);
+
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      
-      // Generate template_content from selected fields
+
       const selectedFields = values.selected_fields || [];
-      const fieldLabels: Record<string, string> = {
-        material_id: "Material ID",
-        part_number: "Part Number",
-        material_name: "Material Name",
-        material_type: "Material Type",
-        storage_conditions: "Storage Conditions",
-        specification_document: "Specification",
-        created_date: "Created Date",
-      };
-      
+      const fieldLabels = getFieldLabels(availableFields);
+
       const templateContent = selectedFields
-        .map((field: string) => `${fieldLabels[field]}: {{${field}}}`)
-        .join('\n');
-      
+        .map((field: string) => `${fieldLabels[field] || field}: {{${field}}}`)
+        .join("\n");
+
       const templateData = {
         template_name: values.template_name,
         label_type: values.label_type,
@@ -103,7 +151,7 @@ export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTe
         width: values.width,
         height: values.height,
       };
-      
+
       if (isEditing && initialData) {
         await updateTemplate({
           id: initialData.template_id,
@@ -114,7 +162,7 @@ export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTe
         await createTemplate(templateData);
         message.success("Template created successfully!");
       }
-      
+
       onClose();
       form.resetFields();
     } catch (error: unknown) {
@@ -148,8 +196,8 @@ export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTe
     >
       <Form form={form} layout="vertical" preserve={false}>
         <Alert
-          message="Select Material Fields"
-          description="Choose which material information fields to include in the label template. The selected fields will be displayed when generating labels."
+          message="Select Label Fields"
+          description="Choose which information fields to include in the label template. Available fields change based on label type."
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
@@ -197,7 +245,7 @@ export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTe
 
         <Form.Item
           name="selected_fields"
-          label="Material Fields to Include"
+          label="Fields to Include"
           rules={[
             {
               type: "array",
@@ -207,7 +255,7 @@ export function LabelTemplateFormModal({ isOpen, onClose, initialData }: LabelTe
           ]}
         >
           <Checkbox.Group
-            options={MATERIAL_FIELDS}
+            options={availableFields}
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}
           />
         </Form.Item>

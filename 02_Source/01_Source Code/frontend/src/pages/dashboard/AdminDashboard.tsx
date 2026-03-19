@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { Row, Col } from "antd";
+import { Row, Col, Tag } from "antd";
 import {
   UserOutlined,
   SwapOutlined,
   InboxOutlined,
   StopOutlined,
+  ApiOutlined,
 } from "@ant-design/icons";
 import {
   PieChart,
@@ -21,6 +22,7 @@ import {
   useAdminStats,
   useAdminUsers,
   useRecentTransactions,
+  useAdminHealth,
 } from "../../hooks/useDashboardData";
 import {
   createTransactionTypeColumn,
@@ -34,7 +36,7 @@ import {
   createLastLoginColumn,
   createUserStatusColumn,
 } from "../../components/common/tables/columnFactories";
-import type { AdminStats, InventoryTransaction, User } from "../../types";
+import type { AdminStats, InventoryTransaction, User, ServiceHealth } from "../../types";
 
 /* ── Mock data (removed when backend is live) ── */
 const MOCK_STATS: AdminStats = {
@@ -144,6 +146,8 @@ export default function AdminDashboard() {
   const { data: statsRes, isLoading: statsLoading } = useAdminStats();
   const { data: txnRes, isLoading: txnLoading } = useRecentTransactions();
   const { data: usersRes, isLoading: usersLoading } = useAdminUsers();
+  const { data: healthRes } = useAdminHealth();
+  const healthData = healthRes?.data;
 
   const rawStats = statsRes?.data;
   const transactions = txnRes?.data ?? MOCK_TRANSACTIONS;
@@ -248,6 +252,55 @@ export default function AdminDashboard() {
           />
         </Col>
       </Row>
+
+      {/* ── Health Monitoring Panel ── */}
+      {healthData && (
+        <Row gutter={[16, 16]} style={{ marginTop: SECTION_GAP }}>
+          <Col span={24}>
+            <div style={{
+              background: "#fff",
+              borderRadius: 8,
+              padding: "16px 24px",
+              border: "1px solid #f0f0f0",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 16, fontWeight: 600 }}>
+                  <ApiOutlined style={{ marginRight: 8 }} />
+                  System Health
+                </span>
+                <Tag color={healthData.overall === "healthy" ? "success" : healthData.overall === "degraded" ? "warning" : "error"}>
+                  {healthData.overall.toUpperCase()}
+                </Tag>
+              </div>
+              <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                {healthData.services.map((svc: ServiceHealth) => (
+                  <div key={svc.name} style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 16px",
+                    background: svc.status === "healthy" ? "#f6ffed" : svc.status === "degraded" ? "#fffbe6" : "#fff2f0",
+                    borderRadius: 6,
+                    border: `1px solid ${svc.status === "healthy" ? "#b7eb8f" : svc.status === "degraded" ? "#ffe58f" : "#ffccc7"}`,
+                  }}>
+                    <span style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: svc.status === "healthy" ? "#52c41a" : svc.status === "degraded" ? "#faad14" : "#ff4d4f",
+                      display: "inline-block",
+                    }} />
+                    <span style={{ fontWeight: 500 }}>{svc.name}</span>
+                    {svc.latency_ms != null && (
+                      <span style={{ color: "#888", fontSize: 12 }}>{svc.latency_ms}ms</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Col>
+        </Row>
+      )}
 
       {/* ── 2. Users by Role (Pie Chart) + Recent Transactions ── */}
       <Row gutter={[16, 16]} style={{ marginTop: SECTION_GAP }}>

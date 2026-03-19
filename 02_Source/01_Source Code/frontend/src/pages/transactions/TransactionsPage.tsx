@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Input, Tag } from "antd";
+import { Input, Tag, Tooltip } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -95,6 +95,8 @@ export default function TransactionsPage() {
       dataIndex: "notes",
       key: "notes",
       ellipsis: true,
+      render: (text: string | null) =>
+        text ? <Tooltip title={text}>{text}</Tooltip> : <span style={{ color: "#bbb" }}>-</span>,
     },
   ];
 

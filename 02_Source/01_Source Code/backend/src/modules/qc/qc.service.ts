@@ -471,6 +471,28 @@ export const approveLot = async (
     console.log(`[QC] Lot ${lotId} approved by user ${userId} at ${new Date().toISOString()}`);
 
     await client.query("COMMIT");
+
+    // Auto-generate Status label (non-blocking)
+    try {
+      const { getTemplatesByLabelType, generateLabelFromTemplate } = await import("../labels/label.service");
+      const { LabelType, EntityType, CodeType } = await import("../labels/label.types");
+      const statusTemplates = await getTemplatesByLabelType(LabelType.STATUS);
+      if (statusTemplates.length > 0) {
+        await generateLabelFromTemplate(
+          {
+            template_id: statusTemplates[0].template_id,
+            entity_type: EntityType.LOT,
+            entity_id: lotId,
+            code_type: CodeType.QR_CODE,
+          },
+          userId
+        );
+        console.log(`[QC] Auto-generated Status label for approved lot ${lotId}`);
+      }
+    } catch (labelError) {
+      console.warn(`[QC] Auto-label generation failed for lot ${lotId}:`, labelError);
+    }
+
     return { success: true, message: "Lô hàng đã được phê duyệt thành công" };
   } catch (error) {
     await client.query("ROLLBACK");
@@ -521,6 +543,28 @@ export const rejectLot = async (
     console.log(`[QC] Lot ${lotId} rejected by user ${userId}. Reason: ${reason}`);
 
     await client.query("COMMIT");
+
+    // Auto-generate Status label (non-blocking)
+    try {
+      const { getTemplatesByLabelType, generateLabelFromTemplate } = await import("../labels/label.service");
+      const { LabelType, EntityType, CodeType } = await import("../labels/label.types");
+      const statusTemplates = await getTemplatesByLabelType(LabelType.STATUS);
+      if (statusTemplates.length > 0) {
+        await generateLabelFromTemplate(
+          {
+            template_id: statusTemplates[0].template_id,
+            entity_type: EntityType.LOT,
+            entity_id: lotId,
+            code_type: CodeType.QR_CODE,
+          },
+          userId
+        );
+        console.log(`[QC] Auto-generated Status label for rejected lot ${lotId}`);
+      }
+    } catch (labelError) {
+      console.warn(`[QC] Auto-label generation failed for lot ${lotId}:`, labelError);
+    }
+
     return { success: true, message: "Lô hàng đã bị từ chối" };
   } catch (error) {
     await client.query("ROLLBACK");

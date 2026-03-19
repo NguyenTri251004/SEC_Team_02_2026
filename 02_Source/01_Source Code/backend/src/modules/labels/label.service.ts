@@ -1,5 +1,5 @@
 import pool from "../../shared/db/pool";
-import { LabelTemplate, CreateTemplateInput, UpdateTemplateInput, GenerateLabelInput, GenerateLabelFromTemplateInput, GeneratedLabel, LabelType, CodeType } from "./label.types";
+import { LabelTemplate, CreateTemplateInput, UpdateTemplateInput, GenerateLabelInput, GenerateLabelFromTemplateInput, GeneratedLabel, LabelType, CodeType, LABEL_TYPE_ALLOWED_ENTITIES } from "./label.types";
 import crypto from "crypto";
 import QRCode from "qrcode";
 import bwipjs from "bwip-js";
@@ -130,7 +130,7 @@ export const deleteTemplate = async (id: string): Promise<boolean> => {
 /**
  * Generate QR Code as base64 image
  */
-const generateQRCode = async (data: string): Promise<string> => {
+const generateQRCode = async (data: string, captionText?: string): Promise<{ dataUrl: string; caption?: string }> => {
   try {
     // Generate QR code as PNG data URL
     const qrDataUrl = await QRCode.toDataURL(data, {
@@ -142,7 +142,7 @@ const generateQRCode = async (data: string): Promise<string> => {
         light: '#FFFFFF'
       }
     });
-    return qrDataUrl;
+    return { dataUrl: qrDataUrl, caption: captionText };
   } catch (error) {
     console.error('Error generating QR code:', error);
     throw new Error('Failed to generate QR code');
@@ -213,7 +213,8 @@ export const generateLabel = async (input: GenerateLabelInput, userId: string): 
   if (input.code_type === CodeType.QR_CODE) {
     // For QR code, encode full JSON data
     const qrPayload = JSON.stringify(content);
-    generatedCode = await generateQRCode(qrPayload);
+    const qrResult = await generateQRCode(qrPayload, `${material.part_number} - ${material.material_name}`);
+    generatedCode = qrResult.dataUrl;
   } else {
     // For barcode, only encode material_id (short & scannable)
     // But display material name below for readability
@@ -427,6 +428,14 @@ export const generateLabelFromTemplate = async (
     throw new Error(`Template ${input.template_id} not found`);
   }
 
+  // Validate entity_type against label_type
+  const allowedEntities = LABEL_TYPE_ALLOWED_ENTITIES[template.label_type];
+  if (allowedEntities && !allowedEntities.includes(input.entity_type)) {
+    throw new Error(
+      `Invalid entity type '${input.entity_type}' for label type '${template.label_type}'. Allowed: ${allowedEntities.join(", ")}`
+    );
+  }
+
   // Get entity data based on entity_type
   let entityData: Record<string, unknown>;
   let materialId: string;
@@ -509,7 +518,8 @@ export const generateLabelFromTemplate = async (
   if (input.code_type === CodeType.QR_CODE) {
     // For QR code, encode full JSON data
     const qrPayload = JSON.stringify(content);
-    generatedCode = await generateQRCode(qrPayload);
+    const qrResult = await generateQRCode(qrPayload, `${template.label_type}: ${materialInfo.material_name || input.entity_id}`);
+    generatedCode = qrResult.dataUrl;
   } else {
     // For barcode, encode entity_id
     const displayText = `${template.label_type}: ${materialInfo.material_name || input.entity_id}`;

@@ -536,15 +536,22 @@ describe("Cross-Module Business Flows", () => {
 
     it("Transition Planned -> In Progress", async () => {
       const inProgressBatch = { ...BATCH, status: "In Progress" };
+
+      // updateBatchStatus uses pool.connect() for transaction
+      const client = createMockClient((text) => {
+        if (text === "BEGIN" || text === "COMMIT") return toResult([]);
+        if (text.includes("SELECT") && text.includes("FOR UPDATE")) {
+          return toResult([BATCH]); // current batch (Planned)
+        }
+        if (text.includes("UPDATE production_batches")) return toResult([]);
+        throw new Error(`Unexpected client query: ${text}`);
+      });
+      mockPool.connect.mockResolvedValueOnce(client);
+
+      // After commit, getBatchById uses pool.query
       mockPool.query
-        // SELECT current batch (Planned)
-        .mockResolvedValueOnce(toResult([BATCH]))
-        // UPDATE status
-        .mockResolvedValueOnce(toResult([]))
-        // getBatchById -> SELECT batch
-        .mockResolvedValueOnce(toResult([inProgressBatch]))
-        // getComponents
-        .mockResolvedValueOnce(toResult([COMPONENT]));
+        .mockResolvedValueOnce(toResult([inProgressBatch])) // SELECT batch
+        .mockResolvedValueOnce(toResult([COMPONENT]));       // getComponents
 
       const result = await productionService.updateBatchStatus(BATCH.batch_id, "In Progress");
 
@@ -552,9 +559,15 @@ describe("Cross-Module Business Flows", () => {
     });
 
     it("Validate: cannot go Planned -> Complete (skip)", async () => {
-      mockPool.query
-        // SELECT current batch (Planned)
-        .mockResolvedValueOnce(toResult([BATCH]));
+      // updateBatchStatus uses pool.connect() for transaction
+      const client = createMockClient((text) => {
+        if (text === "BEGIN" || text === "ROLLBACK") return toResult([]);
+        if (text.includes("SELECT") && text.includes("FOR UPDATE")) {
+          return toResult([BATCH]); // current batch (Planned)
+        }
+        throw new Error(`Unexpected client query: ${text}`);
+      });
+      mockPool.connect.mockResolvedValueOnce(client);
 
       await expect(
         productionService.updateBatchStatus(BATCH.batch_id, "Complete")
@@ -565,15 +578,35 @@ describe("Cross-Module Business Flows", () => {
       const inProgressBatch = { ...BATCH, status: "In Progress" };
       const completeBatch = { ...BATCH, status: "Complete" };
 
+      // updateBatchStatus uses pool.connect() for transaction
+      // For Complete status: checks unconsumed components, creates lot + transaction
+      const client = createMockClient((text) => {
+        if (text === "BEGIN" || text === "COMMIT") return toResult([]);
+        if (text.includes("SELECT") && text.includes("FOR UPDATE")) {
+          return toResult([inProgressBatch]); // current batch (In Progress)
+        }
+        // Check unconsumed components (all consumed)
+        if (text.includes("batch_components") && text.includes("actual_quantity IS NULL")) {
+          return toResult([{ cnt: "0" }]);
+        }
+        // Lot ID sequence
+        if (text.includes("lot_id AS max_id")) {
+          return toResult([{ max_id: "LOT-050" }]);
+        }
+        // INSERT finished product lot
+        if (text.includes("INSERT INTO inventory_lots")) return toResult([]);
+        // INSERT receipt transaction
+        if (text.includes("INSERT INTO inventory_transactions")) return toResult([]);
+        // UPDATE batch status
+        if (text.includes("UPDATE production_batches")) return toResult([]);
+        throw new Error(`Unexpected client query: ${text}`);
+      });
+      mockPool.connect.mockResolvedValueOnce(client);
+
+      // After commit, getBatchById uses pool.query
       mockPool.query
-        // SELECT current batch (In Progress)
-        .mockResolvedValueOnce(toResult([inProgressBatch]))
-        // UPDATE status
-        .mockResolvedValueOnce(toResult([]))
-        // getBatchById -> SELECT batch
-        .mockResolvedValueOnce(toResult([completeBatch]))
-        // getComponents
-        .mockResolvedValueOnce(toResult([COMPONENT]));
+        .mockResolvedValueOnce(toResult([completeBatch])) // SELECT batch
+        .mockResolvedValueOnce(toResult([COMPONENT]));     // getComponents
 
       const result = await productionService.updateBatchStatus(BATCH.batch_id, "Complete");
 

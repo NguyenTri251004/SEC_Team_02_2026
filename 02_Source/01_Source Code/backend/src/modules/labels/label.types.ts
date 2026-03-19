@@ -47,6 +47,15 @@ export enum EntityType {
   BATCH = "batch",
 }
 
+export const LABEL_TYPE_ALLOWED_ENTITIES: Record<LabelType, EntityType[]> = {
+  [LabelType.RAW_MATERIAL]: [EntityType.LOT, EntityType.MATERIAL],
+  [LabelType.API]: [EntityType.LOT, EntityType.MATERIAL],
+  [LabelType.SAMPLE]: [EntityType.LOT],
+  [LabelType.INTERMEDIATE]: [EntityType.BATCH],
+  [LabelType.FINISHED_PRODUCT]: [EntityType.BATCH],
+  [LabelType.STATUS]: [EntityType.LOT, EntityType.MATERIAL, EntityType.BATCH],
+};
+
 export interface GenerateLabelInput {
   material_id: string;
   code_type: CodeType;

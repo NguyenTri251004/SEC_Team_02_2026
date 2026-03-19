@@ -418,15 +418,22 @@ describe("Warehouse Lifecycle Integration", () => {
   describe("Buoc 8: Batch Planned -> In Progress", () => {
     it("chuyen status thanh cong tu Planned sang In Progress", async () => {
       const inProgressBatch = { ...BATCH, status: "In Progress" };
+
+      // updateBatchStatus uses pool.connect() for transaction
+      const client = createMockClient((text) => {
+        if (text === "BEGIN" || text === "COMMIT") return toResult([]);
+        if (text.includes("SELECT") && text.includes("FOR UPDATE")) {
+          return toResult([BATCH]); // current batch (Planned)
+        }
+        if (text.includes("UPDATE production_batches")) return toResult([]);
+        throw new Error(`Unexpected client query: ${text}`);
+      });
+      mockConnect.mockResolvedValueOnce(client);
+
+      // After commit, getBatchById uses pool.query
       mockQuery
-        // SELECT current batch
-        .mockResolvedValueOnce(toResult([BATCH])) // status = "Planned"
-        // UPDATE status
-        .mockResolvedValueOnce(toResult([]))
-        // getBatchById -> SELECT batch
-        .mockResolvedValueOnce(toResult([inProgressBatch]))
-        // getComponents
-        .mockResolvedValueOnce(toResult([COMPONENT]));
+        .mockResolvedValueOnce(toResult([inProgressBatch])) // SELECT batch
+        .mockResolvedValueOnce(toResult([COMPONENT]));       // getComponents
 
       const result = await productionService.updateBatchStatus(
         BATCH.batch_id,
@@ -436,9 +443,10 @@ describe("Warehouse Lifecycle Integration", () => {
       expect(result?.status).toBe("In Progress");
 
       // Verify: chi UPDATE production_batches, khong dong den lot hay transaction
-      const updateSql = mockQuery.mock.calls[1][0] as string;
-      expect(updateSql).toContain("UPDATE production_batches");
-      expect(updateSql).not.toContain("inventory_lots");
+      const updateCall = client.calls.find((c) => c.text.includes("UPDATE production_batches"));
+      expect(updateCall).toBeDefined();
+      expect(updateCall!.text).not.toContain("inventory_lots");
+      expect(client.released).toBe(true);
     });
   });
 

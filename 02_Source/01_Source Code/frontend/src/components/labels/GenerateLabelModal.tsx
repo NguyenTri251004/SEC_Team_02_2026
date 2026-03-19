@@ -39,6 +39,13 @@ export function GenerateLabelModal({ isOpen, onClose }: GenerateLabelModalProps)
   const handleTemplateChange = (templateId: string) => {
     const template = templates.find((t) => t.template_id === templateId);
     setSelectedTemplate(template || null);
+    if (template) {
+      const allowed = getRequiredEntityTypes(template.label_type);
+      if (!allowed.includes(entityType)) {
+        setEntityType(allowed[0]);
+        form.setFieldsValue({ entity_id: undefined });
+      }
+    }
   };
 
   const handleEntityTypeChange = (type: EntityType) => {
@@ -46,11 +53,21 @@ export function GenerateLabelModal({ isOpen, onClose }: GenerateLabelModalProps)
     form.setFieldsValue({ entity_id: undefined }); // Reset entity selection
   };
 
-  const getSuggestedEntityType = (labelType: string): string => {
-    const type = labelType.toLowerCase();
-    if (type.includes("raw material") || type.includes("api")) return "Inventory Lot";
-    if (type.includes("finished product")) return "Production Batch";
-    return "Material";
+  const getRequiredEntityTypes = (labelType: string): EntityType[] => {
+    switch (labelType) {
+      case "Raw Material":
+      case "API":
+        return ["lot", "material"];
+      case "Sample":
+        return ["lot"];
+      case "Intermediate":
+      case "Finished Product":
+        return ["batch"];
+      case "Status":
+        return ["lot", "material", "batch"];
+      default:
+        return ["material", "lot", "batch"];
+    }
   };
 
   const handleGenerate = async () => {
@@ -153,7 +170,7 @@ export function GenerateLabelModal({ isOpen, onClose }: GenerateLabelModalProps)
             <>
               <Alert
                 type="info"
-                message={`Suggested for: ${getSuggestedEntityType(selectedTemplate.label_type)}`}
+                message={`Allowed entity types: ${getRequiredEntityTypes(selectedTemplate.label_type).join(", ").toUpperCase()}`}
                 description={`Dimensions: ${selectedTemplate.width}" × ${selectedTemplate.height}"`}
                 style={{ marginBottom: "16px" }}
               />
@@ -175,9 +192,9 @@ export function GenerateLabelModal({ isOpen, onClose }: GenerateLabelModalProps)
 
           <Form.Item label="Entity Type" required>
             <Radio.Group value={entityType} onChange={(e) => handleEntityTypeChange(e.target.value)}>
-              <Radio.Button value="material">Material</Radio.Button>
-              <Radio.Button value="lot">Inventory Lot</Radio.Button>
-              <Radio.Button value="batch">Production Batch</Radio.Button>
+              <Radio.Button value="material" disabled={selectedTemplate ? !getRequiredEntityTypes(selectedTemplate.label_type).includes("material") : false}>Material</Radio.Button>
+              <Radio.Button value="lot" disabled={selectedTemplate ? !getRequiredEntityTypes(selectedTemplate.label_type).includes("lot") : false}>Inventory Lot</Radio.Button>
+              <Radio.Button value="batch" disabled={selectedTemplate ? !getRequiredEntityTypes(selectedTemplate.label_type).includes("batch") : false}>Production Batch</Radio.Button>
             </Radio.Group>
           </Form.Item>
 
