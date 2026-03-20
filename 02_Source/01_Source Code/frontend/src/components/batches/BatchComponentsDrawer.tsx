@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Drawer,
   Descriptions,
@@ -33,7 +33,16 @@ interface BatchComponentsDrawerProps {
   onClose: () => void;
 }
 
-export function BatchComponentsDrawer({ batch, onClose }: BatchComponentsDrawerProps) {
+export function BatchComponentsDrawer({ batch: batchProp, onClose }: BatchComponentsDrawerProps) {
+  const [localBatch, setLocalBatch] = useState<ProductionBatch | null>(batchProp);
+
+  // Sync local state when prop changes (e.g. drawer opens for a different batch)
+  useEffect(() => {
+    setLocalBatch(batchProp);
+  }, [batchProp]);
+
+  const batch = localBatch;
+
   const { data: components = [], isLoading } = useBatchComponents(batch?.batch_id ?? null);
   const { mutateAsync: addComponent, isPending: isAdding } = useAddComponent();
   const { mutateAsync: updateStatus, isPending: isUpdatingStatus } = useUpdateBatchStatus();
@@ -88,6 +97,7 @@ export function BatchComponentsDrawer({ batch, onClose }: BatchComponentsDrawerP
   const handleStatusChange = async (newStatus: string) => {
     try {
       await updateStatus({ batchId: batch.batch_id, status: newStatus });
+      setLocalBatch((prev) => prev ? { ...prev, status: newStatus as ProductionBatch["status"] } : prev);
       message.success(`Batch status updated to ${newStatus}`);
     } catch (error: unknown) {
       const axiosErr = error as { response?: { data?: { error?: string } } };
