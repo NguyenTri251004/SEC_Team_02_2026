@@ -204,6 +204,13 @@ export default function AdminDashboard() {
       title="Admin Dashboard"
       subtitle="System overview and user activity"
     >
+      {/* ── Demo tag ── */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col>
+          <Tag color="blue">w7 demo</Tag>
+        </Col>
+      </Row>
+
       {/* ── 1. KPI Scorecards (top row, most prominent) ── */}
       <Row gutter={[16, 16]}>
         <Col xs={12} sm={6}>
