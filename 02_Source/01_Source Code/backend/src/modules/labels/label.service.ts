@@ -128,21 +128,79 @@ export const deleteTemplate = async (id: string): Promise<boolean> => {
 };
 
 /**
- * Generate QR Code as base64 image
+ * Generate QR Code as base64 image with optional caption text below
  */
 const generateQRCode = async (data: string, captionText?: string): Promise<{ dataUrl: string; caption?: string }> => {
   try {
-    // Generate QR code as PNG data URL
-    const qrDataUrl = await QRCode.toDataURL(data, {
+    if (!captionText) {
+      // No caption — return plain PNG
+      const qrDataUrl = await QRCode.toDataURL(data, {
+        width: 300,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#000000', light: '#FFFFFF' }
+      });
+      return { dataUrl: qrDataUrl };
+    }
+
+    // Generate QR code as SVG so we can add caption text below
+    let svgString: string = await QRCode.toString(data, {
+      type: 'svg',
       width: 300,
       margin: 2,
       errorCorrectionLevel: 'M',
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      }
+      color: { dark: '#000000', light: '#FFFFFF' }
     });
-    return { dataUrl: qrDataUrl, caption: captionText };
+
+    // Parse viewBox dimensions (e.g. viewBox="0 0 33 33")
+    const viewBoxMatch = svgString.match(/viewBox="0 0 (\d+) (\d+)"/);
+    if (viewBoxMatch) {
+      const vbWidth = parseInt(viewBoxMatch[1]);
+      const vbHeight = parseInt(viewBoxMatch[2]);
+      const fontSize = Math.max(Math.round(vbWidth * 0.06), 2);
+      const textAreaHeight = fontSize + Math.round(fontSize * 1.2);
+      const newVbHeight = vbHeight + textAreaHeight;
+
+      // Update viewBox
+      svgString = svgString.replace(
+        `viewBox="0 0 ${vbWidth} ${vbHeight}"`,
+        `viewBox="0 0 ${vbWidth} ${newVbHeight}"`
+      );
+
+      // Update width/height attributes to maintain aspect ratio
+      const widthMatch = svgString.match(/\swidth="(\d+)"/);
+      const heightMatch = svgString.match(/\sheight="(\d+)"/);
+      if (widthMatch && heightMatch) {
+        const origHeight = parseInt(heightMatch[1]);
+        const newHeight = Math.ceil(origHeight * (newVbHeight / vbHeight));
+        svgString = svgString.replace(
+          new RegExp(`height="${origHeight}"`),
+          `height="${newHeight}"`
+        );
+      }
+
+      // Expand white background rect to cover text area
+      svgString = svgString.replace(
+        `d="M0 0h${vbWidth}v${vbHeight}H0z"`,
+        `d="M0 0h${vbWidth}v${newVbHeight}H0z"`
+      );
+
+      // Escape special characters for SVG
+      const escapedText = captionText
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+      // Add text element before closing </svg>
+      const textY = vbHeight + fontSize + Math.round(fontSize * 0.3);
+      const textElement = `<text x="${vbWidth / 2}" y="${textY}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" fill="#000000">${escapedText}</text>`;
+      svgString = svgString.replace('</svg>', `${textElement}</svg>`);
+    }
+
+    // Convert SVG to data URL
+    const svgDataUrl = `data:image/svg+xml;base64,${Buffer.from(svgString).toString('base64')}`;
+    return { dataUrl: svgDataUrl, caption: captionText };
   } catch (error) {
     console.error('Error generating QR code:', error);
     throw new Error('Failed to generate QR code');

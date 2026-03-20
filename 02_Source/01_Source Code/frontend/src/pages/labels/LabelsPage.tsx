@@ -106,7 +106,8 @@ export default function LabelsPage() {
   const handleDownload = (label: GeneratedLabel) => {
     const link = document.createElement("a");
     link.href = label.code_data;
-    link.download = `label-${label.material_id}-${label.code_type}-${Date.now()}.png`;
+    const ext = label.code_data.startsWith("data:image/svg") ? "svg" : "png";
+    link.download = `label-${label.material_id}-${label.code_type}-${Date.now()}.${ext}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
