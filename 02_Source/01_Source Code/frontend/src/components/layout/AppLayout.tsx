@@ -94,7 +94,7 @@ function getSidebarItems(role: UserRole) {
 }
 
 export default function AppLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, switchRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -202,12 +202,26 @@ export default function AppLayout() {
           </Space>
 
           <Space size="middle">
-            <Tag
-              color={ROLE_TAG[role]?.color ?? "default"}
-              style={{ fontSize: 13, padding: "2px 10px", fontWeight: 600 }}
+            <Dropdown
+              menu={{
+                items: (Object.entries(ROLE_TAG) as [UserRole, { color: string; label: string }][]).map(
+                  ([value, { label }]) => ({
+                    key: value,
+                    label,
+                    disabled: value === role,
+                  })
+                ),
+                onClick: ({ key }) => switchRole(key as UserRole),
+              }}
+              trigger={["click"]}
             >
-              {ROLE_TAG[role]?.label ?? role}
-            </Tag>
+              <Tag
+                color={ROLE_TAG[role]?.color ?? "default"}
+                style={{ fontSize: 13, padding: "2px 10px", fontWeight: 600, cursor: "pointer" }}
+              >
+                {ROLE_TAG[role]?.label ?? role} ▾
+              </Tag>
+            </Dropdown>
             <Dropdown
               menu={{
                 items: userMenuItems,

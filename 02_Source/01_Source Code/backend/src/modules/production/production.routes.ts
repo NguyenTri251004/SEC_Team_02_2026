@@ -251,17 +251,17 @@ router.get(
 );
 
 router.post(
-  "/consume",
+  "/batches/:id/components/:componentId/consume",
   authenticateJWT,
   requirePermission("production", "consume"),
   async (req: Request, res: Response) => {
     try {
-      const { batchId, componentId, actualQuantity } = req.body;
-      if (!batchId || !componentId || actualQuantity === undefined) {
+      const { id: batchId, componentId } = req.params;
+      const actualQuantity = req.body.actual_quantity ?? req.body.actualQuantity;
+      if (actualQuantity === undefined) {
         res.status(400).json({
           success: false,
-          error:
-            "Missing required fields: batchId, componentId, actualQuantity",
+          error: "Missing required field: actual_quantity",
         });
         return;
       }
@@ -296,12 +296,12 @@ router.post(
 );
 
 router.get(
-  "/traceability/:batchId",
+  "/batches/:id/traceability",
   authenticateJWT,
   requirePermission("production", "read"),
   async (req: Request, res: Response) => {
     try {
-      const batch = await productionService.getBatchById(req.params.batchId);
+      const batch = await productionService.getBatchById(req.params.id);
       if (!batch) {
         res
           .status(404)
@@ -310,7 +310,7 @@ router.get(
       }
 
       const traceability = await productionService.getTraceability(
-        req.params.batchId,
+        req.params.id,
       );
       res.json({
         success: true,

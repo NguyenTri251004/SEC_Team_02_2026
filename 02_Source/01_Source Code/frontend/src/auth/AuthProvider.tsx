@@ -26,6 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [token, setToken] = useState<string | undefined>(undefined);
+  const [roleOverride, setRoleOverride] = useState<UserRole | null>(null);
 
   useEffect(() => {
     // check-sso: silently checks whether the user already has an active Keycloak
@@ -84,6 +85,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     keycloak.logout({ redirectUri: window.location.origin });
   }, []);
 
+  const switchRole = useCallback((role: UserRole) => {
+    setRoleOverride(role);
+  }, []);
+
+  // Build effective user with overridden role
+  const effectiveUser = user && roleOverride
+    ? { ...user, role: roleOverride }
+    : user;
+
   if (!isInitialized) {
     return (
       <div
@@ -116,10 +126,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated,
         isInitialized,
         userRoles,
-        user,
+        user: effectiveUser,
         login,
         logout,
-        switchRole: () => {},
+        switchRole,
         token,
       }}
     >

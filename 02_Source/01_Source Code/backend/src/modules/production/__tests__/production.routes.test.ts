@@ -502,19 +502,17 @@ describe('Production Routes', () => {
     });
   });
 
-  describe('POST /api/production/consume', () => {
-    it('should return 400 when required consume fields are missing', async () => {
+  describe('POST /api/production/batches/:id/components/:componentId/consume', () => {
+    it('should return 400 when actual_quantity is missing', async () => {
       const response = await request(app)
-        .post('/api/production/consume')
-        .send({
-          batchId: 'BATCH-001',
-        });
+        .post('/api/production/batches/BATCH-001/components/COMP-001/consume')
+        .send({});
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toContain('Missing required fields');
+      expect(response.body.error).toContain('Missing required field: actual_quantity');
     });
 
-    it('should consume material successfully', async () => {
+    it('should consume material successfully with actual_quantity', async () => {
       mockProductionService.consumeMaterial.mockResolvedValueOnce({
         component_id: 'COMP-001',
         batch_id: 'BATCH-001',
@@ -529,12 +527,8 @@ describe('Production Routes', () => {
       } as any);
 
       const response = await request(app)
-        .post('/api/production/consume')
-        .send({
-          batchId: 'BATCH-001',
-          componentId: 'COMP-001',
-          actualQuantity: 5,
-        });
+        .post('/api/production/batches/BATCH-001/components/COMP-001/consume')
+        .send({ actual_quantity: 5 });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -545,18 +539,41 @@ describe('Production Routes', () => {
       );
     });
 
+    it('should also accept actualQuantity (camelCase) for backward compatibility', async () => {
+      mockProductionService.consumeMaterial.mockResolvedValueOnce({
+        component_id: 'COMP-001',
+        batch_id: 'BATCH-001',
+        lot_id: 'LOT-001',
+        planned_quantity: 10,
+        actual_quantity: 7,
+        unit_of_measure: 'kg',
+        addition_date: new Date(),
+        added_by: 'USR-PROD',
+        created_date: new Date(),
+        modified_date: new Date(),
+      } as any);
+
+      const response = await request(app)
+        .post('/api/production/batches/BATCH-001/components/COMP-001/consume')
+        .send({ actualQuantity: 7 });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(mockProductionService.consumeMaterial).toHaveBeenCalledWith(
+        'BATCH-001',
+        'COMP-001',
+        7
+      );
+    });
+
     it('should return 404 when component not found', async () => {
       mockProductionService.consumeMaterial.mockRejectedValueOnce(
         new Error('Batch component not found')
       );
 
       const response = await request(app)
-        .post('/api/production/consume')
-        .send({
-          batchId: 'BATCH-001',
-          componentId: 'COMP-999',
-          actualQuantity: 3,
-        });
+        .post('/api/production/batches/BATCH-001/components/COMP-999/consume')
+        .send({ actual_quantity: 3 });
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
@@ -569,12 +586,8 @@ describe('Production Routes', () => {
       );
 
       const response = await request(app)
-        .post('/api/production/consume')
-        .send({
-          batchId: 'BATCH-001',
-          componentId: 'COMP-001',
-          actualQuantity: 0,
-        });
+        .post('/api/production/batches/BATCH-001/components/COMP-001/consume')
+        .send({ actual_quantity: 0 });
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Actual quantity must be greater than zero');
@@ -584,12 +597,8 @@ describe('Production Routes', () => {
       mockProductionService.consumeMaterial.mockRejectedValueOnce('unknown failure' as any);
 
       const response = await request(app)
-        .post('/api/production/consume')
-        .send({
-          batchId: 'BATCH-001',
-          componentId: 'COMP-001',
-          actualQuantity: 3,
-        });
+        .post('/api/production/batches/BATCH-001/components/COMP-001/consume')
+        .send({ actual_quantity: 3 });
 
       expect(response.status).toBe(500);
       expect(response.body).toEqual({
@@ -599,7 +608,7 @@ describe('Production Routes', () => {
     });
   });
 
-  describe('GET /api/production/traceability/:batchId', () => {
+  describe('GET /api/production/batches/:id/traceability', () => {
     it('should return traceability successfully', async () => {
       mockProductionService.getBatchById.mockResolvedValueOnce({
         batch_id: 'BATCH-001',
@@ -611,7 +620,7 @@ describe('Production Routes', () => {
         },
       ] as any);
 
-      const response = await request(app).get('/api/production/traceability/BATCH-001');
+      const response = await request(app).get('/api/production/batches/BATCH-001/traceability');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -621,7 +630,7 @@ describe('Production Routes', () => {
     it('should return 404 when traceability batch does not exist', async () => {
       mockProductionService.getBatchById.mockResolvedValueOnce(null);
 
-      const response = await request(app).get('/api/production/traceability/BATCH-404');
+      const response = await request(app).get('/api/production/batches/BATCH-404/traceability');
 
       expect(response.status).toBe(404);
       expect(response.body).toEqual({
@@ -636,7 +645,7 @@ describe('Production Routes', () => {
       } as any);
       mockProductionService.getTraceability.mockRejectedValueOnce(new Error('Database error'));
 
-      const response = await request(app).get('/api/production/traceability/BATCH-001');
+      const response = await request(app).get('/api/production/batches/BATCH-001/traceability');
 
       expect(response.status).toBe(500);
       expect(response.body).toEqual({
