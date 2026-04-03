@@ -10,7 +10,9 @@
     "watch": "tsc --watch",
     "test": "jest --verbose",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --verbose --coverage"
+    "test:coverage": "jest --verbose --coverage",
+    "test:db-integration": "jest --runInBand src/modules/__tests__/warehouse-lifecycle-db.integration.test.ts",
+    "test:api-integration": "jest --runInBand src/modules/__tests__/warehouse-lifecycle-api.test.ts"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^8.11.0",
