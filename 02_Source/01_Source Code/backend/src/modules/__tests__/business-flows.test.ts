@@ -603,9 +603,13 @@ describe("Cross-Module Business Flows", () => {
       });
       mockPool.connect.mockResolvedValueOnce(client);
 
-      // After commit, getBatchById uses pool.query
+      // After commit, there are several pool.query calls:
+      // 1. getTemplatesByLabelType for auto-label generation
+      // 2. getBatchById SELECT batch  
+      // 3. getComponents SELECT components
       mockPool.query
-        .mockResolvedValueOnce(toResult([completeBatch])) // SELECT batch
+        .mockResolvedValueOnce(toResult([])) // getTemplatesByLabelType -> no FINISHED_PRODUCT templates
+        .mockResolvedValueOnce(toResult([completeBatch])) // SELECT batch in getBatchById
         .mockResolvedValueOnce(toResult([COMPONENT]));     // getComponents
 
       const result = await productionService.updateBatchStatus(BATCH.batch_id, "Complete");

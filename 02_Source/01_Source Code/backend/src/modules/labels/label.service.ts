@@ -628,5 +628,5 @@ export const getTemplatesByLabelType = async (labelType: LabelType): Promise<Lab
     "SELECT * FROM label_templates WHERE label_type = $1 ORDER BY created_date DESC",
     [labelType]
   );
-  return result.rows;
+  return result.rows ?? [];
 };
