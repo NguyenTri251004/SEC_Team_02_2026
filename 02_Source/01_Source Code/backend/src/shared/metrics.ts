@@ -27,4 +27,9 @@ export const systemHealthStatus = new Gauge({
   labelNames: ["service", "status"] as const,
 });
 
+systemHealthStatus.labels({ service: "database", status: "up" }).set(1);
+systemHealthStatus.labels({ service: "redis", status: "up" }).set(1);
+
+httpErrorTotal.labels({ method: "GET", route: "/metrics", status_code: "500" }).inc(0);
+
 export { register };
