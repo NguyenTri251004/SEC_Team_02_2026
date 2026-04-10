@@ -19,10 +19,18 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   - job_name: 'ims-backend'
-    scheme: https
+    scheme: http
     metrics_path: '/metrics'
     static_configs:
-      - targets: ['ims-backend-sec02.fly.dev/0']
+      - targets: ['ims-backend:3000']
         labels:
           service: 'backend'
           environment: 'development'
+
+  - job_name: 'ims-elasticsearch'
+    scheme: http
+    metrics_path: '/'
+    static_configs:
+      - targets: ['ims-elasticsearch:9200']
+        labels:
+          service: 'elasticsearch'
