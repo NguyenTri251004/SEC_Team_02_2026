@@ -246,6 +246,20 @@ services:
     networks:
       - ims-network
 
+  promtail:
+    image: grafana/promtail:3.4.2
+    container_name: ims-promtail
+    restart: unless-stopped
+    command: ["-config.file=/etc/promtail/config.yaml"]
+    volumes:
+      - ./monitoring/promtail/config.yaml:/etc/promtail/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail_positions:/tmp
+    depends_on:
+      - loki
+    networks:
+      - ims-network
+
   prometheus:
     image: prom/prometheus:v3.3.1
     container_name: ims-prometheus
@@ -320,6 +334,8 @@ volumes:
   grafana_data:
     driver: local
   loki_data:
+    driver: local
+  promtail_positions:
     driver: local
   tempo_data:
     driver: local

@@ -519,8 +519,11 @@ Default local endpoints:
 - Grafana: http://localhost:3001 (use credentials from .env)
 - Prometheus: http://localhost:9090
 - Alertmanager: http://localhost:9093
-- Loki: http://localhost:3100
-- Tempo: http://localhost:3200
+- Loki (health): http://localhost:3100/ready
+- Tempo (health): http://localhost:3200/ready
+
+Note: opening `http://localhost:3100/` or `http://localhost:3200/` can show `404 page not found`.
+That is expected because Loki/Tempo are API services, not UI pages.
 
 ### Grafana Dashboards
 
