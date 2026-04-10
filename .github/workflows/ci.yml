@@ -16,6 +16,29 @@ jobs:
     defaults:
       run:
         working-directory: "02_Source/01_Source Code/backend"
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: myuser
+          POSTGRES_PASSWORD: mypassword
+          POSTGRES_DB: mydatabase
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: myuser
+      DB_PASSWORD: mypassword
+      DB_NAME: mydatabase
+
     steps:
       - uses: actions/checkout@v4
 
@@ -28,10 +51,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Initialize database schema
+        run: PGPASSWORD=mypassword psql -h localhost -U myuser -d mydatabase -f "../db_schema/db-init.sql"
+
       - name: Type check
         run: npx tsc --noEmit
 
-      - name: Unit tests (Jest)
+      - name: Unit + integration tests (Jest)
         run: npm test
 
   frontend:
