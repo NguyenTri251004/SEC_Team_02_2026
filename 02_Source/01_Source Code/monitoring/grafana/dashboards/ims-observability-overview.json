@@ -11,6 +11,7 @@
       "type": "timeseries",
       "title": "Request Rate",
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "datasource": "Prometheus",
       "targets": [
         {
           "expr": "sum(rate(http_server_requests_total[5m]))",
@@ -23,9 +24,10 @@
       "type": "timeseries",
       "title": "5xx Error Rate",
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_total{status_class='5xx'}[5m])) / clamp_min(sum(rate(http_server_requests_total[5m])), 1)",
+          "expr": "(sum(rate(http_server_requests_total{status_class='5xx'}[5m])) / clamp_min(sum(rate(http_server_requests_total[5m])), 1)) or vector(0)",
           "legendFormat": "error_rate",
           "refId": "A"
         }
@@ -35,6 +37,7 @@
       "type": "timeseries",
       "title": "P95 Latency",
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "datasource": "Prometheus",
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket[5m])) by (le))",
@@ -47,9 +50,73 @@
       "type": "logs",
       "title": "Recent Application Logs",
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "datasource": "Loki",
       "targets": [
         {
-          "expr": "{container=~\"ims-backend|ims-frontend\"}",
+          "expr": "{service_name=~\"ims-(backend|frontend|ai-service)\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Trace Ingestion Rate (Tempo)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(tempo_ingester_traces_created_total[5m]))",
+          "legendFormat": "traces/s",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Active Live Traces (Tempo)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(tempo_ingester_live_traces)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "AI Requests Rate",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(ai_requests_total[5m])) by (endpoint)",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "AI Token Usage Rate",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(ai_tokens_total{token_type=\"total\"}[5m])) by (endpoint)",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "AI Cost USD (Total)",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(ai_cost_usd_total)",
           "refId": "A"
         }
       ]
@@ -65,6 +132,6 @@
   "timezone": "",
   "title": "IMS Observability Overview",
   "uid": "ims-observability-overview",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

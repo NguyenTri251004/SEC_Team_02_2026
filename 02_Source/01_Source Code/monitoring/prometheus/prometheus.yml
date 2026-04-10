@@ -24,6 +24,15 @@ scrape_configs:
     static_configs:
       - targets: ['otel-collector:8889']
 
+  - job_name: ims-ai-service
+    static_configs:
+      - targets: ['ai-service:8000']
+    metrics_path: /metrics
+
+  - job_name: tempo
+    static_configs:
+      - targets: ['tempo:3200']
+
   - job_name: prometheus
     static_configs:
       - targets: ['prometheus:9090']
