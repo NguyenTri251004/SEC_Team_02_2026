@@ -1,5 +1,6 @@
 import axios, { type AxiosRequestConfig } from "axios";
 import keycloak from "../auth/keycloak";
+import { frontendLogger } from "@/lib/observability/logger";
 
 import type {
   AdminStats,
@@ -34,15 +35,45 @@ const api = axios.create({
   baseURL: BASE_URL,
 });
 
+type RequestMetadata = {
+  startedAt: number;
+  traceId: string;
+};
+
+type InstrumentedConfig = AxiosRequestConfig & {
+  _retry?: boolean;
+  metadata?: RequestMetadata;
+};
+
+const createTraceId = (): string => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID().replace(/-/g, "").slice(0, 32);
+  }
+
+  return `${Date.now().toString(16)}${Math.random().toString(16).slice(2, 18)}`.slice(0, 32);
+};
+
 // ────────────────────────────────────────────────────────────
 // Request interceptor: attach Keycloak access token
 // ────────────────────────────────────────────────────────────
 api.interceptors.request.use((config) => {
+  const traceId = createTraceId();
+  const spanId = traceId.slice(0, 16);
+
   const token = keycloak.token;
+  config.headers = config.headers ?? {};
+
   if (token) {
-    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  config.headers["traceparent"] = `00-${traceId}-${spanId}-01`;
+  config.headers["x-correlation-id"] = traceId;
+  (config as InstrumentedConfig).metadata = {
+    startedAt: performance.now(),
+    traceId,
+  };
+
   return config;
 });
 
@@ -52,7 +83,18 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = (error.config ?? {}) as InstrumentedConfig;
+    const metadata = originalRequest.metadata;
+
+    if (metadata) {
+      frontendLogger.warn("frontend.api.request_failed", {
+        method: originalRequest.method,
+        url: originalRequest.url,
+        status: error.response?.status,
+        durationMs: Number((performance.now() - metadata.startedAt).toFixed(2)),
+        traceId: metadata.traceId,
+      });
+    }
 
     if (
       error.response?.status === 401 &&
@@ -63,10 +105,14 @@ api.interceptors.response.use(
         originalRequest._retry = true;
 
         await keycloak.updateToken(30);
+        originalRequest.headers = originalRequest.headers ?? {};
         originalRequest.headers.Authorization = `Bearer ${keycloak.token}`;
 
         return api.request(originalRequest); // use api instead of axios
       } catch {
+        frontendLogger.error("frontend.auth.token_refresh_failed", {
+          url: originalRequest.url,
+        });
         keycloak.logout({ redirectUri: window.location.origin });
       }
     }

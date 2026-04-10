@@ -1,0 +1,32 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+        cors:
+          allowed_origins:
+            - "http://localhost:5173"
+            - "http://localhost:80"
+            - "https://*.vercel.app"
+          allowed_headers:
+            - "*"
+
+processors:
+  batch:
+
+exporters:
+  otlphttp/tempo:
+    endpoint: http://tempo:4318
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/tempo]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]

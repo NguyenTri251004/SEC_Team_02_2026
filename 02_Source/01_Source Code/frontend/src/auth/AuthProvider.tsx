@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback, type ReactNode } from "react";
+import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import keycloak from "./keycloak";
 import type { CurrentUser, UserRole } from "../types";
 import { AuthContext } from "./context";
+import { frontendLogger } from "@/lib/observability/logger";
 
 // Ordered from most to least privileged — used to pick a primary role
 // when a Keycloak user holds multiple realm roles.
@@ -20,6 +21,14 @@ function pickPrimaryRole(roles: string[]): UserRole {
   return "viewer";
 }
 
+function hasAuthCallbackParams(): boolean {
+  const search = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const keys = ["code", "state", "session_state", "error"];
+
+  return keys.some((key) => search.has(key) || hash.has(key));
+}
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -27,17 +36,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [token, setToken] = useState<string | undefined>(undefined);
   const [roleOverride, setRoleOverride] = useState<UserRole | null>(null);
+  const hasInitializedKeycloak = useRef(false);
 
   useEffect(() => {
-    // check-sso: silently checks whether the user already has an active Keycloak
-    // session. If they do, the app initialises as authenticated without a redirect.
-    // If they don't, isAuthenticated stays false and the Login page is shown.
+    // React StrictMode runs effects twice in development. Guarding prevents
+    // duplicate Keycloak init calls that can race and leave auth state false.
+    if (hasInitializedKeycloak.current) {
+      return;
+    }
+    hasInitializedKeycloak.current = true;
+
+    const isAuthCallback = hasAuthCallbackParams();
+
+    // For callback URLs containing auth params, skip check-sso and let Keycloak
+    // process the callback directly. For normal app loads, keep silent SSO check.
     keycloak
-      .init({
-        onLoad: "check-sso",
-        silentCheckSsoRedirectUri: window.location.origin + "/silent-check-sso.html",
-      })
+      .init(
+        isAuthCallback
+          ? {
+              checkLoginIframe: false,
+              pkceMethod: "S256",
+            }
+          : {
+              onLoad: "check-sso",
+              silentCheckSsoRedirectUri:
+                window.location.origin + "/silent-check-sso.html",
+              checkLoginIframe: false,
+              pkceMethod: "S256",
+            },
+      )
       .then((authenticated) => {
+        frontendLogger.info("frontend.auth.keycloak_initialized", {
+          authenticated,
+          isAuthCallback,
+        });
+
         if (authenticated && keycloak.tokenParsed) {
           const parsed = keycloak.tokenParsed as Record<string, unknown>;
           const roles: string[] =
@@ -57,11 +90,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         setIsInitialized(true);
       })
-      .catch(() => setIsInitialized(true));
+      .catch((error: unknown) => {
+        frontendLogger.error("frontend.auth.keycloak_init_failed", {
+          message: error instanceof Error ? error.message : String(error),
+        });
+        setIsInitialized(true);
+      });
 
     // Proactively refresh the token before it expires
     keycloak.onTokenExpired = () => {
+      frontendLogger.warn("frontend.auth.token_expired");
       keycloak.updateToken(60).catch(() => {
+        frontendLogger.error("frontend.auth.token_refresh_failed");
         // Refresh failed — session has ended; reset state
         setIsAuthenticated(false);
         setUser(null);
@@ -71,6 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     keycloak.onAuthRefreshSuccess = () => {
+      frontendLogger.info("frontend.auth.token_refresh_success");
       setToken(keycloak.token);
     };
   }, []);

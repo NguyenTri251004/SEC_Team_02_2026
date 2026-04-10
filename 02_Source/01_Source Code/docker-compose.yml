@@ -143,13 +143,21 @@ services:
       - KEYCLOAK_REALM=${KEYCLOAK_REALM:-inventory-management}
       - AI_SERVICE_URL=http://ai-service:8000
       - BYPASS_AUTH=false
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - OTEL_ENABLED=${OTEL_ENABLED:-true}
+      - OTEL_SERVICE_NAME=ims-backend
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318/v1/traces
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=ims-backend,service.namespace=ims,deployment.environment=local
+      - METRICS_AUTH_TOKEN=${METRICS_AUTH_TOKEN:?set METRICS_AUTH_TOKEN in .env}
     ports:
       - "${BACKEND_PORT:-3000}:3000"
     volumes:
       - ./backend/src:/app/src
       - ./backend/package.json:/app/package.json
+      - ./backend/package-lock.json:/app/package-lock.json
       - backend_node_modules:/app/node_modules
-    command: npm run dev
+    command: sh -c "npm install && npm run dev"
     depends_on:
       postgres:
         condition: service_healthy
@@ -157,6 +165,14 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - ims-network
 
@@ -170,6 +186,9 @@ services:
     environment:
       - VITE_API_URL=http://localhost:3000
       - VITE_KEYCLOAK_URL=http://localhost:8080
+      - VITE_OTEL_ENABLED=${VITE_OTEL_ENABLED:-true}
+      - VITE_OTEL_EXPORTER_OTLP_ENDPOINT=${VITE_OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318/v1/traces}
+      - VITE_ENVIRONMENT=${VITE_ENVIRONMENT:-local}
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     volumes:
@@ -177,9 +196,111 @@ services:
       - ./frontend/public:/app/public
       - ./frontend/index.html:/app/index.html
       - ./frontend/package.json:/app/package.json
+      - ./frontend/package-lock.json:/app/package-lock.json
       - frontend_node_modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     depends_on:
       - backend
+    networks:
+      - ims-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.121.0
+    container_name: ims-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./monitoring/otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"
+    depends_on:
+      - tempo
+    networks:
+      - ims-network
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    container_name: ims-tempo
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./monitoring/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "3200:3200"
+    networks:
+      - ims-network
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: ims-loki
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/config.yaml"]
+    volumes:
+      - ./monitoring/loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - ims-network
+
+  prometheus:
+    image: prom/prometheus:v3.3.1
+    container_name: ims-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./monitoring/prometheus/metrics-token.txt:/etc/prometheus/metrics-token.txt:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
+      - alertmanager
+      - otel-collector
+    networks:
+      - ims-network
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: ims-alertmanager
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/config.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - ./monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - ims-network
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: ims-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:?set GRAFANA_ADMIN_USER in .env}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      - GF_USERS_DEFAULT_THEME=light
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
     networks:
       - ims-network
 
@@ -193,6 +314,16 @@ volumes:
   backend_node_modules:
     driver: local
   frontend_node_modules:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  loki_data:
+    driver: local
+  tempo_data:
+    driver: local
+  alertmanager_data:
     driver: local
 
 networks:

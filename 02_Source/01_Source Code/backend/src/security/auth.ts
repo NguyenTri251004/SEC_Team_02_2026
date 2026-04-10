@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { updateLastLogin } from "../modules/admin/admin.service";
+import { logger } from "../shared/observability/logger";
+import { authFailuresTotal } from "../shared/observability/metrics";
 
 // Extend Express Request để thêm user info
 declare global {
@@ -109,6 +111,7 @@ export const authenticateJWT = async (
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
+    authFailuresTotal.inc({ reason: "missing_header" });
     res.status(401).json({
       success: false,
       error: "Unauthorized - No token provided",
@@ -119,6 +122,7 @@ export const authenticateJWT = async (
   const token = parseBearerToken(authHeader);
 
   if (!token) {
+    authFailuresTotal.inc({ reason: "invalid_format" });
     res.status(401).json({
       success: false,
       error: "Unauthorized - Invalid token format",
@@ -155,7 +159,8 @@ export const authenticateJWT = async (
       cachedPublicKey = null;
       lastKeyFetch = 0;
     }
-    console.error("JWT verification failed:", error);
+    authFailuresTotal.inc({ reason: "verify_failed" });
+    logger.error({ error }, "auth.jwt.verify_failed");
     res.status(403).json({
       success: false,
       error: "Forbidden - Invalid token",
@@ -200,7 +205,8 @@ export const optionalAuth = async (
     };
   } catch (error) {
     // Token invalid, nhưng không reject request
-    console.warn("Optional auth: Invalid token, continuing without user");
+    authFailuresTotal.inc({ reason: "optional_verify_failed" });
+    logger.warn({ error }, "auth.optional.invalid_token");
   }
 
   next();
@@ -217,7 +223,8 @@ export const extractUserFromToken = async (
     const decoded = jwt.verify(token, verifyKey);
     return decoded;
   } catch (error) {
-    console.error("Failed to extract user from token:", error);
+    authFailuresTotal.inc({ reason: "extract_failed" });
+    logger.error({ error }, "auth.extract_user.failed");
     return null;
   }
 };
