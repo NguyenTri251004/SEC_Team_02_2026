@@ -8,6 +8,10 @@ on:
       - ".github/workflows/deploy-backend.yml"
   workflow_dispatch:
 
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Type Check & Deploy to Fly.io
@@ -35,5 +39,30 @@ jobs:
 
       - name: Deploy to Fly.io
         run: flyctl deploy --remote-only -a ims-backend-sec02
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Smoke test (health check)
+        id: smoke
+        run: |
+          echo "Polling https://ims-backend-sec02.fly.dev/health ..."
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 5 https://ims-backend-sec02.fly.dev/health; then
+              echo ""
+              echo "Backend healthy after $i attempt(s)"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "Smoke test failed after 30 attempts (~2.5 min)"
+          exit 1
+
+      - name: Rollback on smoke test failure
+        if: failure() && steps.smoke.conclusion == 'failure'
+        run: |
+          echo "Smoke test failed — attempting rollback to previous release"
+          flyctl releases rollback --yes -a ims-backend-sec02 || \
+            echo "Automatic rollback failed — manual intervention required"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
