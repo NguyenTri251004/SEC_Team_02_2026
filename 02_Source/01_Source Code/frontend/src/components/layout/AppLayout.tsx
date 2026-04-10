@@ -9,7 +9,6 @@ import {
   Breadcrumb,
 } from "antd";
 import {
-  AppstoreOutlined,
   DashboardOutlined,
   InboxOutlined,
   ExperimentOutlined,
@@ -146,16 +145,9 @@ export default function AppLayout() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: 8,
             borderBottom: "1px solid rgba(255,255,255,.1)",
           }}
         >
-          <AppstoreOutlined
-            style={{
-              color: "#1890ff",
-              fontSize: collapsed ? 20 : 22,
-            }}
-          />
           <Text
             strong
             style={{
