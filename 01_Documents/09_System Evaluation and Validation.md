@@ -9,7 +9,7 @@ Tài liệu trình bày cách đăng ký và cài đặt các công cụ kiểm 
 | Loại test | Công cụ | Phạm vi | Vị trí cấu hình |
 |-----------|---------|---------|-----------------|
 | **Unit Test** | Jest 29 + ts-jest | Backend (Express + TS) | `backend/jest.config.ts` |
-| **Unit Test** | (React Testing Library) | Frontend — _chưa triển khai đầy đủ_ | — |
+| **Unit/Component Test** | Vitest 4 + React Testing Library + jsdom | Frontend (React + Vite) | `frontend/vite.config.ts`, `frontend/src/test/setup.ts` |
 | **Integration Test** | Jest + Supertest + pg (real PostgreSQL) | Backend API + DB | `backend/src/modules/__tests__/warehouse-lifecycle-*` |
 | **Manual API Test** | curl + Postman | Smoke test sau deploy | — |
 | **Type Check** | `tsc --noEmit` | Toàn bộ TS | `tsconfig.json` |
@@ -22,12 +22,16 @@ Tất cả công cụ đi kèm dependency của project, không cần cài thủ
 ```bash
 cd "02_Source/01_Source Code/backend"
 npm install
+
+cd "../frontend"
+npm install
 ```
 
 Xác nhận cài đặt:
 ```bash
 npx jest --version     # 29.7.0
-npx tsc --version      # 5.1.6
+npx vitest --version   # 4.1.2
+npx tsc --version      # 5.9.x
 ```
 
 ## 2. Phương pháp thực thi kiểm thử
@@ -40,7 +44,7 @@ npx tsc --version      # 5.1.6
       ├────────────────────────┤
       │  Integration Tests     │   ← Supertest + DB thật
       ├────────────────────────┤
-      │  Unit Tests (669 test) │   ← chạy mỗi commit
+      │  Unit Tests            │   ← chạy mỗi commit
       └────────────────────────┘
 ```
 
@@ -60,13 +64,19 @@ npm test                       # Unit + integration
 npm run test:coverage          # + báo cáo coverage HTML
 npm run test:db-integration    # Integration với DB (cần Docker postgres)
 npm run test:api-integration   # End-to-end warehouse lifecycle
+
+cd "../frontend"
+
+npm test                       # Frontend unit/component tests
+npm run test:coverage          # Frontend coverage report
+npm run build                  # Type check + Vite build
 ```
 
 ## 3. Kết quả kiểm thử (Test Results)
 
 Kết quả chạy trên branch `master` (2026-04-17):
 
-### 3.1. Unit Tests
+### 3.1. Backend Unit Tests
 
 ```
 Test Suites: 26 passed, 26 total
@@ -76,7 +86,37 @@ Time:        1.992 s
 
 **Tỉ lệ pass: 100%** (669/669)
 
-### 3.2. Coverage toàn bộ backend
+### 3.2. Frontend Unit/Component Tests
+
+```
+Test Files:  18 passed, 18 total
+Tests:       55 passed, 55 total
+Duration:    10.21 s
+```
+
+**Tỉ lệ pass: 100%** (55/55)
+
+### 3.3. Coverage toàn bộ frontend
+
+| Metric | Giá trị |
+|--------|---------|
+| Statements | **98.68%** |
+| Branches | **86.45%** |
+| Functions | **99.48%** |
+| Lines | **98.87%** |
+
+### 3.4. Coverage chi tiết theo nhóm module frontend
+
+| Nhóm module | Statements | Branches | Functions | Lines |
+|------------|-----------|----------|-----------|-------|
+| `auth` | 98.18% | 84.84% | 100% | 98.11% |
+| `hooks` | 98.64% | 81.81% | 100% | 98.96% |
+| `lib` | 100% | 100% | 100% | 100% |
+| `pages/dashboard/utils` | 100% | 100% | 100% | 100% |
+| `services` | 98.50% | 93.93% | 97.29% | 98.50% |
+| `stores` | 100% | 100% | 100% | 100% |
+
+### 3.5. Coverage toàn bộ backend
 
 | Metric | Giá trị |
 |--------|---------|
@@ -85,7 +125,7 @@ Time:        1.992 s
 | Functions | **83.60%** |
 | Lines | **84.00%** |
 
-### 3.3. Coverage chi tiết theo module
+### 3.6. Coverage chi tiết theo module backend
 
 | Module | Statements | Branches | Functions | Lines |
 |--------|-----------|----------|-----------|-------|
@@ -98,7 +138,7 @@ Time:        1.992 s
 | `security/rbac` | 64.00% | 33.33% | 75.00% | 57.14% |
 | `shared/db/pool` | 100% | 78.57% | 100% | 100% |
 
-### 3.4. Integration Tests
+### 3.7. Integration Tests
 
 | Suite | Kết quả |
 |-------|---------|
@@ -107,10 +147,12 @@ Time:        1.992 s
 | `warehouse-lifecycle-db.integration.test.ts` (real DB) | Pass khi có PostgreSQL chạy sẵn (skipped trong kết quả trên vì môi trường không có DB) |
 | `business-flows.test.ts` | Pass |
 
-### 3.5. Log cài đặt Jest và chạy thử
+### 3.8. Log cài đặt và chạy thử
 
 HTML coverage report được tạo tại `backend/coverage/lcov-report/index.html`.
 Text summary của lần chạy gần nhất lưu trong commit history (xem `git log`).
+
+Frontend coverage report được tạo tại `frontend/coverage/`.
 
 ## 4. Video hướng dẫn kiểm thử
 
