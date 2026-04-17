@@ -195,13 +195,9 @@ Tính năng GitHub được nhóm sử dụng:
 - **Projects** — hệ thống quản lý dự án (kanban board, sprint tracking)
 - **Actions** — CI/CD pipeline tự động
 
-### Ảnh chụp mời giảng viên làm collaborator/admin repo
+### Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý dự án của nhóm
 
-> ⚠️ **[TODO] Cần chụp màn hình**
->
-> **Yêu cầu (theo syllabus):** ảnh chụp hành động mời tham gia hệ thống với vai trò admin/user để truy cập hệ thống source control của nhóm.
->
-> **Cách chụp:** Vào `Settings → Collaborators and teams` của repo → chụp màn hình danh sách đã mời / pending invitation.
+![Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý dự án của nhóm.](assets/001.png)
 
 ## 7. Hệ thống Build và Tích hợp tự động (CI/CD)
 
@@ -223,10 +219,8 @@ Dự án dùng **GitHub Actions** làm hệ thống CI/CD.
 **Xem lịch sử chạy workflow:**
 https://github.com/Inventory-management-SEC/SEC_Team_02_2026/actions
 
-### Ảnh chụp mời giảng viên làm admin GitHub Actions
+### Ảnh chụp lịch sử thực thi workflow
 
-> ⚠️ **[TODO] Cần chụp màn hình**
->
-> **Yêu cầu (theo syllabus):** ảnh chụp hành động mời tham gia hệ thống build và tích hợp tự động của nhóm.
->
-> **Ghi chú:** Vì GitHub Actions gắn với repo, nên invite ở mục `Collaborators` (mục 6) đã bao gồm quyền xem Actions. Có thể chụp thêm màn hình Actions tab hiển thị danh sách workflow run thành công làm minh chứng.
+>![Ảnh chụp lịch sử thực thi workflow.](assets/002.png)
+
+> **Ghi chú:** Vì GitHub Actions gắn với repo, nên invite ở mục `Collaborators` (mục 6) đã bao gồm quyền xem Actions.

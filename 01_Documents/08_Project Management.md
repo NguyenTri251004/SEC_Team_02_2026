@@ -61,13 +61,9 @@ Tài liệu trình bày các kết quả ước lượng kích cỡ, thời gian
 - **Milestones** tương ứng với các M1–M4 ở mục 2
 - **Assignees** gán cho thành viên phụ trách
 
-### Ảnh chụp mời giảng viên làm admin/user
+### Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý mã nguồn của nhóm
 
-> ⚠️ **[TODO] Cần chụp màn hình**
->
-> **Yêu cầu (theo syllabus):** ảnh chụp hành động mời tham gia hệ thống quản lý dự án của nhóm.
->
-> **Cách chụp:** Vào organization `Inventory-management-SEC` → `People` → `Invite member` (hoặc Project settings → Manage access) → chụp danh sách đã mời.
+![Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý mã nguồn của nhóm.](assets/001.png)
 
 ## 6. Hệ thống quản lý lỗi (Bug / Issue Tracking)
 
@@ -81,10 +77,8 @@ Tài liệu trình bày các kết quả ước lượng kích cỡ, thời gian
 - Link trực tiếp từ Issue sang Pull Request khi fix (`Fixes #123`)
 - Milestones và assignees đồng bộ với GitHub Projects
 
-### Ảnh chụp mời giảng viên làm admin/user
+### Ảnh chụp Issues tab và các label đang dùng
 
-> ⚠️ **[TODO] Cần chụp màn hình**
->
-> **Yêu cầu (theo syllabus):** ảnh chụp hành động mời tham gia hệ thống quản lý lỗi của nhóm.
->
-> **Ghi chú:** GitHub Issues gắn với repo, nên invite ở mục Collaborators repo (xem `02_Source/03_Compilation Guide.md` mục 6) đã bao gồm quyền truy cập Issues. Có thể chụp bổ sung màn hình Issues tab với filter/label đang dùng làm minh chứng.
+![Ảnh chụp Issues tab và các label đang dùng](assets/002.png)
+
+> **Ghi chú:** GitHub Issues gắn với repo, nên invite ở mục Collaborators repo (xem `02_Source/03_Compilation Guide.md` mục 6) đã bao gồm quyền truy cập Issues.

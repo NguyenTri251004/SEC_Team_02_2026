@@ -28,7 +28,7 @@ Hệ thống dùng **Keycloak** làm hệ thống xác thực và quản lý dan
 
 | Vai trò | Username | Password | Trạng thái (production lemur-6) |
 |---------|----------|----------|--------------------------------|
-| Admin | `admin` | `admin123` | ⚠️ **Cần reset password trên Cloud-IAM** (hiện fail `Invalid credentials`) |
+| Admin | `admin` | `admin123` | ✅ Login OK |
 | Inventory Manager | `inv_manager` | `manager123` | ✅ Login OK |
 | Quality Control | `qc_user` | `qc123` | ✅ Login OK |
 | Production | `prod_user` | `prod123` | ✅ Login OK |
@@ -37,7 +37,7 @@ Hệ thống dùng **Keycloak** làm hệ thống xác thực và quản lý dan
 **Ghi chú quan trọng:**
 - Password ở dạng plaintext trong file `inventory-realm.json` chỉ dùng cho mục đích **demo / đồ án học thuật** — không dùng cho hệ thống thật.
 - Khi chấm điểm, giảng viên có thể dùng bất kỳ tài khoản nào ở trên.
-- Tài khoản `admin` trên production cần được **Leader reset password** về `admin123` qua Cloud-IAM admin console: https://lemur-6.cloud-iam.com/auth/admin → realm `inventory-management` → Users → `admin` → Credentials → Reset password.
+- Tài khoản `admin` trên production cần được **Leader reset password** về `admin123` qua Cloud-IAM admin console: https://lemur-6.cloud-iam.com/auth/admin/inventory-management/console → realm `inventory-management` → Users → `admin` → Credentials → Reset password.
 
 ## 3. Hướng dẫn sử dụng theo vai trò
 
