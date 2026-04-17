@@ -46,15 +46,26 @@ Tài liệu trình bày các kết quả ước lượng kích cỡ, thời gian
 
 ## 4. Hệ thống tương tác, liên lạc của nhóm
 
-**Hệ thống:** _(TODO — xác nhận: nhóm dùng Discord / Messenger / Zalo / Slack?)_
+**Hệ thống:** **Discord** — kênh liên lạc chính của nhóm
 
-**Link mời tham gia:** _(TODO — leader cung cấp link mời)_
+**Cách nhóm sử dụng:**
+- Server riêng cho nhóm SEC Team 02
+- Các channel phân loại: `#general` (thảo luận chung), `#backend`, `#frontend`, `#deploy`, `#tài-liệu` (theo sprint/module)
+- Voice channel cho daily/weekly sync
+
+**Link mời tham gia:**
+
+> ⚠️ **[TODO] Leader cung cấp Discord invite link**
+>
+> Cách lấy: Discord server → click tên server → `Invite People` → chọn `Edit invite link` → set Expire = "Never" + Max uses = "No limit" → copy link.
 
 ### Ảnh chụp mời giảng viên làm admin/user
 
 > ⚠️ **[TODO] Cần chụp màn hình**
 >
-> **Yêu cầu (theo syllabus):** ảnh chụp hành động mời tham gia hệ thống với vai trò admin/user để truy cập hệ thống tương tác, liên lạc của nhóm (ví dụ Slack, Discord).
+> **Yêu cầu (theo syllabus):** ảnh chụp hành động mời tham gia hệ thống với vai trò admin/user để truy cập hệ thống tương tác, liên lạc của nhóm.
+>
+> **Cách chụp:** Discord server → `Server Settings → Members` → mời giảng viên kèm role Admin/Moderator → chụp màn hình hộp thoại mời hoặc tab Members hiển thị giảng viên đã join.
 
 ## 5. Hệ thống quản lý dự án (Project Management)
 
