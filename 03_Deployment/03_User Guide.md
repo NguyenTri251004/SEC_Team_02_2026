@@ -24,17 +24,20 @@ Hệ thống dùng **Keycloak** làm hệ thống xác thực và quản lý dan
 
 ### Tài khoản demo
 
-> ⚠️ **[TODO] Cần cung cấp tài khoản demo thực tế**
->
-> Môi trường production đang bật `BYPASS_AUTH=false` nên yêu cầu đăng nhập qua Keycloak. Nhóm cần tạo sẵn 5 tài khoản demo (mỗi role một tài khoản) và cập nhật thông tin vào đây:
->
-> | Vai trò | Username | Password |
-> |---------|----------|----------|
-> | Admin | `_(TODO)_` | `_(TODO)_` |
-> | Inventory Manager | `_(TODO)_` | `_(TODO)_` |
-> | Quality Control | `_(TODO)_` | `_(TODO)_` |
-> | Production | `_(TODO)_` | `_(TODO)_` |
-> | Viewer | `_(TODO)_` | `_(TODO)_` |
+5 tài khoản demo đã được định nghĩa sẵn trong realm `inventory-management` (file `02_Source/01_Source Code/keycloak/inventory-realm.json`) và import lên Keycloak Cloud-IAM production (`https://lemur-6.cloud-iam.com/auth`):
+
+| Vai trò | Username | Password | Trạng thái (production lemur-6) |
+|---------|----------|----------|--------------------------------|
+| Admin | `admin` | `admin123` | ⚠️ **Cần reset password trên Cloud-IAM** (hiện fail `Invalid credentials`) |
+| Inventory Manager | `inv_manager` | `manager123` | ✅ Login OK |
+| Quality Control | `qc_user` | `qc123` | ✅ Login OK |
+| Production | `prod_user` | `prod123` | ✅ Login OK |
+| Viewer | `viewer` | `viewer123` | ✅ Login OK |
+
+**Ghi chú quan trọng:**
+- Password ở dạng plaintext trong file `inventory-realm.json` chỉ dùng cho mục đích **demo / đồ án học thuật** — không dùng cho hệ thống thật.
+- Khi chấm điểm, giảng viên có thể dùng bất kỳ tài khoản nào ở trên.
+- Tài khoản `admin` trên production cần được **Leader reset password** về `admin123` qua Cloud-IAM admin console: https://lemur-6.cloud-iam.com/auth/admin → realm `inventory-management` → Users → `admin` → Credentials → Reset password.
 
 ## 3. Hướng dẫn sử dụng theo vai trò
 
