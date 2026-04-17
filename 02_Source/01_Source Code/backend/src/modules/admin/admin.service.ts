@@ -12,7 +12,6 @@ import {
   ServiceHealth,
   SystemHealth,
 } from "./admin.types";
-import { systemHealthStatus } from "../../shared/metrics";
 
 // ── Keycloak Admin API ──────────────────────────────────────────────────────────────────────────────
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL ?? "http://keycloak:8080";
@@ -582,12 +581,6 @@ export const getSystemHealth = async (): Promise<SystemHealth> => {
       message: error instanceof Error ? error.message : "Connection failed",
     });
   }
-
-  // Update Prometheus gauge so external monitoring can observe dependency health.
-  services.forEach((service) => {
-    const value = service.status === "healthy" ? 1 : service.status === "degraded" ? 0.5 : 0;
-    systemHealthStatus.set({ service: service.name, status: service.status }, value);
-  });
 
   // Determine overall status
   const hasUnhealthy = services.some((s) => s.status === "unhealthy");
