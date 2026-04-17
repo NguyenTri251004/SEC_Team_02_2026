@@ -1,6 +1,6 @@
 # System Evaluation and Validation
 
-Tài liệu trình bày cách đăng ký và cài đặt các công cụ kiểm thử, phương pháp thực thi kiểm thử, kết quả kiểm thử, kết quả khảo sát và bảng so sánh hệ thống IMS với các hệ thống tương tự.
+Tài liệu trình bày cách đăng ký và cài đặt các công cụ kiểm thử, phương pháp thực thi kiểm thử, kết quả kiểm thử và bảng so sánh hệ thống IMS với các hệ thống tương tự.
 
 ## 1. Công cụ kiểm thử (Testing Tools)
 
@@ -127,27 +127,7 @@ Text summary của lần chạy gần nhất lưu trong commit history (xem `git
 >
 > **YouTube link:** _(sẽ bổ sung)_
 
-## 5. Khảo sát người dùng (User Survey)
-
-> ⚠️ **[TODO] Cần tổ chức khảo sát thật**
->
-> Nhóm cần:
-> 1. Thiết kế form khảo sát (Google Form) gồm các tiêu chí: dễ sử dụng, tốc độ, tính đầy đủ chức năng, giao diện
-> 2. Mời ≥ 15 người dùng mục tiêu (sinh viên, nhân viên kho nếu có liên hệ) dùng thử hệ thống demo
-> 3. Tổng hợp kết quả vào đây
->
-> **Template bảng kết quả cần điền:**
->
-> | Tiêu chí | Điểm trung bình (1–5) | Ghi chú |
-> |---------|----------------------|---------|
-> | Dễ sử dụng | _(TODO)_ | |
-> | Tốc độ phản hồi | _(TODO)_ | |
-> | Giao diện | _(TODO)_ | |
-> | Đầy đủ chức năng | _(TODO)_ | |
-> | Tính ổn định | _(TODO)_ | |
-> | **Tổng quát** | _(TODO)_ | |
-
-## 6. So sánh với các hệ thống tương tự
+## 5. So sánh với các hệ thống tương tự
 
 Bảng so sánh IMS của nhóm với 2 hệ thống thương mại phổ biến trong ngành quản lý kho / tồn kho:
 

@@ -21,8 +21,8 @@ Tài liệu ghi lại công cụ AI và các prompt chính mà nhóm đã dùng 
 ### 2.3. Prompt mô tả workflow PM
 > "Viết mô tả cách nhóm dùng GitHub Projects làm kanban board: trạng thái (Backlog → To Do → In Progress → In Review → Done), label (role, sprint), milestone (M1-M4), assignee. Mỗi user story trong Product Backlog được convert thành 1 issue."
 
-### 2.4. Prompt về các mục cần screenshot/video
-> "Theo syllabus `enterprise-project-artifacts`, tài liệu Project Management phải có screenshot mời giáo viên vào hệ thống liên lạc, hệ thống PM, hệ thống bug tracking. Và 1 video YouTube team building. Viết block TODO rõ ràng cho từng mục, không fake placeholder."
+### 2.4. Prompt về các mục cần screenshot
+> "Theo syllabus `enterprise-project-artifacts`, tài liệu Project Management phải có screenshot mời giáo viên vào hệ thống liên lạc, hệ thống PM, hệ thống bug tracking. Viết block TODO rõ ràng cho từng mục, không fake placeholder."
 
 ## 3. Phương pháp review của con người
 

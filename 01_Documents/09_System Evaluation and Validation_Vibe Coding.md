@@ -12,7 +12,6 @@ Tài liệu ghi lại công cụ AI và các prompt chính mà nhóm đã dùng 
 | **ESLint 9** | Static analysis | Lint frontend |
 | **tsc --noEmit** | Type checker | Enforce strict TS |
 | **curl + Postman** | Manual API test | Smoke test sau deploy |
-| **Google Forms** | Survey | _(TODO khi khảo sát thật)_ |
 
 ## 2. Các prompt chính đã dùng
 
@@ -28,13 +27,9 @@ Tài liệu ghi lại công cụ AI và các prompt chính mà nhóm đã dùng 
 ### 2.4. Prompt so sánh competitor
 > "So sánh IMS của nhóm với Odoo Inventory và Zoho Inventory theo 13 tiêu chí: cost, open-source status, lot tracking, QC workflow, label generation, role-based dashboard, AI analytics, customizability, IAM 3rd party, multi-cloud deploy, microservices, suitable for. Viết thành bảng markdown, kèm điểm mạnh và hạn chế của IMS."
 
-### 2.5. Prompt thiết kế survey
-> "Thiết kế câu hỏi khảo sát người dùng cho hệ thống IMS. Tối đa 10 câu, thang Likert 1-5 cho 5 tiêu chí (dễ sử dụng, tốc độ, giao diện, đầy đủ chức năng, ổn định) + 2 câu mở (điều thích nhất / điều muốn cải thiện)."
-
 ## 3. Phương pháp review của con người
 
 1. Mỗi test AI sinh ra phải **chạy được trước khi commit** — không merge test chưa chạy
 2. Coverage số liệu **phải được reproduce** — mỗi lần update tài liệu, chạy lại `npm run test:coverage` và copy con số thật
 3. Bảng so sánh competitor: Leader verify lại thông tin từ trang chính thức của Odoo và Zoho trước khi ghi
-4. Kết quả survey **KHÔNG được bịa** — chỉ ghi khi có data thật từ Google Form
-5. Video demo testing quay 1 lần đầy đủ, không edit che phần fail (nếu có fail phải giải thích)
+4. Video demo testing quay 1 lần đầy đủ, không edit che phần fail (nếu có fail phải giải thích)

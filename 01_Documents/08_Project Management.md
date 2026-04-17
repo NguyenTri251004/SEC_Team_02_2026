@@ -44,15 +44,7 @@ Tài liệu trình bày các kết quả ước lượng kích cỡ, thời gian
 
 **Ghi chú:** Leader chịu trách nhiệm điều phối chung, nộp bài, và thông báo phân bổ điểm số với giảng viên (nếu có). Các thành viên cùng tham gia tất cả giai đoạn từ phân tích yêu cầu, thiết kế, hiện thực, kiểm thử đến triển khai.
 
-## 4. Video Team Building
-
-> ⚠️ **[TODO] Cần quay và upload YouTube**
->
-> **Nội dung cần có (theo yêu cầu syllabus):** video quay một buổi team building của nhóm.
->
-> **YouTube link:** _(sẽ bổ sung)_
-
-## 5. Hệ thống tương tác, liên lạc của nhóm
+## 4. Hệ thống tương tác, liên lạc của nhóm
 
 **Hệ thống:** _(TODO — xác nhận: nhóm dùng Discord / Messenger / Zalo / Slack?)_
 
@@ -64,7 +56,7 @@ Tài liệu trình bày các kết quả ước lượng kích cỡ, thời gian
 >
 > **Yêu cầu (theo syllabus):** ảnh chụp hành động mời tham gia hệ thống với vai trò admin/user để truy cập hệ thống tương tác, liên lạc của nhóm (ví dụ Slack, Discord).
 
-## 6. Hệ thống quản lý dự án (Project Management)
+## 5. Hệ thống quản lý dự án (Project Management)
 
 **Hệ thống:** **GitHub Projects** — tích hợp sẵn trong repo chính của nhóm
 
@@ -84,7 +76,7 @@ Tài liệu trình bày các kết quả ước lượng kích cỡ, thời gian
 >
 > **Cách chụp:** Vào organization `Inventory-management-SEC` → `People` → `Invite member` (hoặc Project settings → Manage access) → chụp danh sách đã mời.
 
-## 7. Hệ thống quản lý lỗi (Bug / Issue Tracking)
+## 6. Hệ thống quản lý lỗi (Bug / Issue Tracking)
 
 **Hệ thống:** **GitHub Issues** — tích hợp sẵn trong repo
 
