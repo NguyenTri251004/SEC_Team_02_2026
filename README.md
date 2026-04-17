@@ -50,7 +50,7 @@
 | Layer | Tech Stack |
 |-------|------------|
 | Frontend | React 19 · Vite 7 · TypeScript 5.9 · Ant Design 6 · Tailwind CSS 4 · TanStack React Query · Zustand · React Router 7 |
-| Backend | Node.js 22 · Express 4 · TypeScript 5.1 · pg · Redis · Elasticsearch 8 · JWT · OpenTelemetry |
+| Backend | Node.js 22 · Express 4 · TypeScript 5.1 · pg · Redis · Elasticsearch 8 · JWT |
 | AI Service | Python 3.11 · FastAPI · Redis (async) · Elasticsearch (async) |
 | Database | PostgreSQL 16 (Supabase prod) |
 | Identity | Keycloak 23 |
@@ -105,7 +105,7 @@ SEC_Team_02_2026/
 │   │   ├── frontend/               # React + Vite SPA
 │   │   ├── ai-service/             # FastAPI AI analytics
 │   │   ├── db_schema/              # PostgreSQL init SQL
-│   │   ├── monitoring/             # OpenTelemetry + Prometheus + Grafana + Loki + Tempo
+│   │   ├── monitoring/             # Prometheus scrape config (observability stack, planned)
 │   │   ├── keycloak/               # Keycloak realm config
 │   │   └── docker-compose.yml      # Full-stack orchestration
 │   ├── 02_Raw Data/                # Dữ liệu gốc

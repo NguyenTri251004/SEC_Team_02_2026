@@ -37,9 +37,11 @@ Tài liệu ghi lại công cụ AI và các prompt chính mà nhóm đã dùng 
 
 > **Prompt schema:** "Viết PostgreSQL 16 schema (`db-init.sql`) cho IMS: `users`, `materials`, `inventory_lots`, `inventory_transactions`, `qc_tests`, `production_batches`, `batch_components`, `label_templates`. Bao gồm: PK, FK, CHECK constraint cho status enum, indexes cho cột tìm kiếm thường xuyên (lot_number, material_id, status, received_date), trigger update `updated_at`."
 
-### 2.5. Monitoring Stack
+### 2.5. Monitoring Stack _(đã thử nghiệm, hiện đã revert)_
 
 > **Prompt setup OpenTelemetry:** "Instrument backend Express với `@opentelemetry/auto-instrumentations-node` export trace qua OTLP HTTP tới collector. Frontend dùng `@opentelemetry/sdk-trace-web` instrument fetch và document-load. Config stack Prometheus + Grafana + Loki + Tempo trong `monitoring/` dùng docker-compose."
+
+_Ghi chú: stack quan sát đầy đủ đã được POC trên branch `feature/monitoring-observability`, nhưng hiện tại được revert về master để tập trung cho các tính năng cốt lõi. Kế hoạch đưa lại theo lộ trình trong `05_Architecture.md`._
 
 ### 2.6. Docker + Deploy
 

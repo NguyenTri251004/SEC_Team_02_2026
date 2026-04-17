@@ -220,7 +220,7 @@ git push origin v1.0.0
 | Backend metrics | Fly.io Grafana | https://fly-metrics.net |
 | Frontend logs | Vercel Deployment logs | https://vercel.com/dashboard |
 | Database | Supabase Dashboard (Logs + SQL Editor) | https://app.supabase.com/project/viguwtevkhfiszadpjvy |
-| Application tracing | OpenTelemetry + stack Prometheus/Grafana/Loki/Tempo | `02_Source/01_Source Code/monitoring/` (self-hosted stack) |
+| Application tracing | _Planned_ — OpenTelemetry SDK + Grafana Cloud integration (chưa triển khai production) | Xem `05_Architecture.md` §Observability View |
 
 ## 9. Backup & Recovery
 
