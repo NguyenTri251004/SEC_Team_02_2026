@@ -50,7 +50,7 @@ describe("ProtectedRoute", () => {
   it("allows access when no roles are required", () => {
     vi.mocked(useAuth).mockReturnValue({
       userRoles: [],
-    } as ReturnType<typeof useAuth>);
+    } as unknown as ReturnType<typeof useAuth>);
 
     render(
       <MemoryRouter initialEntries={["/secure"]}>

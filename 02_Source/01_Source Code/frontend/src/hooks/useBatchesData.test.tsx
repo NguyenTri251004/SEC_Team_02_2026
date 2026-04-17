@@ -35,33 +35,33 @@ describe("useBatchesData hooks", () => {
 
   it("returns parsed arrays and handles batchId conditions", async () => {
     vi.mocked(api.get).mockResolvedValue({ data: { data: [{ batch_id: "B-1" }] } });
-    const batches = useBatches();
+    const batches = useBatches() as any;
     expect(await batches.queryFn()).toEqual([{ batch_id: "B-1" }]);
 
-    const componentsWithoutId = useBatchComponents(null);
+    const componentsWithoutId = useBatchComponents(null) as any;
     expect(await componentsWithoutId.queryFn()).toEqual([]);
     expect(componentsWithoutId.enabled).toBe(false);
 
     vi.mocked(api.get).mockResolvedValue({ data: { data: [{ component_id: "C-1" }] } });
-    const componentsWithId = useBatchComponents("B-1");
+    const componentsWithId = useBatchComponents("B-1") as any;
     expect(await componentsWithId.queryFn()).toEqual([{ component_id: "C-1" }]);
 
-    const traceability = useTraceability("B-1");
+    const traceability = useTraceability("B-1") as any;
     vi.mocked(api.get).mockResolvedValue({ data: { data: [{ lot_id: "L-1" }] } });
     expect(await traceability.queryFn()).toEqual([{ lot_id: "L-1" }]);
 
     vi.mocked(api.get).mockResolvedValue({ data: { data: { invalid: true } } });
-    const nonArrayBatches = useBatches();
+    const nonArrayBatches = useBatches() as any;
     expect(await nonArrayBatches.queryFn()).toEqual([]);
 
     vi.mocked(api.get).mockRejectedValue(new Error("network"));
-    const failedBatches = useBatches();
+    const failedBatches = useBatches() as any;
     expect(await failedBatches.queryFn()).toEqual([]);
 
-    const failedComponents = useBatchComponents("B-1");
+    const failedComponents = useBatchComponents("B-1") as any;
     expect(await failedComponents.queryFn()).toEqual([]);
 
-    const failedTraceability = useTraceability("B-1");
+    const failedTraceability = useTraceability("B-1") as any;
     expect(await failedTraceability.queryFn()).toEqual([]);
   });
 
@@ -69,13 +69,13 @@ describe("useBatchesData hooks", () => {
     vi.mocked(api.post).mockResolvedValue({ data: {} });
     vi.mocked(api.patch).mockResolvedValue({ data: {} });
 
-    const createBatch = useCreateBatch();
+    const createBatch = useCreateBatch() as any;
     await createBatch.mutationFn({ batch_number: "B-1" });
     expect(api.post).toHaveBeenCalledWith("/api/production/batches", { batch_number: "B-1" });
     createBatch.onSuccess();
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["batches"] });
 
-    const addComponent = useAddComponent();
+    const addComponent = useAddComponent() as any;
     await addComponent.mutationFn({
       batchId: "B-1",
       data: { lot_id: "L-1", planned_quantity: 2, unit_of_measure: "kg" },
@@ -88,7 +88,7 @@ describe("useBatchesData hooks", () => {
     addComponent.onSuccess();
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["batch-components"] });
 
-    const updateStatus = useUpdateBatchStatus();
+    const updateStatus = useUpdateBatchStatus() as any;
     await updateStatus.mutationFn({ batchId: "B-1", status: "Completed" });
     expect(api.patch).toHaveBeenCalledWith("/api/production/batches/B-1/status", {
       status: "Completed",
@@ -96,7 +96,7 @@ describe("useBatchesData hooks", () => {
     updateStatus.onSuccess();
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["production", "batches"] });
 
-    const consume = useConsumeMaterial();
+    const consume = useConsumeMaterial() as any;
     await consume.mutationFn({
       batchId: "B-1",
       componentId: "C-1",
