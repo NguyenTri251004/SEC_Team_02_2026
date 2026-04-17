@@ -4,13 +4,12 @@
 
 ## Thông tin môn học
 
+- **Môn học:** Software Engineering Capstone
+- **Giảng viên:** Ngô Huy Biên
 - **Nhóm:** SEC Team 02 — 2026
+- **Tham chiếu yêu cầu đồ án:** https://nhbien.github.io/enterprise-project-artifacts/
 
-> ⚠️ **[TODO]** Bổ sung thông tin môn học:
->
-> - **Môn học:** _(sẽ bổ sung)_
-> - **Giảng viên:** _(sẽ bổ sung)_
-> - **Học kỳ:** _(sẽ bổ sung)_
+> ⚠️ **[TODO]** Bổ sung **học kỳ / năm học** cụ thể (ví dụ: HK2 / 2025-2026).
 
 ## Thành viên nhóm
 

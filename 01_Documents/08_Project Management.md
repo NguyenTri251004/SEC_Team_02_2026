@@ -2,6 +2,16 @@
 
 Tài liệu trình bày các kết quả ước lượng kích cỡ, thời gian và chi phí để hoàn thành đồ án; các cột mốc quan trọng; thông tin các thành viên nhóm; cùng các hệ thống cộng tác được nhóm sử dụng.
 
+## 0. Bối cảnh môn học
+
+| Thông tin | Giá trị |
+|-----------|---------|
+| Môn học | Software Engineering Capstone |
+| Giảng viên | Ngô Huy Biên |
+| Đồ án | Theo hướng hệ thống doanh nghiệp (Enterprise System Project) |
+| Nhóm | SEC Team 02 — 2026 |
+| Tham chiếu yêu cầu | https://nhbien.github.io/enterprise-project-artifacts/ |
+
 ## 1. Ước lượng dự án (Estimation)
 
 | Thông số | Giá trị |
