@@ -29,7 +29,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-app.use(pinoHttp({ logger: logger as any }));
+app.use(pinoHttp({ logger }));
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
