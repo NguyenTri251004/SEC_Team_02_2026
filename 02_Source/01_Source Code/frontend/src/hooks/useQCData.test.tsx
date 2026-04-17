@@ -37,15 +37,15 @@ describe("useQCData hooks", () => {
 
   it("returns test list and fallback empty array on failure", async () => {
     vi.mocked(api.get).mockResolvedValueOnce({ data: { data: [{ test_id: "T-1" }] } });
-    const query = useQCTests();
+    const query = useQCTests() as any;
     expect(await query.queryFn()).toEqual([{ test_id: "T-1" }]);
 
     vi.mocked(api.get).mockResolvedValueOnce({ data: { data: { test_id: "bad-shape" } } });
-    const nonArrayQuery = useQCTests();
+    const nonArrayQuery = useQCTests() as any;
     expect(await nonArrayQuery.queryFn()).toEqual([]);
 
     vi.mocked(api.get).mockRejectedValueOnce(new Error("down"));
-    const failedQuery = useQCTests();
+    const failedQuery = useQCTests() as any;
     expect(await failedQuery.queryFn()).toEqual([]);
   });
 
@@ -53,13 +53,13 @@ describe("useQCData hooks", () => {
     vi.mocked(api.post).mockResolvedValue({ data: {} });
     vi.mocked(api.put).mockResolvedValue({ data: {} });
 
-    const create = useCreateQCTest();
+    const create = useCreateQCTest() as any;
     await create.mutationFn({ lot_id: "LOT-1" });
     expect(api.post).toHaveBeenCalledWith("/api/qc/tests", { lot_id: "LOT-1" });
     create.onSuccess();
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["qc-tests"] });
 
-    const update = useUpdateTestResult();
+    const update = useUpdateTestResult() as any;
     await update.mutationFn({
       testId: "T-1",
       data: { test_result: "Pass", result_status: "Completed", verified_by: "u1" },
@@ -71,12 +71,12 @@ describe("useQCData hooks", () => {
     });
     update.onSuccess();
 
-    const approve = useApproveLot();
+    const approve = useApproveLot() as any;
     await approve.mutationFn({ lotId: "LOT-1" });
     expect(api.post).toHaveBeenCalledWith("/api/qc/approve/LOT-1");
     approve.onSuccess();
 
-    const reject = useRejectLot();
+    const reject = useRejectLot() as any;
     await reject.mutationFn({ lotId: "LOT-1", reason: "fail spec" });
     expect(api.post).toHaveBeenCalledWith("/api/qc/reject/LOT-1", { reason: "fail spec" });
     reject.onSuccess();
@@ -84,11 +84,11 @@ describe("useQCData hooks", () => {
 
   it("queries qc queue with optional status parameter", async () => {
     vi.mocked(qcApi.getQueue).mockResolvedValue({ data: [{ lot_id: "L-1" }] } as never);
-    const query = useQCQueue("Quarantine");
+    const query = useQCQueue("Quarantine") as any;
     expect(await query.queryFn()).toEqual([{ lot_id: "L-1" }]);
     expect(qcApi.getQueue).toHaveBeenCalledWith("status=Quarantine");
 
-    const queryWithoutStatus = useQCQueue();
+    const queryWithoutStatus = useQCQueue() as any;
     expect(await queryWithoutStatus.queryFn()).toEqual([{ lot_id: "L-1" }]);
     expect(qcApi.getQueue).toHaveBeenCalledWith(undefined);
   });

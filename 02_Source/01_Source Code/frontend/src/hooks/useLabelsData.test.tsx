@@ -46,14 +46,14 @@ describe("useLabelsData hooks", () => {
     vi.mocked(labelApi.getTemplateById).mockResolvedValue({ data: { template_id: "T-1" } } as never);
     vi.mocked(labelApi.getAllLabels).mockResolvedValue({ data: [{ label_id: "L-1" }] } as never);
 
-    const templates = useTemplates();
+    const templates = useTemplates() as any;
     expect(await templates.queryFn()).toEqual([{ template_id: "T-1" }]);
 
-    const template = useTemplate("T-1");
+    const template = useTemplate("T-1") as any;
     expect(await template.queryFn()).toEqual({ template_id: "T-1" });
     expect(template.enabled).toBe(true);
 
-    const labels = useGeneratedLabels();
+    const labels = useGeneratedLabels() as any;
     expect(await labels.queryFn()).toEqual([{ label_id: "L-1" }]);
   });
 
@@ -61,15 +61,15 @@ describe("useLabelsData hooks", () => {
     vi.mocked(labelApi.getAllTemplates).mockResolvedValue({ data: undefined } as never);
     vi.mocked(labelApi.getAllLabels).mockResolvedValue({ data: undefined } as never);
 
-    const templates = useTemplates();
+    const templates = useTemplates() as any;
     expect(await templates.queryFn()).toEqual([]);
 
-    const labels = useGeneratedLabels();
+    const labels = useGeneratedLabels() as any;
     expect(await labels.queryFn()).toEqual([]);
   });
 
   it("throws for missing template id", async () => {
-    const template = useTemplate(undefined);
+    const template = useTemplate(undefined) as any;
     await expect(template.queryFn()).rejects.toThrow("Template ID is required");
     expect(template.enabled).toBe(false);
   });
@@ -82,7 +82,7 @@ describe("useLabelsData hooks", () => {
     vi.mocked(labelApi.generateLabelFromTemplate).mockResolvedValue({ data: { label_id: "L-2" } } as never);
     vi.mocked(labelApi.deleteLabel).mockResolvedValue({ data: {} } as never);
 
-    const createTemplate = useCreateTemplate();
+    const createTemplate = useCreateTemplate() as any;
     await createTemplate.mutationFn({
       template_name: "Lot",
       label_type: "lot",
@@ -90,26 +90,26 @@ describe("useLabelsData hooks", () => {
     });
     createTemplate.onSuccess();
 
-    const updateTemplate = useUpdateTemplate();
+    const updateTemplate = useUpdateTemplate() as any;
     await updateTemplate.mutationFn({
       id: "T-1",
       data: { template_name: "Updated" },
     });
     updateTemplate.onSuccess(undefined, { id: "T-1", data: {} });
 
-    const deleteTemplate = useDeleteTemplate();
+    const deleteTemplate = useDeleteTemplate() as any;
     await deleteTemplate.mutationFn("T-1");
     deleteTemplate.onSuccess();
 
-    const generate = useGenerateLabel();
+    const generate = useGenerateLabel() as any;
     await generate.mutationFn({} as never);
     generate.onSuccess();
 
-    const generateFromTemplate = useGenerateLabelFromTemplate();
+    const generateFromTemplate = useGenerateLabelFromTemplate() as any;
     await generateFromTemplate.mutationFn({} as never);
     generateFromTemplate.onSuccess();
 
-    const deleteLabel = useDeleteLabel();
+    const deleteLabel = useDeleteLabel() as any;
     await deleteLabel.mutationFn("L-1");
     deleteLabel.onSuccess();
 

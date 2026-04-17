@@ -87,7 +87,7 @@ describe("api service", () => {
     keycloakMock.token = "new-token";
     mockApi.request.mockResolvedValue({ data: { ok: true } });
 
-    const originalRequest = { headers: {} as Record<string, string> };
+    const originalRequest: { headers: Record<string, string>; _retry?: boolean } = { headers: {} };
     const error = { response: { status: 401 }, config: originalRequest };
 
     const result = await responseErrorInterceptor?.(error);

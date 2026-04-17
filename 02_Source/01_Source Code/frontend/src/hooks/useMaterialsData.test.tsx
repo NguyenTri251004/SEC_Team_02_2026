@@ -28,13 +28,13 @@ describe("useMaterialsData hooks", () => {
 
   it("falls back to mock data on empty response and on error", async () => {
     vi.mocked(api.get).mockResolvedValueOnce({ data: { data: [] } });
-    let query = useMaterials();
+    let query = useMaterials() as any;
     let result = await query.queryFn();
     expect(result.length).toBeGreaterThan(0);
     expect(result[0].material_id).toBe("MAT-001");
 
     vi.mocked(api.get).mockRejectedValueOnce(new Error("backend down"));
-    query = useMaterials();
+    query = useMaterials() as any;
     result = await query.queryFn();
     expect(result.length).toBeGreaterThan(0);
   });
@@ -44,7 +44,7 @@ describe("useMaterialsData hooks", () => {
       data: { data: [{ material_id: "MAT-9", material_name: "X" }] },
     });
 
-    const query = useMaterials();
+    const query = useMaterials() as any;
     const result = await query.queryFn();
     expect(result[0].material_id).toBe("MAT-9");
   });
@@ -54,7 +54,7 @@ describe("useMaterialsData hooks", () => {
     vi.mocked(api.put).mockResolvedValue({ data: {} });
     vi.mocked(api.delete).mockResolvedValue({ data: {} });
 
-    const saveMutation = useSaveMaterial();
+    const saveMutation = useSaveMaterial() as any;
     await saveMutation.mutationFn({ isEditing: false, data: { material_id: "MAT-1" } });
     expect(api.post).toHaveBeenCalledWith("/api/materials", { material_id: "MAT-1" });
     await saveMutation.mutationFn({ isEditing: true, data: { material_id: "MAT-1" } });
@@ -62,7 +62,7 @@ describe("useMaterialsData hooks", () => {
     saveMutation.onSuccess();
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["materials"] });
 
-    const deleteMutation = useDeleteMaterial();
+    const deleteMutation = useDeleteMaterial() as any;
     await deleteMutation.mutationFn("MAT-1");
     expect(api.delete).toHaveBeenCalledWith("/api/materials/MAT-1");
     deleteMutation.onSuccess();

@@ -33,13 +33,13 @@ describe("useUsersData hooks", () => {
 
   it("returns fallback users on empty/error responses", async () => {
     vi.mocked(api.get).mockResolvedValueOnce({ data: { data: [] } });
-    let query = useUsers();
+    let query = useUsers() as any;
     let users = await query.queryFn();
     expect(users.length).toBeGreaterThan(0);
     expect(users[0].user_id).toBe("USR-001");
 
     vi.mocked(api.get).mockRejectedValueOnce(new Error("offline"));
-    query = useUsers();
+    query = useUsers() as any;
     users = await query.queryFn();
     expect(users.length).toBeGreaterThan(0);
   });
@@ -47,7 +47,7 @@ describe("useUsersData hooks", () => {
   it("save user mutation handles create/update and cache invalidation", async () => {
     vi.mocked(api.post).mockResolvedValue({ data: {} });
     vi.mocked(api.put).mockResolvedValue({ data: {} });
-    const mutation = useSaveUser();
+    const mutation = useSaveUser() as any;
 
     await mutation.mutationFn({ isEditing: false, data: { user_id: "USR-9" } });
     expect(api.post).toHaveBeenCalledWith("/api/admin/users", { user_id: "USR-9" });
@@ -65,13 +65,13 @@ describe("useUsersData hooks", () => {
     vi.mocked(api.patch).mockResolvedValue({ data: {} });
     vi.mocked(api.post).mockResolvedValue({ data: {} });
 
-    const toggleMutation = useToggleUserActive();
+    const toggleMutation = useToggleUserActive() as any;
     await toggleMutation.mutationFn("USR-1");
     expect(api.patch).toHaveBeenCalledWith("/api/admin/users/USR-1/toggle-active");
     toggleMutation.onSuccess();
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["users"] });
 
-    const resetMutation = useResetPassword();
+    const resetMutation = useResetPassword() as any;
     await resetMutation.mutationFn({ userId: "USR-1", newPassword: "new-pass" });
     expect(api.post).toHaveBeenCalledWith("/api/admin/users/USR-1/reset-password", {
       new_password: "new-pass",

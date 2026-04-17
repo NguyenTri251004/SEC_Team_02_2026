@@ -36,7 +36,7 @@ describe("useLotsData hooks", () => {
   it("falls back to mock data when lots endpoint returns empty", async () => {
     vi.mocked(api.get).mockResolvedValue({ data: { data: [] } });
 
-    const query = useLots();
+    const query = useLots() as any;
     const lots = await query.queryFn();
 
     expect(Array.isArray(lots)).toBe(true);
@@ -48,12 +48,12 @@ describe("useLotsData hooks", () => {
     const apiLots = [{ lot_id: "LOT-X" }];
     vi.mocked(api.get).mockResolvedValue({ data: { data: apiLots } });
 
-    const query = useLots();
+    const query = useLots() as any;
     const lots = await query.queryFn();
     expect(lots).toEqual(apiLots);
 
     vi.mocked(api.get).mockResolvedValue({ data: apiLots });
-    const directDataQuery = useLots();
+    const directDataQuery = useLots() as any;
     const directDataLots = await directDataQuery.queryFn();
     expect(directDataLots).toEqual(apiLots);
   });
@@ -62,7 +62,7 @@ describe("useLotsData hooks", () => {
     vi.mocked(api.post).mockResolvedValue({ data: {} });
     vi.mocked(api.put).mockResolvedValue({ data: {} });
 
-    const mutation = useSaveLot();
+    const mutation = useSaveLot() as any;
 
     await mutation.mutationFn({ isEditing: false, data: { lot_id: "LOT-9" } });
     expect(api.post).toHaveBeenCalledWith("/api/lots", { lot_id: "LOT-9" });
@@ -82,7 +82,7 @@ describe("useLotsData hooks", () => {
     vi.mocked(api.patch).mockResolvedValue({ data: {} });
     vi.mocked(api.delete).mockResolvedValue({ data: {} });
 
-    const updateMutation = useUpdateLotStatus();
+    const updateMutation = useUpdateLotStatus() as any;
     await updateMutation.mutationFn({
       lotId: "LOT-7",
       status: "Accepted",
@@ -94,7 +94,7 @@ describe("useLotsData hooks", () => {
     });
     updateMutation.onSuccess();
 
-    const deleteMutation = useDeleteLot();
+    const deleteMutation = useDeleteLot() as any;
     await deleteMutation.mutationFn("LOT-7");
     expect(api.delete).toHaveBeenCalledWith("/api/lots/LOT-7");
     deleteMutation.onSuccess();
@@ -103,7 +103,7 @@ describe("useLotsData hooks", () => {
   it("parent lots query returns empty array on API failure", async () => {
     vi.mocked(api.get).mockRejectedValue(new Error("down"));
 
-    const query = useParentLots();
+    const query = useParentLots() as any;
     const data = await query.queryFn();
 
     expect(data).toEqual([]);
@@ -111,7 +111,7 @@ describe("useLotsData hooks", () => {
 
   it("parent lots query returns empty array when payload is not an array", async () => {
     vi.mocked(api.get).mockResolvedValue({ data: { data: {} } });
-    const query = useParentLots();
+    const query = useParentLots() as any;
     const data = await query.queryFn();
     expect(data).toEqual([]);
   });
