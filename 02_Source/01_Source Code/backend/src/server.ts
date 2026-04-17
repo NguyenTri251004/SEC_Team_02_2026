@@ -1,5 +1,4 @@
 import express, { Request, Response, NextFunction } from "express";
-import pinoHttp from "pino-http";
 import dotenv from "dotenv";
 import pool from "./shared/db/pool";
 import { connectRedis } from "./shared/cache/redis";
@@ -14,13 +13,6 @@ import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import reportRoutes from "./modules/reports/reports.routes";
 import productionRoutes from "./modules/production/production.routes";
 import adminRoutes from "./modules/admin/admin.routes";
-import logger from "./shared/logger";
-import {
-  httpErrorTotal,
-  httpRequestDurationSeconds,
-  httpRequestTotal,
-  register,
-} from "./shared/metrics";
 
 dotenv.config();
 
@@ -29,7 +21,6 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-app.use(pinoHttp({ logger }));
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
@@ -41,35 +32,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     res.sendStatus(200);
     return;
   }
-
-  const start = process.hrtime();
-  res.on("finish", () => {
-    const [seconds, nanoseconds] = process.hrtime(start);
-    const durationSeconds = seconds + nanoseconds / 1e9;
-    const method = req.method;
-    const route = req.baseUrl && req.route?.path ? `${req.baseUrl}${req.route.path}` : req.route?.path ?? req.path;
-    const statusCode = res.statusCode.toString();
-
-    httpRequestTotal.inc({ method, route, status_code: statusCode });
-    httpRequestDurationSeconds.observe({ method, route, status_code: statusCode }, durationSeconds);
-
-    if (res.statusCode >= 500) {
-      httpErrorTotal.inc({ method, route, status_code: statusCode });
-    }
-  });
-
   next();
-});
-
-// Metrics endpoint for Prometheus scraping
-app.get("/metrics", async (_req: Request, res: Response) => {
-  try {
-    res.setHeader("Content-Type", register.contentType);
-    res.send(await register.metrics());
-  } catch (error) {
-    logger.error({ err: error }, "Failed to scrape metrics");
-    res.status(500).send("Unable to collect metrics");
-  }
 });
 
 // Routes cơ bản
@@ -98,10 +61,10 @@ const start = async (): Promise<void> => {
   // Kiểm tra kết nối PostgreSQL
   pool.connect((err, client, done) => {
     if (err || !client) {
-      logger.error({ err }, "❌ Lỗi kết nối PostgreSQL");
+      console.error("❌ Lỗi kết nối PostgreSQL:", err?.message);
       return;
     }
-    logger.info("✓ Đã kết nối PostgreSQL");
+    console.log("✓ Đã kết nối PostgreSQL");
     done();
 
     // One-time migration: set last_login for users who have never logged in
@@ -109,9 +72,9 @@ const start = async (): Promise<void> => {
       `UPDATE users SET last_login = modified_date WHERE last_login IS NULL`
     ).then((res) => {
       if (res.rowCount && res.rowCount > 0) {
-        logger.info({ rowCount: res.rowCount }, "✓ Initialized last_login for users");
+        console.log(`✓ Initialized last_login for ${res.rowCount} user(s)`);
       }
-    }).catch((e) => logger.warn({ err: e }, "last_login migration skipped"));
+    }).catch((e) => console.warn("last_login migration skipped:", e.message));
   });
 
   // Kết nối Redis (không bắt buộc — app vẫn chạy nếu Redis không có)
@@ -125,25 +88,25 @@ const start = async (): Promise<void> => {
   }
 
   app.listen(PORT, () => {
-    logger.info({ port: PORT }, `✓ Server đang chạy tại http://localhost:${PORT}`);
-    logger.info("  GET  /api/materials");
-    logger.info("  POST /api/materials");
-    logger.info("  GET  /api/transactions");
-    logger.info("  POST /api/transactions");
-    logger.info("  GET  /api/lots");
-    logger.info("  POST /api/lots");
-    logger.info("  GET  /api/qc/tests");
-    logger.info("  POST /api/qc/tests");
-    logger.info("  GET  /api/qc/queue");
-    logger.info("  GET  /api/qc/stats");
-    logger.info("  POST /api/qc/approve/:lotId");
-    logger.info("  POST /api/qc/reject/:lotId");
-    logger.info("  GET  /api/production/batches");
-    logger.info("  POST /api/production/batches");
-    logger.info("  GET  /api/search?q=keyword");
-    logger.info("  POST /api/search/index (Index all materials)");
-    logger.info("  GET  /api/admin/users (Admin only)");
-    logger.info("  GET  /api/admin/stats (Admin only)");
+    console.log(`✓ Server đang chạy tại http://localhost:${PORT}`);
+    console.log(`  GET  /api/materials`);
+    console.log(`  POST /api/materials`);
+    console.log(`  GET  /api/transactions`);
+    console.log(`  POST /api/transactions`);
+    console.log(`  GET  /api/lots`);
+    console.log(`  POST /api/lots`);
+    console.log(`  GET  /api/qc/tests`);
+    console.log(`  POST /api/qc/tests`);
+    console.log(`  GET  /api/qc/queue`);
+    console.log(`  GET  /api/qc/stats`);
+    console.log(`  POST /api/qc/approve/:lotId`);
+    console.log(`  POST /api/qc/reject/:lotId`);
+    console.log(`  GET  /api/production/batches`);
+    console.log(`  POST /api/production/batches`);
+    console.log(`  GET  /api/search?q=keyword`);
+    console.log(`  POST /api/search/index (Index all materials)`);
+    console.log(`  GET  /api/admin/users (Admin only)`);
+    console.log(`  GET  /api/admin/stats (Admin only)`);
   });
 };
 

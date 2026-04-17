@@ -478,110 +478,52 @@ psql "postgresql://postgres:[PASSWORD]@[HOST].supabase.co:5432/postgres" -c "SEL
 <a id="monitoring-logs"></a>
 # 7️⃣ Monitoring & Logs
 
-## Local Monitoring (Docker Compose)
-
-For **local development** with `docker compose up -d`, see the complete guide: **[MONITORING_DOCKER_COMPOSE.md](MONITORING_DOCKER_COMPOSE.md)**
-
-Quick commands:
-
-```bash
-# View backend logs
-docker compose logs -f ims-backend
-
-# Check health
-curl http://localhost:3000/api/admin/health | jq .
-
-# View Prometheus metrics
-curl http://localhost:3000/metrics
-```
-
----
-
-## Production Monitoring (Fly.io + Vercel + Supabase)
-
 ## View Backend Logs (Fly.io)
 
 ```bash
-# Stream live backend logs
-flyctl logs --app ims-backend
+# Real-time logs
+flyctl logs
 
-# Last 100 lines of backend logs
-flyctl logs --app ims-backend -n 100
+# Last 100 lines
+flyctl logs -n 100
+
+# Specific app
+flyctl logs --app ims-backend
 ```
 
-### Notes
-- Fly.io captures all stdout/stderr from the backend container.
-- Because the backend now uses structured logging with pino, each log line is JSON-ready and easy to ship.
-- For production observability, forward these logs to Grafana Loki using Fly log shipper or a custom Vector/Fluent Bit pipeline.
+## View Frontend Logs (Vercel)
 
-## View frontend logs (Vercel)
-
-1. Open the Vercel Dashboard.
-2. Select your frontend project.
-3. Go to **Deployments**.
-4. Click the most recent deployment.
-5. Open **Logs**.
-
-### Notes
-- Vercel logs include build output, serverless function execution, and runtime errors.
-- To centralize frontend logs in Grafana Loki, configure a Vercel Log Drain.
+1. Go to Vercel Dashboard
+2. Select your project
+3. Click **"Deployments"** tab
+4. Choose deployment → View **"Logs"**
 
 ## Monitor Performance
 
-### Fly.io Metrics
+### Fly.io Monitoring
 
-1. Open Fly.io Dashboard.
-2. Select your backend app.
-3. Check the **Metrics** tab.
-4. Monitor:
+1. Dashboard → Select app
+2. View:
    - CPU usage
    - Memory usage
-   - Network I/O
-   - Request count and latency
-   - Process health
-
-### Prometheus / Metrics endpoint
-
-The backend now exposes a Prometheus-compatible endpoint:
-
-- `GET /metrics`
-
-This endpoint includes:
-- Node.js process metrics
-- GC and heap usage
-- HTTP request count
-- HTTP request duration
-- HTTP error count
-- Dependency health status for PostgreSQL, Redis, and Elasticsearch
-
-### Grafana Cloud integration
-
-For consolidated dashboards and alerting:
-1. Create a Grafana Cloud account.
-2. Add a Prometheus remote write endpoint.
-3. Configure Fly.io internal Prometheus remote write to Grafana Cloud.
-4. Optionally configure Grafana Loki and send Fly logs via a log shipper.
+   - Request metrics
+   - Response times
 
 ### Vercel Analytics
 
-1. Open Vercel Dashboard.
-2. Go to **Analytics**.
-3. Monitor:
+1. Dashboard → Settings → Analytics
+2. View:
    - Core Web Vitals
    - Response times
    - Error rates
-   - Traffic
 
 ### Supabase Metrics
 
-1. Go to https://app.supabase.com.
-2. Open your Supabase project.
-3. Go to **Statistics**.
-4. Monitor:
+1. Go to https://app.supabase.com
+2. Select project
+3. **Statistics** → View:
    - Database size
-   - Active connections
-   - Query performance
-   - Index usage
+   - API calls
    - Auth events
 
 ---

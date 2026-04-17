@@ -276,38 +276,6 @@ To remove the database volume as well:
 docker-compose down -v
 ```
 
-## Monitoring & Observability
-
-### Local Development (Docker Compose)
-
-When running `docker compose up -d` locally, monitor the app using:
-
-```bash
-# View backend logs
-docker compose logs -f ims-backend
-
-# Check system health
-curl http://localhost:3000/api/admin/health | jq .
-
-# View Prometheus metrics
-curl http://localhost:3000/metrics
-```
-
-For comprehensive local monitoring instructions, see: **[MONITORING_DOCKER_COMPOSE.md](MONITORING_DOCKER_COMPOSE.md)**
-
-This includes:
-- How to stream logs from each service
-- Health check endpoints
-- Prometheus metrics endpoint
-- Optional: Set up local Prometheus + Grafana for dashboards
-- Database and cache monitoring
-
-### Production Monitoring
-
-Deployment monitoring for Fly.io, Vercel, and Supabase is documented in: **[DEPLOYMENT.md](DEPLOYMENT.md)**
-
----
-
 ## Additional Resources
 
 For detailed information, refer to:
@@ -316,10 +284,6 @@ For detailed information, refer to:
 - [Architecture](../../01_Documents/05_Architecture.md)
 - [Coding Standards](../../01_Documents/07_Coding%20Standards.md)
 - [Deployment Guide](../../03_Deployment/02_Deployment%20Guide.md)
-- [Monitoring Guide (Local - Docker Compose)](MONITORING_DOCKER_COMPOSE.md)
-- [Monitoring Quick Reference](MONITORING_QUICK_REFERENCE.md) ⭐ **START HERE**
-- [Monitoring Verification Report](MONITORING_VERIFICATION.md) - All endpoints tested ✅
-- [Monitoring Guide (Production)](DEPLOYMENT.md)
 
 ## Support
 
