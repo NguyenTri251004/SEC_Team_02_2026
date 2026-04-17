@@ -8,6 +8,7 @@ Tài liệu trình bày các kết quả ước lượng kích cỡ, thời gian
 |-----------|---------|
 | Môn học | Software Engineering Capstone |
 | Giảng viên | Ngô Huy Biên |
+| Học kỳ | HK2 / 2025-2026 |
 | Đồ án | Theo hướng hệ thống doanh nghiệp (Enterprise System Project) |
 | Nhóm | SEC Team 02 — 2026 |
 | Tham chiếu yêu cầu | https://nhbien.github.io/enterprise-project-artifacts/ |
