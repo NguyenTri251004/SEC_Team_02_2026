@@ -22,24 +22,24 @@ vi.mock("../services/api", () => ({
 
 describe("useReportsData hooks", () => {
   it("wires inventory report query and select function", async () => {
-    vi.mocked(reportApi.getInventoryReport).mockResolvedValue({ data: [{ id: 1 }] });
-    const hook = useInventoryReport({ site: "A" });
+    vi.mocked(reportApi.getInventoryReport).mockResolvedValue({ data: [{ id: 1 }] } as any);
+    const hook = useInventoryReport({ site: "A" }) as any;
     const response = await hook.queryFn();
     expect(reportApi.getInventoryReport).toHaveBeenCalledWith({ site: "A" });
     expect(hook.select(response)).toEqual([{ id: 1 }]);
   });
 
   it("wires transaction report query and select function", async () => {
-    vi.mocked(reportApi.getTransactionReport).mockResolvedValue({ data: [{ id: 2 }] });
-    const hook = useTransactionReport();
+    vi.mocked(reportApi.getTransactionReport).mockResolvedValue({ data: [{ id: 2 }] } as any);
+    const hook = useTransactionReport() as any;
     const response = await hook.queryFn();
     expect(reportApi.getTransactionReport).toHaveBeenCalledWith(undefined);
     expect(hook.select(response)).toEqual([{ id: 2 }]);
   });
 
   it("wires audit log query and select function", async () => {
-    vi.mocked(reportApi.getAuditLog).mockResolvedValue({ data: [{ id: 3 }] });
-    const hook = useAuditLog({ actor: "alice" });
+    vi.mocked(reportApi.getAuditLog).mockResolvedValue({ data: [{ id: 3 }] } as any);
+    const hook = useAuditLog({ actor: "alice" }) as any;
     const response = await hook.queryFn();
     expect(reportApi.getAuditLog).toHaveBeenCalledWith({ actor: "alice" });
     expect(hook.select(response)).toEqual([{ id: 3 }]);
