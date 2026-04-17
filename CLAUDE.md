@@ -19,8 +19,8 @@ Inventory Management System (IMS) for pharmaceutical/manufacturing warehouse ope
     reporting/         # Placeholder for reporting module
     docker-compose.yml # Full-stack Docker Compose (all services)
   02_Raw Data/         # Sample/seed data
-  03_Build Scripts/
-03_Deployment/         # Deployment & user guides
+  03_Compilation Guide.md  # Developer setup guide
+03_Deployment/         # Deployment package, deployment guide, user guide
 ```
 
 ## Development Commands

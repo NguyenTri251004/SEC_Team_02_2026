@@ -1,44 +1,84 @@
 # Project Management
 
-## 1. Ước lượng Dự án (Estimation)
-*   **Kích cỡ dự án:** [Số lượng người/tháng, ví dụ: 12 man-months]
-*   **Thời gian dự kiến:** [Ngày bắt đầu] - [Ngày kết thúc] (Tổng: X tuần)
-*   **Chi phí dự kiến:** [Ước lượng chi phí nếu có, hoặc N/A]
+Tài liệu trình bày các kết quả ước lượng kích cỡ, thời gian và chi phí để hoàn thành đồ án; các cột mốc quan trọng; thông tin các thành viên nhóm; cùng các hệ thống cộng tác được nhóm sử dụng.
+
+## 0. Bối cảnh môn học
+
+| Thông tin | Giá trị |
+|-----------|---------|
+| Môn học | Software Engineering Capstone |
+| Giảng viên | Ngô Huy Biên |
+| Học kỳ | HK2 / 2025-2026 |
+| Đồ án | Theo hướng hệ thống doanh nghiệp (Enterprise System Project) |
+| Nhóm | SEC Team 02 — 2026 |
+| Tham chiếu yêu cầu | https://nhbien.github.io/enterprise-project-artifacts/ |
+
+## 1. Ước lượng dự án (Estimation)
+
+| Thông số | Giá trị |
+|----------|---------|
+| Quy mô nhóm | 6 thành viên |
+| Thời gian dự kiến | 11 tuần (Tuần 1 → Tuần 11 theo lịch môn học) |
+| Khối lượng ước lượng | ~12 man-months |
+| Chi phí hạ tầng | Miễn phí — dùng free tier (Fly.io shared-CPU 1x, Vercel Hobby, Supabase Free, GitHub Free) |
+| Chi phí nhân sự | N/A (đồ án sinh viên) |
 
 ## 2. Các cột mốc quan trọng (Milestones)
-| Milestone | Thời hạn | Mô tả mục tiêu |
-| :--- | :--- | :--- |
-| **M1: Inception** | 01/02/2026 | Hoàn thành tài liệu nghiệp vụ, thiết kế kiến trúc và Prototype. |
-| **M2: MVP Release** | 01/03/2026 | Hoàn thành các tính năng cốt lõi (Nhập, Xuất, Tồn). |
-| **M3: Final Release** | 01/04/2026 | Hoàn thiện báo cáo, tối ưu hiệu năng và sửa lỗi. |
+
+| Milestone | Thời hạn | Mục tiêu |
+|-----------|----------|----------|
+| **M1: Inception** | Tuần 3 | Hoàn thành Product Requirements, Domain Model, Prototype (Figma), Architecture |
+| **M2: Proof of Concept** | Tuần 5 | Hoàn thành PoC các tính năng khó (QR/Barcode, Label PDF, Lot lifecycle) |
+| **M3: Midterm Release** | Tuần 7 | Demo 1 business problem; hoàn thành MVP Inventory + Lot + QC + Production; deploy lên Fly.io + Vercel |
+| **M4: Final Release** | Tuần 11 (Thứ 6) | Hoàn thành Product Backlog, bổ sung gRPC/GraphQL/RAG AI, tài liệu đầy đủ, nộp ZIP |
 
 ## 3. Thành viên nhóm (Team Members)
-*(Một đoạn riêng chứa thông tin về các thành viên của nhóm, vai trò của thành viên trong nhóm)*
 
-| STT | Họ và Tên | Mã Sinh Viên | Vai Trò (Role) | Trách nhiệm chính |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | Nguyễn Văn A | SV001 | Project Manager | Quản lý tiến độ, điều phối chung. |
-| 2 | Trần Thị B | SV002 | Business Analyst | Phân tích nghiệp vụ, viết tài liệu. |
-| 3 | Lê Văn C | SV003 | Backend Lead | Thiết kế Database, API. |
-| 4 | Phạm Thị D | SV004 | Frontend Lead | Thiết kế UI/UX, tích hợp API. |
-| 5 | Hoàng Văn E | SV005 | QA/Tester | Kiểm thử, đảm bảo chất lượng. |
+| STT | MSSV | Họ và Tên | Vai trò |
+|-----|----------|-------------------------|--------------|
+| 1 | 21127173 | Nguyễn Thiên Thọ | **Leader** |
+| 2 | 22127424 | Nguyễn Phước Minh Trí | Thành viên |
+| 3 | 22127316 | Nguyễn Ngô Ngọc Như | Thành viên |
+| 4 | 22127176 | Huỳnh Nguyễn Minh Khang | Thành viên |
+| 5 | 22127074 | Võ Hoàng Đức | Thành viên |
+| 6 | 18127008 | Lê Mạnh Hoàng | Thành viên |
 
-## 4. Video Team Building
-*(Một đoạn riêng chứa liên kết đến video trên YouTube quay một buổi team building của nhóm)*
-> **YouTube Link:** [Chèn link video team building tại đây]
+**Ghi chú:** Leader chịu trách nhiệm điều phối chung, nộp bài, và thông báo phân bổ điểm số với giảng viên (nếu có). Các thành viên cùng tham gia tất cả giai đoạn từ phân tích yêu cầu, thiết kế, hiện thực, kiểm thử đến triển khai.
 
-## 5. Hệ thống Quản lý Dự án (Task Management)
-*(Một đoạn riêng chứa liên kết, và ảnh chụp hành động mời tham gia hệ thống với vai trò admin/user)*
+## 4. Hệ thống tương tác, liên lạc của nhóm
 
-> **Link Trello/Jira/Asana:** [Chèn link board tại đây]
+**Hệ thống:** **Discord** — kênh liên lạc chính của nhóm.
 
-**Ảnh chụp màn hình mời thành viên:**
-![Project Management Invite](https://via.placeholder.com/600x400?text=Insert+Screenshot+Here)
+## 5. Hệ thống quản lý dự án (Project Management)
 
-## 6. Hệ thống Quản lý Lỗi (Issue Tracking)
-*(Một đoạn riêng chứa liên kết, và ảnh chụp hành động mời tham gia hệ thống với vai trò admin/user)*
+**Hệ thống:** **GitHub Projects** — tích hợp sẵn trong repo chính của nhóm
 
-> **Link GitHub Issues / Jira:** [Chèn link issue tracker tại đây]
+**Link:** https://github.com/orgs/Inventory-management-SEC/projects
 
-**Ảnh chụp màn hình mời thành viên:**
-![Issue Tracker Invite](https://via.placeholder.com/600x400?text=Insert+Screenshot+Here)
+**Cách nhóm sử dụng:**
+- **Kanban board** phân theo trạng thái: `Backlog → To Do → In Progress → In Review → Done`
+- **Mỗi user story** trong Product Backlog được convert thành GitHub Issue, gắn label theo role (`admin`, `inventory_manager`, `qc`, `production`) và sprint (`sprint-1`, `sprint-2`, ...)
+- **Milestones** tương ứng với các M1–M4 ở mục 2
+- **Assignees** gán cho thành viên phụ trách
+
+### Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý mã nguồn của nhóm
+
+![Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý mã nguồn của nhóm.](assets/001.png)
+
+## 6. Hệ thống quản lý lỗi (Bug / Issue Tracking)
+
+**Hệ thống:** **GitHub Issues** — tích hợp sẵn trong repo
+
+**Link:** https://github.com/Inventory-management-SEC/SEC_Team_02_2026/issues
+
+**Cách nhóm sử dụng:**
+- Mỗi lỗi được tạo Issue với template gồm: mô tả, steps to reproduce, expected vs actual, environment, screenshots
+- Label phân loại: `bug`, `enhancement`, `documentation`, `priority: high/medium/low`
+- Link trực tiếp từ Issue sang Pull Request khi fix (`Fixes #123`)
+- Milestones và assignees đồng bộ với GitHub Projects
+
+### Ảnh chụp Issues tab và các label đang dùng
+
+![Ảnh chụp Issues tab và các label đang dùng](assets/002.png)
+
+> **Ghi chú:** GitHub Issues gắn với repo, nên invite ở mục Collaborators repo (xem `02_Source/03_Compilation Guide.md` mục 6) đã bao gồm quyền truy cập Issues.

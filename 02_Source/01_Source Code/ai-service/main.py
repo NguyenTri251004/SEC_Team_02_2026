@@ -47,7 +47,7 @@ def estimate_tokens(value: Any) -> int:
 
 
 aiRequestsTotal = Counter(
-    "ai_requests_total",
+    "ai_requests",
     "Total AI service requests",
     ["endpoint", "method", "status_code"],
 )
@@ -60,18 +60,35 @@ aiRequestDurationSeconds = Histogram(
 )
 
 aiTokensTotal = Counter(
-    "ai_tokens_total",
+    "ai_tokens",
     "Estimated AI token usage",
     ["token_type", "endpoint"],
 )
 
 aiCostUsdTotal = Counter(
-    "ai_cost_usd_total",
+    "ai_cost_usd",
     "Estimated AI usage cost in USD",
     ["endpoint"],
 )
 
 AI_COST_PER_1K_TOKENS_USD = float(os.getenv("AI_COST_PER_1K_TOKENS_USD", "0"))
+
+
+@app.middleware("http")
+async def prometheus_metrics_middleware(request: Request, call_next):
+    start = time.perf_counter()
+    endpoint = request.url.path
+    method = request.method
+
+    response = await call_next(request)
+
+    duration = time.perf_counter() - start
+    status_code = str(response.status_code)
+
+    aiRequestsTotal.labels(endpoint=endpoint, method=method, status_code=status_code).inc()
+    aiRequestDurationSeconds.labels(endpoint=endpoint, method=method).observe(duration)
+
+    return response
 
 
 # Models
@@ -123,24 +140,7 @@ async def startup_event():
         password=redis_password,
         decode_responses=True
     )
-    
 
-
-    @app.middleware("http")
-    async def prometheus_metrics_middleware(request: Request, call_next):
-        start = time.perf_counter()
-        endpoint = request.url.path
-        method = request.method
-
-        response = await call_next(request)
-
-        duration = time.perf_counter() - start
-        status_code = str(response.status_code)
-
-        aiRequestsTotal.labels(endpoint=endpoint, method=method, status_code=status_code).inc()
-        aiRequestDurationSeconds.labels(endpoint=endpoint, method=method).observe(duration)
-
-        return response
     # Elasticsearch connection
     es_host = os.getenv("ELASTICSEARCH_HOST", "localhost")
     es_port = int(os.getenv("ELASTICSEARCH_PORT", "9200"))

@@ -1,64 +1,124 @@
-# Inventory Management System
+# Inventory Management System (IMS)
+
+Đồ án môn **SEC (Software Enterprise Construction)** — xây dựng hệ thống quản lý kho hàng (Inventory Management System) cho ngành dược phẩm / sản xuất, hỗ trợ quản lý nguyên vật liệu, vòng đời lô hàng, kiểm soát chất lượng (QC), sản xuất batch và in tem nhãn truy xuất nguồn gốc.
 
 ## Thông tin môn học
 
-- **Môn học:** [Tên môn học]
-- **Giảng viên:** [Tên giảng viên]
-- **Học kỳ:** [Học kỳ - Năm học]
+- **Môn học:** Software Engineering Capstone
+- **Giảng viên:** Ngô Huy Biên
+- **Học kỳ:** HK2 / 2025-2026
+- **Nhóm:** SEC Team 02 — 2026
+- **Tham chiếu yêu cầu đồ án:** https://nhbien.github.io/enterprise-project-artifacts/
 
 ## Thành viên nhóm
 
 | STT | MSSV     | Họ và Tên               | Vai trò     |
 |-----|----------|-------------------------|-------------|
-| 1   | 21127173 | Nguyễn Thiên Thọ        | Nhóm trưởng |
+| 1   | 21127173 | Nguyễn Thiên Thọ        | Leader      |
 | 2   | 22127424 | Nguyễn Phước Minh Trí   | Thành viên  |
 | 3   | 22127316 | Nguyễn Ngô Ngọc Như     | Thành viên  |
 | 4   | 22127176 | Huỳnh Nguyễn Minh Khang | Thành viên  |
 | 5   | 22127074 | Võ Hoàng Đức            | Thành viên  |
 | 6   | 18127008 | Lê Mạnh Hoàng           | Thành viên  |
 
-## Mô tả đề tài
+## Link truy cập nhanh
 
-**Inventory Management System** - Hệ thống quản lý kho hàng
+| Thành phần | URL |
+|------------|-----|
+| **Repository** | https://github.com/Inventory-management-SEC/SEC_Team_02_2026 |
+| **Frontend (production)** | https://ims-frontend-sec02.vercel.app |
+| **Backend API (production)** | https://ims-backend-sec02.fly.dev |
+| **Backend health check** | https://ims-backend-sec02.fly.dev/health |
+| **GitHub Issues** | https://github.com/Inventory-management-SEC/SEC_Team_02_2026/issues |
+| **GitHub Projects** | https://github.com/orgs/Inventory-management-SEC/projects |
+| **CI/CD** | https://github.com/Inventory-management-SEC/SEC_Team_02_2026/actions |
 
-Hệ thống hỗ trợ quản lý hàng hóa trong kho, bao gồm các chức năng:
+## Chức năng chính
 
-- Quản lý sản phẩm (thêm, sửa, xóa, tìm kiếm)
-- Quản lý nhập/xuất kho
-- Theo dõi tồn kho
-- Báo cáo thống kê
-- Quản lý nhà cung cấp
-- Quản lý người dùng và phân quyền
+- **Quản lý Nguyên vật liệu (Material Catalog)** — danh mục, phiên bản, thông tin tuân thủ
+- **Quản lý Lô hàng (Lot Tracking)** — vòng đời: Quarantine → Accepted/Rejected → Depleted
+- **Kiểm soát Chất lượng (QC)** — quy trình kiểm định, phê duyệt, cách ly lô
+- **Sản xuất (Production Batch)** — tạo batch, tiêu thụ nguyên liệu, traceability
+- **Tem nhãn (Labeling)** — Barcode + QR Code + PDF export
+- **Báo cáo & Audit Trail** — Inventory / Transactions / Audit reports
+- **Dashboard theo vai trò** — 5 role: Admin / Inventory Manager / QC / Production / Viewer
 
 ## Công nghệ sử dụng
 
-- **Frontend:** [Công nghệ frontend]
-- **Backend:** [Công nghệ backend]
-- **Database:** [Cơ sở dữ liệu]
+| Layer | Tech Stack |
+|-------|------------|
+| Frontend | React 19 · Vite 7 · TypeScript 5.9 · Ant Design 6 · Tailwind CSS 4 · TanStack React Query · Zustand · React Router 7 |
+| Backend | Node.js 22 · Express 4 · TypeScript 5.1 · pg · Redis · Elasticsearch 8 · JWT |
+| AI Service | Python 3.11 · FastAPI · Redis (async) · Elasticsearch (async) |
+| Database | PostgreSQL 16 (Supabase prod) |
+| Identity | Keycloak 23 |
+| Infrastructure | Docker Compose · Fly.io (backend) · Vercel (frontend) · Supabase (DB) · GitHub Actions (CI/CD) |
 
-## Cài đặt và chạy chương trình
+## Cài đặt và chạy
+
+### Chạy nhanh với Docker Compose
 
 ```bash
-# Clone repository
-git clone [repository-url]
-
-# Cài đặt dependencies
-[Lệnh cài đặt]
-
-# Chạy chương trình
-[Lệnh chạy]
+git clone https://github.com/Inventory-management-SEC/SEC_Team_02_2026.git
+cd SEC_Team_02_2026/02_Source/01_Source\ Code/
+docker compose up -d
 ```
 
-## Cấu trúc thư mục
+Truy cập:
+- Frontend: http://localhost:5173
+- Backend: http://localhost:3000
+
+### Chạy từng service (dev mode)
+
+Chi tiết xem `02_Source/03_Compilation Guide.md`.
+
+```bash
+# Terminal 1 — DB + services phụ trợ
+cd 02_Source/01_Source\ Code && docker compose up -d postgres redis elasticsearch keycloak
+
+# Terminal 2 — Backend
+cd 02_Source/01_Source\ Code/backend && npm install && npm run dev
+
+# Terminal 3 — Frontend
+cd 02_Source/01_Source\ Code/frontend && npm install && npm run dev
+```
+
+## Cấu trúc repository
 
 ```
-inventory/
-├── src/
-├── docs/
-├── tests/
-└── README.md
+SEC_Team_02_2026/
+├── 01_Documents/                   # Tài liệu dự án (PRD, Domain Model, Architecture, PoC, ...)
+│   ├── 01_Product Requirements Document.md
+│   ├── 02_Domain Model.md
+│   ├── 03_Prototype.md
+│   ├── 04_Product Backlog.md
+│   ├── 05_Architecture.md
+│   ├── 06_Proof of Concept.md
+│   ├── 07_Coding Standards.md
+│   ├── 08_Project Management.md
+│   └── 09_System Evaluation and Validation.md
+├── 02_Source/
+│   ├── 01_Source Code/             # Mã nguồn
+│   │   ├── backend/                # Express + TypeScript API
+│   │   ├── frontend/               # React + Vite SPA
+│   │   ├── ai-service/             # FastAPI AI analytics
+│   │   ├── db_schema/              # PostgreSQL init SQL
+│   │   ├── monitoring/             # Prometheus scrape config (observability stack, planned)
+│   │   ├── keycloak/               # Keycloak realm config
+│   │   └── docker-compose.yml      # Full-stack orchestration
+│   ├── 02_Raw Data/                # Dữ liệu gốc
+│   └── 03_Compilation Guide.md     # Hướng dẫn build cho developer
+├── 03_Deployment/
+│   ├── 01_Deployment_Package/      # IaaC files (fly.toml, Dockerfile, vercel.json, ...)
+│   ├── 02_Deployment Guide.md      # Hướng dẫn triển khai cho IT admin
+│   └── 03_User Guide.md            # Hướng dẫn sử dụng cho end user
+├── .github/workflows/              # GitHub Actions CI/CD
+│   ├── deploy-backend.yml
+│   └── deploy-frontend.yml
+├── CLAUDE.md                       # Project context cho AI assistant
+└── README.md                       # File này
 ```
 
 ## License
 
-Project này được phát triển cho mục đích học tập.
+Dự án được phát triển cho mục đích học tập (đồ án môn SEC).

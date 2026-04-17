@@ -10,6 +10,7 @@ datasources:
 
   - name: Loki
     type: loki
+    uid: loki
     access: proxy
     url: http://loki:3100
     editable: false
@@ -23,4 +24,4 @@ datasources:
       nodeGraph:
         enabled: true
       tracesToLogs:
-        datasourceUid: Loki
+        datasourceUid: loki
