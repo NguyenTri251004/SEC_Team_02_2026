@@ -79,6 +79,6 @@ Dự án nhằm xây dựng **Hệ thống Quản lý Kho (IMS - Inventory Manag
 
 ## 5. Luồng Quy trình Nghiệp vụ
 
-1. **[Inventory Management Workflow - Tổng quan](05_Inventory_Management_Workflow.md)**
+1. **[Inventory Management Workflow - Tổng quan](10_Inventory_Management_Workflow.md)**
 
-2. **[Inventory Management Workflow Detail - Chi tiết](06_Inventory_Management_Workflow_Detail.md)**
+2. **[Inventory Management Workflow Detail - Chi tiết](11_Inventory_Management_Workflow_Detail.md)**

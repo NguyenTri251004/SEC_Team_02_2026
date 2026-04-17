@@ -1,0 +1,61 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "02_Source/01_Source Code/frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy:
+    name: Build & Deploy to Vercel
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "02_Source/01_Source Code/frontend"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: "02_Source/01_Source Code/frontend/package-lock.json"
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Smoke test (HTTP 200)
+        run: |
+          echo "Polling https://ims-frontend-sec02.vercel.app ..."
+          for i in $(seq 1 20); do
+            status=$(curl -o /dev/null -s -w "%{http_code}" --max-time 5 https://ims-frontend-sec02.vercel.app || echo "000")
+            if [ "$status" = "200" ]; then
+              echo "Frontend returned 200 after $i attempt(s)"
+              exit 0
+            fi
+            echo "Attempt $i: got HTTP $status, retrying in 5s..."
+            sleep 5
+          done
+          echo "Smoke test failed after 20 attempts (~1.5 min)"
+          exit 1

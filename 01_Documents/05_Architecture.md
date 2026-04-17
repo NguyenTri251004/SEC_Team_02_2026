@@ -2145,14 +2145,16 @@ React components re-render (optimistic UI)
 
 ### Industry Research
 
-- Modern IMS Architectures: [Research Report](plans/reports/researcher-260205-1541-modern-ims-architectures.md)
-- Monitoring & Observability: [Research Report](plans/reports/researcher-260205-1540-monitoring-observability-stack.md)
-- AI Capabilities: [Research Report](plans/reports/researcher-260205-1541-ai-capabilities-for-ims.md)
+Nhóm đã tham khảo các chủ đề sau trong quá trình thiết kế kiến trúc (research notes nội bộ, không commit):
+
+- Modern IMS Architectures (microservices, event-driven patterns trong ngành warehouse/pharma)
+- Monitoring & Observability stack (OpenTelemetry, Prometheus, Grafana, Loki, Tempo)
+- AI Capabilities cho IMS (demand forecasting, anomaly detection)
 
 ### Internal POCs
 
-- Keycloak Integration POC: [06_Proof of Concept.md](01_Documents/06_Proof of Concept.md) - Section Keycloak
-- Elasticsearch Semantic Search POC: [06_Proof of Concept.md](01_Documents/06_Proof of Concept.md) - Section Elasticsearch
+- Keycloak Integration POC: [06_Proof of Concept.md](06_Proof%20of%20Concept.md) — mục Keycloak
+- Elasticsearch Semantic Search POC: [06_Proof of Concept.md](06_Proof%20of%20Concept.md) — mục Elasticsearch
 
 ### External Standards
 
