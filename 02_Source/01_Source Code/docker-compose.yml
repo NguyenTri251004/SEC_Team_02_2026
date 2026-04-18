@@ -141,6 +141,7 @@ services:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - KEYCLOAK_URL=http://keycloak:8080
       - KEYCLOAK_REALM=${KEYCLOAK_REALM:-inventory-management}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET:-backend-secret-change-in-production}
       - AI_SERVICE_URL=http://ai-service:8000
       - BYPASS_AUTH=false
       - LOG_LEVEL=${LOG_LEVEL:-info}

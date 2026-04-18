@@ -61,6 +61,7 @@ services:
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}
       OTEL_RESOURCE_ATTRIBUTES: service.name=ims-backend,service.namespace=ims,deployment.environment=production
       METRICS_AUTH_TOKEN: ${METRICS_AUTH_TOKEN:?set METRICS_AUTH_TOKEN in .env}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy

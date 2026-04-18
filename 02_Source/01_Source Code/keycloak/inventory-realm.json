@@ -152,6 +152,19 @@
         }
       ],
       "realmRoles": ["viewer"]
+    },
+    {
+      "username": "service-account-inventory-backend",
+      "enabled": true,
+      "serviceAccountClientId": "inventory-backend",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users",
+          "manage-realm"
+        ]
+      }
     }
   ]
 }
