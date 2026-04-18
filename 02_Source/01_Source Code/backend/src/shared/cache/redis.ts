@@ -1,4 +1,6 @@
 import { createClient } from "redis";
+import { logger } from "../observability/logger";
+import { redisConnectionStatus } from "../observability/metrics";
 
 const redisClient = createClient({
   url: process.env.REDIS_URL || "redis://localhost:6379",
@@ -8,17 +10,24 @@ const redisClient = createClient({
   },
 });
 
-redisClient.on("error", (err) =>
-  console.warn("⚠️  Redis không kết nối được, tiếp tục không có cache:", err.message)
-);
+redisConnectionStatus.set(0);
 
-redisClient.on("connect", () => console.log("✓ Đã kết nối Redis"));
+redisClient.on("error", (err) => {
+  redisConnectionStatus.set(0);
+  logger.warn({ error: err.message }, "redis.connection.error");
+});
+
+redisClient.on("connect", () => {
+  redisConnectionStatus.set(1);
+  logger.info("redis.connection.ready");
+});
 
 export const connectRedis = async (): Promise<void> => {
   try {
     await redisClient.connect();
   } catch (err) {
-    console.warn("⚠️  Bỏ qua Redis, chạy không có cache.");
+    redisConnectionStatus.set(0);
+    logger.warn({ error: err }, "redis.connection.skipped");
   }
 };
 

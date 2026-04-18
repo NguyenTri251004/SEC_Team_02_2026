@@ -500,6 +500,75 @@ flyctl logs --app ims-backend
 
 ## Monitor Performance
 
+### IMS Telemetry Stack (Prometheus + Grafana + Loki + Tempo + OTEL)
+
+```bash
+# Start observability stack in local/full environment
+cd 02_Source/01_Source\ Code
+docker-compose up -d otel-collector tempo loki prometheus alertmanager grafana
+
+# Verify telemetry endpoints
+# /metrics requires auth token (value from METRICS_AUTH_TOKEN in .env)
+curl -H "x-metrics-token: <METRICS_AUTH_TOKEN>" http://localhost:3000/metrics
+curl http://localhost:9090/-/ready
+curl http://localhost:3100/ready
+curl http://localhost:3200/ready
+```
+
+Default local endpoints:
+
+- Grafana: http://localhost:3001 (use credentials from .env)
+- Prometheus: http://localhost:9090
+- Alertmanager: http://localhost:9093
+- Loki (health): http://localhost:3100/ready
+- Tempo (health): http://localhost:3200/ready
+
+Note: opening `http://localhost:3100/` or `http://localhost:3200/` can show `404 page not found`.
+That is expected because Loki/Tempo are API services, not UI pages.
+
+### Grafana Dashboards
+
+Pre-provisioned dashboard:
+
+- `IMS Observability Overview`
+
+Data sources provisioned automatically:
+
+- Prometheus (metrics)
+- Loki (logs)
+- Tempo (traces)
+
+### Email Alerts Configuration
+
+Set these values in `.env` before starting Alertmanager:
+
+```env
+SMTP_SMARTHOST=smtp.gmail.com:587
+SMTP_FROM=alerts@example.com
+SMTP_AUTH_USERNAME=alerts@example.com
+SMTP_AUTH_PASSWORD=app-password
+ALERT_EMAIL_TO=ops-team@example.com
+```
+
+Current default alert rules:
+
+- `BackendDown` (critical)
+- `HighHttpErrorRate` (high)
+- `HighP95Latency` (medium)
+
+### Metrics Authentication
+
+The backend `/metrics` endpoint requires a token. Keep these two values identical:
+
+1. `.env` variable `METRICS_AUTH_TOKEN`
+2. `monitoring/prometheus/metrics-token.txt` content
+
+Create the local token file from template before running compose:
+
+```bash
+cp monitoring/prometheus/metrics-token.txt.example monitoring/prometheus/metrics-token.txt
+```
+
 ### Fly.io Monitoring
 
 1. Dashboard → Select app

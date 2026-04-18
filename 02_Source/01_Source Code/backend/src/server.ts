@@ -3,6 +3,10 @@ import dotenv from "dotenv";
 import pool from "./shared/db/pool";
 import { connectRedis } from "./shared/cache/redis";
 import esClient from "./shared/elasticsearch/client";
+import { logger } from "./shared/observability/logger";
+import { getMetricsRegistry } from "./shared/observability/metrics";
+import { observabilityMiddleware } from "./shared/observability/middleware";
+import { startTracing } from "./shared/observability/tracing";
 import materialRoutes from "./modules/materials/material.routes";
 import transactionRoutes from "./modules/transactions/transaction.routes";
 import searchRoutes from "./modules/search/search.routes";
@@ -15,17 +19,19 @@ import productionRoutes from "./modules/production/production.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 
 dotenv.config();
+startTracing();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
+app.use(observabilityMiddleware);
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization, traceparent, x-correlation-id, x-metrics-token",
   );
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
   if (req.method === "OPTIONS") {
@@ -42,6 +48,29 @@ app.get("/", (_req: Request, res: Response) => {
 
 app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok" });
+});
+
+app.get("/metrics", async (_req: Request, res: Response) => {
+  const metricsToken = process.env.METRICS_AUTH_TOKEN;
+  const headerToken = _req.header("x-metrics-token");
+  const authHeader = _req.header("authorization");
+  const bearerToken = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length).trim()
+    : undefined;
+  const providedToken = headerToken ?? bearerToken;
+
+  if (!metricsToken) {
+    res.status(503).json({ success: false, error: "Metrics token not configured" });
+    return;
+  }
+
+  if (providedToken !== metricsToken) {
+    res.status(401).json({ success: false, error: "Unauthorized" });
+    return;
+  }
+
+  res.set("Content-Type", getMetricsRegistry().contentType);
+  res.send(await getMetricsRegistry().metrics());
 });
 
 // Module routes
@@ -61,10 +90,10 @@ const start = async (): Promise<void> => {
   // Kiểm tra kết nối PostgreSQL
   pool.connect((err, client, done) => {
     if (err || !client) {
-      console.error("❌ Lỗi kết nối PostgreSQL:", err?.message);
+      logger.error({ error: err?.message }, "postgres.connection.failed");
       return;
     }
-    console.log("✓ Đã kết nối PostgreSQL");
+    logger.info("postgres.connection.ready");
     done();
 
     // One-time migration: set last_login for users who have never logged in
@@ -72,9 +101,9 @@ const start = async (): Promise<void> => {
       `UPDATE users SET last_login = modified_date WHERE last_login IS NULL`
     ).then((res) => {
       if (res.rowCount && res.rowCount > 0) {
-        console.log(`✓ Initialized last_login for ${res.rowCount} user(s)`);
+        logger.info({ count: res.rowCount }, "users.last_login.initialized");
       }
-    }).catch((e) => console.warn("last_login migration skipped:", e.message));
+    }).catch((e) => logger.warn({ error: e.message }, "users.last_login.migration_skipped"));
   });
 
   // Kết nối Redis (không bắt buộc — app vẫn chạy nếu Redis không có)
@@ -88,28 +117,9 @@ const start = async (): Promise<void> => {
   }
 
   app.listen(PORT, () => {
-    console.log(`✓ Server đang chạy tại http://localhost:${PORT}`);
-    console.log(`  GET  /api/materials`);
-    console.log(`  POST /api/materials`);
-    console.log(`  GET  /api/transactions`);
-    console.log(`  POST /api/transactions`);
-    console.log(`  GET  /api/lots`);
-    console.log(`  POST /api/lots`);
-    console.log(`  GET  /api/qc/tests`);
-    console.log(`  POST /api/qc/tests`);
-    console.log(`  GET  /api/qc/queue`);
-    console.log(`  GET  /api/qc/stats`);
-    console.log(`  POST /api/qc/approve/:lotId`);
-    console.log(`  POST /api/qc/reject/:lotId`);
-    console.log(`  GET  /api/production/batches`);
-    console.log(`  POST /api/production/batches`);
-    console.log(`  GET  /api/search?q=keyword`);
-    console.log(`  POST /api/search/index (Index all materials)`);
-    console.log(`  GET  /api/admin/users (Admin only)`);
-    console.log(`  GET  /api/admin/stats (Admin only)`);
+    logger.info({ port: PORT }, "server.started");
+    logger.info("routes.ready");
   });
 };
 
 start();
-
-// test commit 5
