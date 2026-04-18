@@ -15,22 +15,20 @@ import {
 
 // ── Keycloak Admin API ──────────────────────────────────────────────────────────────────────────────
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL ?? "http://keycloak:8080";
-const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM ?? "ims";
-const KEYCLOAK_ADMIN_USER = process.env.KEYCLOAK_ADMIN_USER ?? "admin";
-const KEYCLOAK_ADMIN_PASSWORD = process.env.KEYCLOAK_ADMIN_PASSWORD ?? "admin";
+const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM ?? "inventory-management";
+const KEYCLOAK_CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET ?? "";
 
-/** Obtain a short-lived admin access token from the Keycloak master realm. */
+/** Obtain a short-lived admin token via the inventory-backend service account (client_credentials). */
 async function getKeycloakAdminToken(): Promise<string> {
   const res = await fetch(
-    `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
+    `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`,
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        grant_type: "password",
-        client_id: "admin-cli",
-        username: KEYCLOAK_ADMIN_USER,
-        password: KEYCLOAK_ADMIN_PASSWORD,
+        grant_type: "client_credentials",
+        client_id: "inventory-backend",
+        client_secret: KEYCLOAK_CLIENT_SECRET,
       }),
     }
   );
