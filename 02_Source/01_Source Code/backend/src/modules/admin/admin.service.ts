@@ -16,10 +16,21 @@ import {
 // ── Keycloak Admin API ──────────────────────────────────────────────────────────────────────────────
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL ?? "http://keycloak:8080";
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM ?? "inventory-management";
-const KEYCLOAK_CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET ?? "";
+const KEYCLOAK_CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET;
+
+function requireKeycloakClientSecret(): string {
+  if (!KEYCLOAK_CLIENT_SECRET) {
+    throw new Error(
+      "KEYCLOAK_CLIENT_SECRET env var is required for admin API access. " +
+      "Set it to the 'inventory-backend' client secret from Keycloak."
+    );
+  }
+  return KEYCLOAK_CLIENT_SECRET;
+}
 
 /** Obtain a short-lived admin token via the inventory-backend service account (client_credentials). */
 async function getKeycloakAdminToken(): Promise<string> {
+  const clientSecret = requireKeycloakClientSecret();
   const res = await fetch(
     `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`,
     {
@@ -28,7 +39,7 @@ async function getKeycloakAdminToken(): Promise<string> {
       body: new URLSearchParams({
         grant_type: "client_credentials",
         client_id: "inventory-backend",
-        client_secret: KEYCLOAK_CLIENT_SECRET,
+        client_secret: clientSecret,
       }),
     }
   );
