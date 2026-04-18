@@ -26,7 +26,7 @@ INSERT INTO users (user_id, username, email, role, is_active, last_login) VALUES
   ('22222222-2222-4222-8222-222222222222', 'inv_manager', 'manager@ims.local',    'InventoryManager', true,  '2026-03-08 14:15:00'),
   ('33333333-3333-4333-8333-333333333333', 'qc_user',     'qc@ims.local',         'QualityControl',   true,  '2026-03-09 07:45:00'),
   ('44444444-4444-4444-8444-444444444444', 'prod_user',   'production@ims.local', 'Production',       true,  '2026-03-07 16:20:00'),
-  ('55555555-5555-4555-8555-555555555555', 'viewer',      'viewer@ims.local',     'Viewer',           false, NULL);
+  ('55555555-5555-4555-8555-555555555555', 'viewer',      'viewer@ims.local',     'Viewer',           true, NULL);
 
 -- ────────────────────────────────────────────────────────────
 -- 2. Materials (Nguyen vat lieu)

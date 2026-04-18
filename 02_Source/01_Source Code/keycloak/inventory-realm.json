@@ -140,7 +140,7 @@
       "id": "55555555-5555-4555-8555-555555555555",
       "username": "viewer",
       "email": "viewer@ims.local",
-      "enabled": false,
+      "enabled": true,
       "emailVerified": true,
       "firstName": "Read",
       "lastName": "Only",
