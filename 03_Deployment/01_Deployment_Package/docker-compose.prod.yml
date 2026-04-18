@@ -51,11 +51,30 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       BYPASS_AUTH: ${BYPASS_AUTH:-false}
       FRONTEND_URL: ${FRONTEND_URL:-https://localhost}
+      KEYCLOAK_URL: ${KEYCLOAK_URL}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-inventory-management}
+      KEYCLOAK_PUBLIC_KEY: ${KEYCLOAK_PUBLIC_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      OTEL_ENABLED: ${OTEL_ENABLED:-true}
+      OTEL_SERVICE_NAME: ims-backend
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}
+      OTEL_RESOURCE_ATTRIBUTES: service.name=ims-backend,service.namespace=ims,deployment.environment=production
+      METRICS_AUTH_TOKEN: ${METRICS_AUTH_TOKEN:?set METRICS_AUTH_TOKEN in .env}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - ims-network
 
@@ -78,10 +97,108 @@ services:
     networks:
       - ims-network
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.121.0
+    container_name: ims-otel-collector
+    restart: always
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./monitoring/otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    depends_on:
+      - tempo
+    networks:
+      - ims-network
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    container_name: ims-tempo
+    restart: always
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./monitoring/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    networks:
+      - ims-network
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: ims-loki
+    restart: always
+    command: ["-config.file=/etc/loki/config.yaml"]
+    volumes:
+      - ./monitoring/loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - ims-network
+
+  prometheus:
+    image: prom/prometheus:v3.3.1
+    container_name: ims-prometheus
+    restart: always
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./monitoring/prometheus/metrics-token.txt:/etc/prometheus/metrics-token.txt:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - backend
+      - alertmanager
+      - otel-collector
+    networks:
+      - ims-network
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: ims-alertmanager
+    restart: always
+    command:
+      - "--config.file=/etc/alertmanager/config.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - ./monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - ims-network
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: ims-grafana
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?set GRAFANA_ADMIN_USER in .env}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_DEFAULT_THEME: light
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - ims-network
+
 volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  loki_data:
+    driver: local
+  tempo_data:
+    driver: local
+  alertmanager_data:
     driver: local
 
 networks:

@@ -508,7 +508,8 @@ cd 02_Source/01_Source\ Code
 docker-compose up -d otel-collector tempo loki prometheus alertmanager grafana
 
 # Verify telemetry endpoints
-curl http://localhost:3000/metrics
+# /metrics requires auth token (value from METRICS_AUTH_TOKEN in .env)
+curl -H "x-metrics-token: <METRICS_AUTH_TOKEN>" http://localhost:3000/metrics
 curl http://localhost:9090/-/ready
 curl http://localhost:3100/ready
 curl http://localhost:3200/ready
