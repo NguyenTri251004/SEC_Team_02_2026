@@ -22,7 +22,7 @@ Dự án nhằm xây dựng **Hệ thống Quản lý Kho (IMS - Inventory Manag
 - **Quản lý Nguyên vật liệu (Material Management):** Danh mục, phiên bản, thông tin tuân thủ.
 - **Quản lý Lô hàng (Lot Tracking):** Theo dõi vòng đời, hạn sử dụng, trạng thái chất lượng.
 - **Kiểm soát Chất lượng (QC Integration):** Quy trình phê duyệt/từ chối, cách ly hàng hóa.
-- **Tem nhãn (Labeling):** Tạo và in mã vạch/QR code định danh.
+- **Tem nhãn (Labeling):** Tạo mã vạch/QR code định danh.
 - **Báo cáo & Giám sát:** Báo cáo tồn kho, lịch sử giao dịch, audit trail.
 
 ### 1.2.2. Ngoài phạm vi
@@ -64,17 +64,17 @@ Dự án nhằm xây dựng **Hệ thống Quản lý Kho (IMS - Inventory Manag
 - **Thời gian phản hồi:**
   - API: < 2 giây
   - Báo cáo/Xuất: < 30 giây
-- **Caching:** Tích hợp Redis/Memcached để tăng tốc truy xuất
+- **Caching:** Tích hợp Redis để tăng tốc truy xuất
 
 ### 4.2. Bảo mật và An toàn
 
-- **Rate Limiting:** Giới hạn lưu lượng truy cập API để tránh tấn công DDOS.
+- **Authentication:** Keycloak-based authentication with JWT tokens
+- **Authorization:** Role-based access control (RBAC) with 5 roles
 - **Mã hóa:** Toàn bộ thông tin quan trọng/nhạy cảm phải được mã hóa khi lưu trữ (Encryption at Rest).
 - **Chống tấn công:** Tích hợp giải pháp ngăn chặn CSRF, XSS và các lỗ hổng bảo mật phổ biến (OWASP Top 10).
 
 ### 4.3. Vận hành và Quản trị
 
-- **Backup:** Tự động sao lưu và có quy trình phục hồi dữ liệu (Disaster Recovery Plan).
 - **Monitoring:** Theo dõi liên tục trạng thái vận hành (health checks), phân tích logs và dữ liệu hiệu suất hệ thống (metrics).
 
 ## 5. Luồng Quy trình Nghiệp vụ

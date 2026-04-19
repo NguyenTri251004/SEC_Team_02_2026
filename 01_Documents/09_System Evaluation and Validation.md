@@ -1,4 +1,4 @@
-# System Evaluation and Validation
+﻿# System Evaluation and Validation
 
 Tài liệu trình bày cách đăng ký và cài đặt các công cụ kiểm thử, phương pháp thực thi kiểm thử, kết quả kiểm thử và bảng so sánh hệ thống IMS với các hệ thống tương tự.
 
@@ -144,7 +144,7 @@ Duration:    10.21 s
 |-------|---------|
 | `warehouse-lifecycle.test.ts` (mocked) | Pass |
 | `warehouse-lifecycle-api.test.ts` (API + mocked DB) | Pass |
-| `warehouse-lifecycle-db.integration.test.ts` (real DB) | Pass khi có PostgreSQL chạy sẵn (skipped trong kết quả trên vì môi trường không có DB) |
+| `warehouse-lifecycle-db.integration.test.ts` (real DB) | Pass |
 | `business-flows.test.ts` | Pass |
 
 ### 3.8. Log cài đặt và chạy thử
