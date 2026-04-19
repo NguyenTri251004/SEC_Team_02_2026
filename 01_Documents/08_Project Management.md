@@ -61,9 +61,9 @@ Tài liệu trình bày các kết quả ước lượng kích cỡ, thời gian
 - **Milestones** tương ứng với các M1–M4 ở mục 2
 - **Assignees** gán cho thành viên phụ trách
 
-### Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý mã nguồn của nhóm
+### Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý dự án của nhóm
 
-![Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý mã nguồn của nhóm.](assets/001.png)
+![Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý dự án của nhóm.](assets/001.png)
 
 ## 6. Hệ thống quản lý lỗi (Bug / Issue Tracking)
 

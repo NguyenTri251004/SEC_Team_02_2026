@@ -21,13 +21,12 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 │  │  ──────────────────────────────────────────────────────────────────────  │  │
 │  │  • Web Browser (React SPA)                                               │  │
 │  │  • Mobile Browser (Responsive)                                           │  │
-│  │  • Real-time Updates (WebSocket)                                         │  │
 │  └──────────────────────────────────────────────────────────────────────────┘  │
 │                              │                                                 │
-│                              │ HTTPS + JWT + REST/GraphQL/WebSocket            │
+│                              │ HTTPS + JWT + REST                              │
 │                              ▼                                                 │
 │  ┌──────────────────────────────────────────────────────────────────────────┐  │
-│  │  API GATEWAY (Kong/NGINX)                                                │  │
+│  │  API GATEWAY (Express.js)                                                │  │
 │  │  • Routing, Auth Verification, Rate Limiting                             │  │
 │  │  • Load Balancing, SSL Termination                                       │  │
 │  └──────────────────────────────────────────────────────────────────────────┘  │
@@ -101,7 +100,6 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
   - **Nhập kho (receiving):** Nhập kho → Tạo InventoryLot → Kiểm tra QC → Duyệt/từ chối
   - **Sản xuất (production):** Tạo ProductionBatch → Tiêu thụ vật tư → Theo dõi thành phần
   - **Dán nhãn (labeling):** Tạo nhãn (QR/Barcode) → In
-  - **Giám sát thời gian thực (real-time monitoring):** Cập nhật WebSocket → Bảng điều khiển trực tiếp
   - **Vận hành với sự hỗ trợ của AI (AI-assisted operations):** Dự báo nhu cầu → Gợi ý đặt hàng lại → Cảnh báo bất thường
 
 ---
@@ -129,7 +127,6 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 │  │  │  • User interface rendering                                    │  │  │
 │  │  │  • Client-side routing & state management                      │  │  │
 │  │  │  • Form validation & user input handling                       │  │  │
-│  │  │  • Real-time UI updates (WebSocket)                            │  │  │
 │  │  │                                                                │  │  │
 │  │  │  Sub-components:                                               │  │  │
 │  │  │  ├─ Material Management UI (CRUD, categories, search)          │  │  │
@@ -152,8 +149,6 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 │  └──────────────────────────────────────────────────────────────────────┘  │
 │                              │                                             │
 │                              │ REST API (JSON) — CRUD operations           │
-│                              │ GraphQL (/graphql) — Complex queries        │
-│                              │ WebSocket (Real-time updates)               │
 │                              │ OAuth2/OIDC (Auth via Keycloak)             │
 │                              ▼                                             │
 │  ┌──────────────────────────────────────────────────────────────────────┐  │
@@ -161,7 +156,7 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 │  │  ──────────────────────────────────────────────────────────────────  │  │
 │  │                                                                      │  │
 │  │  ┌────────────────────────────────────────────────────────────────┐  │  │
-│  │  │  API Gateway Component (NGINX/Kong)                            │  │  │
+│  │  │  API Gateway Component (Express.js)                            │  │  │
 │  │  │  ────────────────────────────────────────────────────────────  │  │  │
 │  │  │  Responsibilities:                                             │  │  │
 │  │  │  • Request routing & load balancing                            │  │  │
@@ -178,7 +173,6 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 │  │  │  • Business logic orchestration                                │  │  │
 │  │  │  • API endpoint implementation                                 │  │  │
 │  │  │  • Request/Response handling                                   │  │  │
-│  │  │  • WebSocket server (real-time events)                         │  │  │
 │  │  │  • Event publishing/subscribing                                │  │  │
 │  │  │                                                                │  │  │
 │  │  │  Core Modules (Bounded Contexts):                              │  │  │
@@ -288,7 +282,6 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 │  │  │  • Stock levels cache                                          │  │  │
 │  │  │  • Session storage                                             │  │  │
 │  │  │  • Rate limiting counters                                      │  │  │
-│  │  │  • WebSocket session management                                │  │  │
 │  │  └────────────────────────────────────────────────────────────────┘  │  │
 │  └──────────────────────────────────────────────────────────────────────┘  │
 │                                                                            │
@@ -334,8 +327,6 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 │     LotService → EventBus: Emit 'lot.created' event                 │
 │     EventBus → SearchService: Index lot in Elasticsearch            │
 │     EventBus → CacheService: Invalidate stock cache                 │
-│     EventBus → WebSocketService: Broadcast update                   │
-│     WebSocketService → Frontend: Real-time notification             │
 │     Backend API → Frontend: Success response (201)                  │
 │                                                                     │
 │  3. QC Approval Workflow                                            │
@@ -371,16 +362,6 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 │     AI/ML Service → Backend API: Forecast results                   │
 │     Backend API → EventBus: Emit 'forecast.completed'               │
 │     EventBus → NotificationService: Alert inventory managers        │
-│                                                                     │
-│  6. Real-time Stock Update Flow (WebSocket)                         │
-│     ────────────────────────────────────────────────────────────    │
-│     Frontend → Backend API: Establish WebSocket connection          │
-│     Backend API → WebSocketService: Register client                 │
-│     [Stock change occurs via API]                                   │
-│     InventoryModule → EventBus: Emit 'stock.updated' event          │
-│     EventBus → WebSocketService: Receive event                      │
-│     WebSocketService → Frontend: Broadcast to all clients           │
-│     Frontend → React State: Update UI optimistically                │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -567,188 +548,6 @@ class AIServiceInterface:
     }
 ```
 
-**E. GraphQL API (Frontend ↔ Backend — Complex Queries)**
-
-Hệ thống sử dụng **GraphQL** song song với REST API cho các trường hợp frontend cần truy vấn dữ liệu phức tạp, tổng hợp nhiều nguồn, hoặc client cần tự chọn fields để tối ưu bandwidth.
-
-```graphql
-# Schema Definition (Apollo Server)
-
-type Material {
-  id: ID!
-  sku: String!
-  name: String!
-  description: String
-  category: String!
-  unit: String!
-  currentStock: Float
-  lots: [InventoryLot!]!
-  recentTransactions(limit: Int = 10): [Transaction!]!
-}
-
-type InventoryLot {
-  id: ID!
-  lotNumber: String!
-  material: Material!
-  quantity: Float!
-  status: LotStatus!
-  expiryDate: String
-  qcTests: [QCTest!]!
-}
-
-type Transaction {
-  id: ID!
-  type: TransactionType!
-  quantity: Float!
-  material: Material!
-  lot: InventoryLot
-  performedBy: String!
-  createdDate: String!
-}
-
-type DashboardSummary {
-  totalMaterials: Int!
-  totalLots: Int!
-  lowStockAlerts: Int!
-  expiringLots: Int!
-  recentTransactions: [Transaction!]!
-  stockByCategory: [CategoryStock!]!
-}
-
-enum LotStatus { QUARANTINE APPROVED REJECTED IN_USE DEPLETED }
-enum TransactionType { IN OUT ADJUST TRANSFER }
-
-type Query {
-  # Single query that fetches all dashboard data (vs 5+ REST calls)
-  dashboard: DashboardSummary!
-
-  # Flexible material queries with nested lots & transactions
-  materials(filter: MaterialFilter, limit: Int, offset: Int): [Material!]!
-  material(id: ID!): Material
-
-  # Full traceability: lot → material → transactions → QC
-  lotTraceability(lotNumber: String!): InventoryLot
-}
-
-type Mutation {
-  createMaterial(input: CreateMaterialInput!): Material!
-  updateMaterial(id: ID!, input: UpdateMaterialInput!): Material!
-  recordTransaction(input: CreateTransactionInput!): Transaction!
-}
-
-type Subscription {
-  # Real-time stock updates via GraphQL subscriptions (WebSocket)
-  stockUpdated(materialId: ID): Transaction!
-  lotStatusChanged: InventoryLot!
-}
-```
-
-**Khi nào dùng GraphQL vs REST:**
-
-| Use Case | Protocol | Lý do |
-|:---|:---|:---|
-| CRUD đơn giản (Material, Transaction) | REST | Đơn giản, cacheable, dễ test |
-| Dashboard tổng hợp (nhiều entity) | GraphQL | 1 query thay vì 5+ REST calls |
-| Truy xuất nguồn gốc (lot → material → QC) | GraphQL | Nested queries, client chọn fields |
-| Real-time updates | GraphQL Subscriptions | WebSocket-based, typed schema |
-| External integrations, webhooks | REST | Standard, dễ tích hợp |
-
-**Implementation:**
-
-```typescript
-// backend/src/shared/graphql/schema.ts
-import { ApolloServer } from "@apollo/server";
-import { expressMiddleware } from "@apollo/server/express4";
-
-const server = new ApolloServer({ typeDefs, resolvers });
-await server.start();
-app.use("/graphql", expressMiddleware(server));
-```
-
-**F. gRPC API (Backend ↔ AI/ML Service — Internal Communication)**
-
-Hệ thống sử dụng **gRPC** cho giao tiếp nội bộ giữa Backend (Node.js) và AI/ML Service (FastAPI/Python), thay thế REST cho các internal calls để đạt hiệu năng cao hơn.
-
-**Lý do chọn gRPC cho internal communication:**
-
-- **Performance:** Binary protocol (Protobuf) nhanh hơn JSON 5-10x
-- **Type safety:** Proto definitions sinh code cho cả Node.js và Python
-- **Streaming:** Hỗ trợ bidirectional streaming (real-time anomaly detection)
-- **Contract-first:** Proto file là single source of truth cho cả 2 services
-
-```protobuf
-// proto/ai_service.proto
-
-syntax = "proto3";
-package ims.ai;
-
-// Semantic Search Service
-service SemanticSearchService {
-  rpc Search (SearchRequest) returns (SearchResponse);
-  rpc IndexMaterial (IndexRequest) returns (IndexResponse);
-}
-
-message SearchRequest {
-  string query = 1;
-  int32 limit = 2;
-  map<string, string> filters = 3;
-}
-
-message SearchResponse {
-  repeated SearchResult results = 1;
-  float latency_ms = 2;
-}
-
-message SearchResult {
-  string material_id = 1;
-  string name = 2;
-  string sku = 3;
-  float score = 4;
-}
-
-// Demand Forecasting Service
-service ForecastService {
-  rpc PredictDemand (ForecastRequest) returns (ForecastResponse);
-  rpc StreamForecast (ForecastRequest) returns (stream ForecastPoint);
-}
-
-message ForecastRequest {
-  string sku = 1;
-  int32 horizon_days = 2;
-  string model = 3;  // "prophet" or "lstm"
-}
-
-message ForecastResponse {
-  repeated ForecastPoint predictions = 1;
-  float confidence = 2;
-}
-
-message ForecastPoint {
-  string date = 1;
-  float predicted_quantity = 2;
-  float lower_bound = 3;
-  float upper_bound = 4;
-}
-
-// Anomaly Detection Service
-service AnomalyService {
-  rpc DetectAnomalies (AnomalyRequest) returns (AnomalyResponse);
-  rpc StreamAnomalies (AnomalyStreamRequest) returns (stream AnomalyAlert);
-}
-
-message AnomalyRequest {
-  repeated DataPoint data = 1;
-  float threshold = 2;
-}
-
-message AnomalyAlert {
-  string material_id = 1;
-  string anomaly_type = 2;  // "theft", "data_error", "unusual_pattern"
-  float severity = 3;
-  string description = 4;
-}
-```
-
 **Architecture — Multi-Protocol API:**
 
 ```
@@ -759,78 +558,18 @@ message AnomalyAlert {
 │  Frontend (React SPA)                                                   │
 │      │                                                                  │
 │      ├── REST API (/api/*)         → CRUD operations, simple queries    │
-│      ├── GraphQL (/graphql)        → Complex queries, dashboard data    │
-│      └── WebSocket (ws://)         → Real-time updates                  │
 │                                                                         │
 │  Backend (Node.js + Express)                                            │
 │      │                                                                  │
 │      ├── REST endpoints            → Express Router (existing)          │
-│      ├── GraphQL endpoint          → Apollo Server middleware           │
-│      ├── WebSocket server          → ws library                         │
-│      └── gRPC client               → @grpc/grpc-js                      │
 │              │                                                          │
-│              │ gRPC (Protobuf, binary, high-performance)                │
 │              ▼                                                          │
 │  AI/ML Service (Python + FastAPI)                                       │
-│      └── gRPC server               → grpcio (Python)                    │
 │          ├── SemanticSearchService                                      │
 │          ├── ForecastService                                            │
 │          └── AnomalyService                                             │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
-```
-
-**Implementation — gRPC Client (Node.js):**
-
-```typescript
-// backend/src/shared/grpc/ai-client.ts
-import * as grpc from "@grpc/grpc-js";
-import * as protoLoader from "@grpc/proto-loader";
-
-const packageDef = protoLoader.loadSync("proto/ai_service.proto");
-const aiProto = grpc.loadPackageDefinition(packageDef).ims.ai;
-
-const searchClient = new aiProto.SemanticSearchService(
-  process.env.AI_SERVICE_URL || "localhost:50051",
-  grpc.credentials.createInsecure()
-);
-
-export async function semanticSearch(query: string, limit: number) {
-  return new Promise((resolve, reject) => {
-    searchClient.Search({ query, limit }, (err, response) => {
-      if (err) reject(err);
-      else resolve(response);
-    });
-  });
-}
-```
-
-**Implementation — gRPC Server (Python):**
-
-```python
-# ai_service/grpc_server.py
-import grpc
-from concurrent import futures
-import ai_service_pb2
-import ai_service_pb2_grpc
-
-class SemanticSearchServicer(ai_service_pb2_grpc.SemanticSearchServiceServicer):
-    def Search(self, request, context):
-        results = self.search_engine.search(
-            query=request.query,
-            limit=request.limit,
-            filters=dict(request.filters)
-        )
-        return ai_service_pb2.SearchResponse(
-            results=[ai_service_pb2.SearchResult(**r) for r in results]
-        )
-
-server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-ai_service_pb2_grpc.add_SemanticSearchServiceServicer_to_server(
-    SemanticSearchServicer(), server
-)
-server.add_insecure_port("[::]:50051")
-server.start()
 ```
 
 ---
@@ -1006,22 +745,6 @@ forecaster = ProphetForecast() if simple else LSTMForecast()
 result = forecaster.predict(data)
 ```
 
-**8. Observer Pattern (WebSocket)**
-
-```typescript
-// Real-time updates
-class WebSocketService {
-  private clients: Set<WebSocket> = new Set();
-
-  subscribe(client: WebSocket) {
-    this.clients.add(client);
-  }
-
-  broadcast(event: any) {
-    this.clients.forEach((client) => client.send(JSON.stringify(event)));
-  }
-}
-```
 
 ---
 
@@ -1034,7 +757,7 @@ class WebSocketService {
 │                                                            │
 │  Frontend Component                                        │
 │      ↓ depends on                                          │
-│      ├─→ Backend API Component (REST/GraphQL/WebSocket)    │
+│      ├─→ Backend API Component (REST)            │
 │      └─→ Keycloak Component (Auth)                         │
 │                                                            │
 │  Backend API Component                                     │
@@ -1043,7 +766,7 @@ class WebSocketService {
 │      ├─→ Redis Component (Cache)                           │
 │      ├─→ Elasticsearch Component (Search)                  │
 │      ├─→ Keycloak Component (JWT validation)               │
-│      └─→ AI/ML Services Component (via gRPC)               │
+│      └─→ AI/ML Services Component (via REST)               │
 │                                                            │
 │  AI/ML Services Component                                  │
 │      ↓ depends on                                          │
@@ -1085,7 +808,7 @@ Hệ thống backend được tổ chức theo mô hình **Modular Monolith** �
 │  • Auth (Keycloak integration)                                     │
 └────────────────────────────────────────────────────────────────────┘
                               │
-                              │ REST + GraphQL (JSON) + WebSocket
+                              │ REST (JSON)
                               ▼
 ┌────────────────────────────────────────────────────────────────────┐
 │  BACKEND — MODULAR MONOLITH (Node.js + Express + TypeScript)       │
@@ -1134,7 +857,7 @@ Hệ thống backend được tổ chức theo mô hình **Modular Monolith** �
                               │
                               ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│  AI/ML SERVICE (FastAPI — tách biệt, giao tiếp qua gRPC)           │
+│  AI/ML SERVICE (FastAPI — tách biệt, giao tiếp qua REST)           │
 │  ────────────────────────────────────────────────────────────────  │
 │  • Semantic Search (Elasticsearch + Embeddings)                    │
 │  • Demand Forecasting (Prophet + LSTM)                             │
@@ -1178,7 +901,6 @@ Monolith Core (95% traffic):
 ├─ Inventory, QC, Production, Reporting
 
 Extracted Services (hot paths):
-├─ Real-time Stock Updates (WebSocket service)
 ├─ AI/ML Inference (FastAPI - already separate)
 └─ Notification Service (high concurrency)
 ```
@@ -1227,17 +949,12 @@ Database Change (Inventory Update)
           ↓
     Internal Event Emitter (Node.js EventEmitter)
           ↓
-    WebSocket Server
-          ↓
-    Broadcast to Connected Clients
-          ↓
     Frontend Updates (React state)
 ```
 
 **Performance Target:**
 
 - API response: <200ms (p99)
-- WebSocket latency: <100ms
 - Database query: <50ms (p95)
 
 **3. Task Distribution Patterns:**
@@ -1397,7 +1114,7 @@ Database schema giữ nguyên như đã thiết kế:
 │     Environment Variables (via Vercel Dashboard):          │
 │     - VITE_API_URL=https://api.yourdomain.com              │
 │     - VITE_KEYCLOAK_URL=https://auth.yourdomain.com        │
-│     - VITE_WS_URL=wss://api.yourdomain.com/ws              │
+│                   │
 │                                                            │
 │  4. Custom Domain:                                         │
 │     app.yourdomain.com → Vercel                            │
@@ -1675,7 +1392,7 @@ jobs:
 │  • CORS Policy (allowed origins)                           │
 │  • Security Headers (CSP, X-Content-Type-Options, ...)     │
 │                                                            │
-│  Nơi chặn (Enforcement Point): API Gateway (NGINX/Kong)   │
+│  Nơi chặn (Enforcement Point): API Gateway (Express.js)   │
 │                                                            │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
@@ -1743,10 +1460,9 @@ jobs:
 │  │  • Build Tool:      Vite 6                                              │    │
 │  │  • Auth Client:     @react-keycloak/web (planned)                       │    │
 │  │  • Charts:          Recharts / Chart.js (planned)                       │    │
-│  │  • Real-time:       WebSocket client (planned)                          │    │
 │  └─────────────────────────────────────────────────────────────────────────┘    │
 │                              │                                                  │
-│                              │ REST + GraphQL (JSON) + JWT + WebSocket          │
+│                              │ REST (JSON) + JWT                   │
 │                              ▼                                                  │
 │  ┌─────────────────────────────────────────────────────────────────────────┐    │
 │  │  BACKEND (Server)                                                       │    │
@@ -1757,10 +1473,9 @@ jobs:
 │  │  • Cache:           redis (npm package v5)                              │    │
 │  │  • Validation:      Manual (planned: Zod)                               │    │
 │  │  • Auth:            Keycloak JWT Verify (planned: express-jwt)          │    │
-│  │  • API Protocols:   REST (primary) + GraphQL + gRPC                     │    │
+│  │  • API Protocols:   REST   │    │
 │  │  • API Docs:        Swagger / OpenAPI 3.0 (planned)                     │    │
 │  │  • Logging:         console (planned: Winston structured JSON logs)     │    │
-│  │  • WebSocket:       ws (planned)                                        │    │
 │  │  • Tracing:         OpenTelemetry SDK (planned)                         │    │
 │  └─────────────────────────────────────────────────────────────────────────┘    │
 │                              │                                                  │
@@ -2032,27 +1747,7 @@ Return results: "Organic Coffee Beans" (score: 7.35)
 
 ---
 
-#### 4.1.2 Real-Time Inventory Updates
-
-**WebSocket Flow:**
-
-```
-Database Update (Stock Change)
-     ↓
-Event Trigger (PostgreSQL trigger or app-level)
-     ↓
-Emit via Internal Event Emitter (Node.js EventEmitter)
-     ↓
-WebSocket Server broadcasts event
-     ↓
-Connected clients receive update (<100ms)
-     ↓
-React components re-render (optimistic UI)
-```
-
----
-
-#### 4.1.3 Label Printing
+#### 4.1.2 Label Printing
 
 **Technology:**
 
@@ -2063,7 +1758,7 @@ React components re-render (optimistic UI)
 
 ---
 
-#### 4.1.4 Excel Export
+#### 4.1.3 Excel Export
 
 **Technology:**
 
@@ -2073,7 +1768,7 @@ React components re-render (optimistic UI)
 
 ---
 
-#### 4.1.5 AI-Powered Features (Roadmap)
+#### 4.1.4 AI-Powered Features (Roadmap)
 
 
 | Feature                | Status         | Timeline              |
@@ -2128,16 +1823,13 @@ React components re-render (optimistic UI)
 ### Immediate Priorities
 
 1. **Keycloak Integration:** Deploy Keycloak on Fly.io, implement RBAC with 5 roles (Admin, InventoryManager, QualityControl, Operator, Viewer)
-2. **GraphQL API:** Add Apollo Server alongside REST for complex frontend queries (dashboard aggregation, nested entity fetches)
-3. **gRPC Service:** Setup gRPC interface between Backend ↔ AI/ML service for high-performance internal communication
-4. **Frontend Implementation:** Build core pages — Dashboard, Material CRUD, Transaction history
-5. **Remaining Backend Modules:** Implement inventory-lots, qc, labeling, stock, reporting modules
+2. **Frontend Implementation:** Build core pages — Dashboard, Material CRUD, Transaction history
+3. **Remaining Backend Modules:** Implement inventory-lots, qc, labeling, stock, reporting modules
 
 ### Open Questions
 
 1. **Elasticsearch hosting:** Elastic Cloud free tier vs self-hosted on Fly.io?
 2. **AI/ML priority:** Which AI feature to implement first for demo? (Semantic Search is POC-ready)
-3. **gRPC scope:** Full internal communication or selective (only Backend ↔ AI/ML)?
 
 ---
 
@@ -2167,4 +1859,4 @@ Nhóm đã tham khảo các chủ đề sau trong quá trình thiết kế kiế
 
 **Document Version:** 3.0 (Updated 2026-02-28)
 **Status:** ✅ Updated - Aligned with current source code & deployment
-**Next Review:** After Keycloak + GraphQL + gRPC integration
+**Next Review:** After Keycloak integration

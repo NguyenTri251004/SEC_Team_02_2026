@@ -195,9 +195,9 @@ Tính năng GitHub được nhóm sử dụng:
 - **Projects** — hệ thống quản lý dự án (kanban board, sprint tracking)
 - **Actions** — CI/CD pipeline tự động
 
-### Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý dự án của nhóm
+### Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý mã nguồn của nhóm
 
-![Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý dự án của nhóm.](assets/001.png)
+![Ảnh chụp mời giảng viên làm admin trong hệ thống quản lý mã nguồn của nhóm.](assets/001.png)
 
 ## 7. Hệ thống Build và Tích hợp tự động (CI/CD)
 
