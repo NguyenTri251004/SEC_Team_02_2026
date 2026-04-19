@@ -74,7 +74,7 @@ psql -U myuser -h localhost -d mydatabase -f db-init.sql   # init schema
 - **Backend:** Node.js, Express 4, TypeScript 5, pg (node-postgres), Redis, Elasticsearch 8, jsonwebtoken
 - **AI Service:** Python, FastAPI, Redis (async), Elasticsearch (async), Pydantic
 - **Database:** PostgreSQL 16
-- **Auth:** Keycloak 23 (with `BYPASS_KEYCLOAK = true` flag in `AuthProvider.tsx` for demo/dev mode)
+- **Auth:** Keycloak 23 (OAuth2/OIDC with JWT tokens)
 - **Infrastructure:** Docker Compose with health checks
 
 ### Backend Structure (`backend/src/`)
@@ -98,7 +98,7 @@ Modular organization: each domain module has `*.routes.ts`, `*.service.ts`, `*.t
 - `shared/elasticsearch/client.ts` - Elasticsearch client (optional)
 
 ### Frontend Structure (`frontend/src/`)
-- `auth/` - Keycloak integration + AuthProvider context (demo mode with role switcher via `BYPASS_KEYCLOAK`)
+- `auth/` - Keycloak integration + AuthProvider context
 - `components/layout/AppLayout.tsx` - Main layout with sidebar navigation
 - `components/dashboard/` - Reusable dashboard widgets (KpiCard, ChartCard, AlertPanel, DataTableCard)
 - `components/common/tables/columnFactories.tsx` - Shared TanStack React Table column factories

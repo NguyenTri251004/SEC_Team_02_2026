@@ -1,5 +1,9 @@
 # Inventory Management System - Source Code
 
+✅ **Production Status:** Deployed and operational  
+🌐 **Frontend:** https://ims-frontend-sec02.vercel.app  
+📡 **Backend:** https://ims-backend-sec02.fly.dev  
+
 This directory contains the complete source code for the Inventory Management System (IMS), including the backend API, frontend application, and database schema.
 
 ## Project Structure
