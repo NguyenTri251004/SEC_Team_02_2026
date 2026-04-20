@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import pool from "../../shared/db/pool";
 import { Transaction, CreateTransactionDto } from "./transaction.types";
+import { invalidateAdminStatsCache } from "../admin/admin.service";
 
 export const getAllTransactions = async (): Promise<Transaction[]> => {
   const result = await pool.query(
@@ -82,5 +83,6 @@ export const createTransaction = async (
       dto.performed_by ?? null,
     ]
   );
+  await invalidateAdminStatsCache();
   return result.rows[0] as Transaction;
 };

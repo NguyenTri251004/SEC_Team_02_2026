@@ -49,7 +49,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       JWT_SECRET: ${JWT_SECRET}
-      BYPASS_AUTH: ${BYPASS_AUTH:-false}
+      BYPASS_AUTH: false
       FRONTEND_URL: ${FRONTEND_URL:-https://localhost}
       KEYCLOAK_URL: ${KEYCLOAK_URL}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-inventory-management}
@@ -62,6 +62,8 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: service.name=ims-backend,service.namespace=ims,deployment.environment=production
       METRICS_AUTH_TOKEN: ${METRICS_AUTH_TOKEN:?set METRICS_AUTH_TOKEN in .env}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      RAG_SERVICE_URL: ${RAG_SERVICE_URL:-http://rag-service:8000}
+      RAG_SERVICE_SHARED_SECRET: ${RAG_SERVICE_SHARED_SECRET:?set RAG_SERVICE_SHARED_SECRET in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -75,6 +77,41 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    networks:
+      - ims-network
+
+  rag-service:
+    build:
+      context: ./rag-service
+      dockerfile: Dockerfile
+    container_name: ims-rag-service
+    restart: always
+    environment:
+      RAG_SERVICE_PORT: 8000
+      RAG_BYPASS_S2S: "false"
+      RAG_SERVICE_SHARED_SECRET: ${RAG_SERVICE_SHARED_SECRET:?set RAG_SERVICE_SHARED_SECRET in .env}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      KB_DOCS_DIR: /workspace/01_Documents
+      RAG_STORAGE_PATH: /app/data/vector_store.json
+      RAG_INDEX_NAMESPACE: ${RAG_INDEX_NAMESPACE:-ims_inventory}
+      RAG_INDEX_VERSION: ${RAG_INDEX_VERSION:-v1}
+      RAG_SEED_ON_STARTUP: ${RAG_SEED_ON_STARTUP:-true}
+      RAG_ENABLE_SCHEDULED_SYNC: ${RAG_ENABLE_SCHEDULED_SYNC:-true}
+      RAG_SYNC_INTERVAL_SECONDS: ${RAG_SYNC_INTERVAL_SECONDS:-900}
+      RAG_INCREMENTAL_LOOKBACK_SECONDS: ${RAG_INCREMENTAL_LOOKBACK_SECONDS:-1800}
+      RAG_MONGO_URI: ${RAG_MONGO_URI:-}
+      RAG_MONGO_DB: ${RAG_MONGO_DB:-ims}
+    volumes:
+      - ../../01_Documents:/workspace/01_Documents:ro
+      - ./rag-service/data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     networks:
       - ims-network
 
