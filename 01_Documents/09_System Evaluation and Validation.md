@@ -74,7 +74,7 @@ npm run build                  # Type check + Vite build
 
 ## 3. Kết quả kiểm thử (Test Results)
 
-Kết quả chạy trên branch `master` (2026-04-17):
+Kết quả chạy trên branch `master` (2026-04-20):
 
 ### 3.1. Backend Unit Tests
 
@@ -89,31 +89,32 @@ Time:        1.992 s
 ### 3.2. Frontend Unit/Component Tests
 
 ```
-Test Files:  18 passed, 18 total
-Tests:       55 passed, 55 total
-Duration:    10.21 s
+Test Files:  23 passed, 23 total
+Tests:       68 passed, 68 total
+Duration:    14.74 s
 ```
 
-**Tỉ lệ pass: 100%** (55/55)
+**Tỉ lệ pass: 100%** (68/68)
 
 ### 3.3. Coverage toàn bộ frontend
 
 | Metric | Giá trị |
 |--------|---------|
-| Statements | **98.68%** |
-| Branches | **86.45%** |
-| Functions | **99.48%** |
-| Lines | **98.87%** |
+| Statements | **98.54%** |
+| Branches | **86.93%** |
+| Functions | **99.53%** |
+| Lines | **98.67%** |
 
 ### 3.4. Coverage chi tiết theo nhóm module frontend
 
 | Nhóm module | Statements | Branches | Functions | Lines |
 |------------|-----------|----------|-----------|-------|
-| `auth` | 98.18% | 84.84% | 100% | 98.11% |
+| `auth` | 100% | 87.80% | 100% | 100% |
 | `hooks` | 98.64% | 81.81% | 100% | 98.96% |
 | `lib` | 100% | 100% | 100% | 100% |
+| `lib/observability` | 95.23% | 80.76% | 100% | 94.82% |
 | `pages/dashboard/utils` | 100% | 100% | 100% | 100% |
-| `services` | 98.50% | 93.93% | 97.29% | 98.50% |
+| `services` | 98.76% | 95.34% | 97.36% | 98.76% |
 | `stores` | 100% | 100% | 100% | 100% |
 
 ### 3.5. Coverage toàn bộ backend

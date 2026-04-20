@@ -1,10 +1,11 @@
-import { describe, expect, it, beforeEach, vi } from "vitest";
+import { StrictMode } from "react";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthProvider } from "./AuthProvider";
 import { useAuth } from "./context";
 
-const { keycloakMock } = vi.hoisted(() => ({
+const { keycloakMock, loggerMock } = vi.hoisted(() => ({
   keycloakMock: {
     token: "initial-token",
     tokenParsed: {} as Record<string, unknown>,
@@ -15,10 +16,20 @@ const { keycloakMock } = vi.hoisted(() => ({
     onTokenExpired: undefined as (() => void) | undefined,
     onAuthRefreshSuccess: undefined as (() => void) | undefined,
   },
+  loggerMock: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock("./keycloak", () => ({
   default: keycloakMock,
+}));
+
+vi.mock("@/lib/observability/logger", () => ({
+  frontendLogger: loggerMock,
 }));
 
 function Probe() {
@@ -38,6 +49,7 @@ function Probe() {
 
 describe("AuthProvider", () => {
   beforeEach(() => {
+    window.history.replaceState({}, "", "/");
     keycloakMock.token = "initial-token";
     keycloakMock.tokenParsed = {};
     keycloakMock.init.mockReset();
@@ -46,6 +58,14 @@ describe("AuthProvider", () => {
     keycloakMock.updateToken.mockReset();
     keycloakMock.onTokenExpired = undefined;
     keycloakMock.onAuthRefreshSuccess = undefined;
+    loggerMock.info.mockReset();
+    loggerMock.warn.mockReset();
+    loggerMock.error.mockReset();
+    loggerMock.debug.mockReset();
+  });
+
+  afterEach(() => {
+    window.history.replaceState({}, "", "/");
   });
 
   it("initializes auth state and picks highest-priority role", async () => {
@@ -157,5 +177,53 @@ describe("AuthProvider", () => {
       expect(screen.getByTestId("initialized")).toHaveTextContent("true"),
     );
     expect(screen.getByTestId("authenticated")).toHaveTextContent("false");
+  });
+
+  it("uses callback init settings and falls back to viewer for unknown roles", async () => {
+    window.history.replaceState({}, "", "/?code=abc&state=xyz");
+    keycloakMock.tokenParsed = {
+      sub: "user-4",
+      preferred_username: "dana",
+      email: "dana@example.com",
+      realm_access: { roles: ["guest"] },
+    };
+    keycloakMock.init.mockResolvedValue(true);
+
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("authenticated")).toHaveTextContent("true"),
+    );
+
+    expect(keycloakMock.init).toHaveBeenCalledWith({
+      checkLoginIframe: false,
+      pkceMethod: "S256",
+    });
+    expect(screen.getByTestId("role")).toHaveTextContent("viewer");
+  });
+
+  it("guards duplicate init in StrictMode and leaves unauthenticated users empty", async () => {
+    keycloakMock.init.mockResolvedValue(false);
+
+    render(
+      <StrictMode>
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>
+      </StrictMode>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("initialized")).toHaveTextContent("true"),
+    );
+
+    expect(keycloakMock.init).toHaveBeenCalledOnce();
+    expect(screen.getByTestId("authenticated")).toHaveTextContent("false");
+    expect(screen.getByTestId("role")).toHaveTextContent("none");
+    expect(screen.getByTestId("token")).toHaveTextContent("none");
   });
 });

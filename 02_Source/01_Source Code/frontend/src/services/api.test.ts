@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { keycloakMock, mockApi, axiosCreate, getInterceptors } = vi.hoisted(() => {
+const { keycloakMock, loggerMock, mockApi, axiosCreate, getInterceptors } = vi.hoisted(() => {
   let requestInterceptor: ((config: Record<string, unknown>) => Record<string, unknown>) | undefined;
   let responseErrorInterceptor: ((error: Record<string, any>) => Promise<unknown>) | undefined;
 
@@ -28,6 +28,12 @@ const { keycloakMock, mockApi, axiosCreate, getInterceptors } = vi.hoisted(() =>
       updateToken: vi.fn(),
       logout: vi.fn(),
     },
+    loggerMock: {
+      warn: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      debug: vi.fn(),
+    },
     mockApi: hoistedApi,
     axiosCreate: vi.fn(() => hoistedApi),
     getInterceptors: () => ({ requestInterceptor, responseErrorInterceptor }),
@@ -41,6 +47,10 @@ vi.mock("axios", () => ({
 
 vi.mock("../auth/keycloak", () => ({
   default: keycloakMock,
+}));
+
+vi.mock("@/lib/observability/logger", () => ({
+  frontendLogger: loggerMock,
 }));
 
 import api, {
@@ -63,6 +73,14 @@ describe("api service", () => {
     keycloakMock.updateToken.mockReset();
     keycloakMock.logout.mockReset();
     keycloakMock.token = "token-123";
+    loggerMock.warn.mockReset();
+    loggerMock.error.mockReset();
+    loggerMock.info.mockReset();
+    loggerMock.debug.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("exports the created axios instance", () => {
@@ -79,6 +97,27 @@ describe("api service", () => {
     };
 
     expect(config.headers.Authorization).toBe("Bearer token-123");
+  });
+
+  it("request interceptor creates trace headers without auth token", () => {
+    const { requestInterceptor } = getInterceptors();
+    keycloakMock.token = "";
+    vi.stubGlobal("crypto", {});
+
+    const config = requestInterceptor?.({}) as {
+      headers: Record<string, string>;
+      metadata: { startedAt: number; traceId: string };
+    };
+    const traceId = config.headers["x-correlation-id"];
+
+    expect(config.headers.Authorization).toBeUndefined();
+    expect(traceId.length).toBeGreaterThan(0);
+    expect(traceId.length).toBeLessThanOrEqual(32);
+    expect(config.headers.traceparent).toBe(
+      `00-${traceId}-${traceId.slice(0, 16)}-01`,
+    );
+    expect(config.metadata.traceId).toBe(traceId);
+    expect(config.metadata.startedAt).toBeTypeOf("number");
   });
 
   it("response interceptor refreshes token and retries once on 401", async () => {
@@ -99,6 +138,32 @@ describe("api service", () => {
     expect(result).toEqual({ data: { ok: true } });
   });
 
+  it("logs request metadata and rejects when 401 cannot refresh", async () => {
+    const { responseErrorInterceptor } = getInterceptors();
+    keycloakMock.token = "";
+
+    const error = {
+      response: { status: 401 },
+      config: {
+        method: "get",
+        url: "/api/materials",
+        metadata: { startedAt: performance.now() - 20, traceId: "trace-123" },
+      },
+    };
+
+    await expect(responseErrorInterceptor?.(error)).rejects.toBe(error);
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      "frontend.api.request_failed",
+      expect.objectContaining({
+        method: "get",
+        url: "/api/materials",
+        status: 401,
+        traceId: "trace-123",
+      }),
+    );
+    expect(keycloakMock.updateToken).not.toHaveBeenCalled();
+  });
+
   it("logs out and rejects when token refresh fails", async () => {
     const { responseErrorInterceptor } = getInterceptors();
     keycloakMock.updateToken.mockRejectedValue(new Error("expired"));
@@ -112,6 +177,18 @@ describe("api service", () => {
     expect(keycloakMock.logout).toHaveBeenCalledWith({
       redirectUri: window.location.origin,
     });
+  });
+
+  it("rejects 401 responses already marked as retried", async () => {
+    const { responseErrorInterceptor } = getInterceptors();
+    const error = {
+      response: { status: 401 },
+      config: { _retry: true, headers: {} },
+    };
+
+    await expect(responseErrorInterceptor?.(error)).rejects.toBe(error);
+    expect(keycloakMock.updateToken).not.toHaveBeenCalled();
+    expect(loggerMock.warn).not.toHaveBeenCalled();
   });
 
   it("rejects immediately for non-401 responses", async () => {
