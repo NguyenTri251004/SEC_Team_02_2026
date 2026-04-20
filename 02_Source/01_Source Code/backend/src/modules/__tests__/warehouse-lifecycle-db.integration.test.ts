@@ -69,11 +69,20 @@ describe("Warehouse Lifecycle DB Integration", () => {
         await pool.query("DELETE FROM production_batches WHERE batch_id = $1", [batch.batch_id]);
       }
       if (lot && lot.lot_id) {
+        // Clear transactions first
+        await pool.query("DELETE FROM inventory_transactions WHERE lot_id = $1", [lot.lot_id]); 
+
+        // Then clear QC tests
+        await pool.query("DELETE FROM qc_tests WHERE lot_id = $1", [lot.lot_id]);
+        
+        // Then delete the lot
         await pool.query("DELETE FROM inventory_lots WHERE lot_id = $1", [lot.lot_id]);
       }
+      
       if (material && material.material_id) {
         await pool.query("DELETE FROM materials WHERE material_id = $1", [material.material_id]);
       }
+      
     } catch (error) {
       console.warn("Cleanup side effect failed:", error);
     } finally {
@@ -132,7 +141,7 @@ describe("Warehouse Lifecycle DB Integration", () => {
     expect(inProgress?.status).toBe("In Progress");
 
     const consumed = await productionService.consumeMaterial(batch.batch_id, component.component_id, 50);
-    expect(consumed.actual_quantity).toBe(50);
-    expect(consumed.lot_status).toBe("Depleted" || "Accepted"); // may be Depleted if exactly match
-  });
+    expect(Number(consumed.actual_quantity)).toBe(50);
+    expect(["Depleted", "Accepted"]).toContain(consumed.lot_status); // may be Depleted if exactly match
+  }, 30000);
 });

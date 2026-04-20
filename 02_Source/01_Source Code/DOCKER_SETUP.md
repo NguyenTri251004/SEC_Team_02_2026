@@ -2,9 +2,30 @@
 
 Complete Docker Compose setup for the Inventory Management System.
 
+## ⚠️ IMPORTANT: Required vs. Optional Services
+
+### **Required Services** (Minimum to run the application)
+- **PostgreSQL** (port 5432) - Main database — **REQUIRED**
+- **Keycloak** (port 8080) - Authentication and authorization — **REQUIRED** (or use `BYPASS_KEYCLOAK=true`)
+- **Backend** (port 3000) - Node.js/Express API — **REQUIRED**
+- **Frontend** (port 5173) - React/Vite application — **REQUIRED**
+
+### **Optional Services** (Performance & Advanced Features)
+These services enhance functionality but are **not required**:
+- **Redis** (port 6379) - Caching layer — *Optional* (skip for development)
+- **Elasticsearch** (port 9200) - Search and analytics — *Optional* (falls back to PostgreSQL full-text search)
+- **AI Service** (port 8000) - FastAPI-based AI/ML service — *Optional* (placeholder endpoints)
+
+**Recommendation:**
+- **Development:** Run only PostgreSQL + Backend + Frontend (minimal stack)
+- **Staging/QA:** Add Keycloak if testing auth
+- **Production:** Add Redis for caching + Elasticsearch for search
+
+---
+
 ## Services
 
-The stack includes the following services:
+The full stack includes the following services:
 
 1. **PostgreSQL** (port 5432) - Main database
 2. **Redis** (port 6379) - Caching layer
