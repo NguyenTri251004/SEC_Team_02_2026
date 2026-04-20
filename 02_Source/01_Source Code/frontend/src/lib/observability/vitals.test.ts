@@ -35,6 +35,12 @@ vi.mock("web-vitals", () => ({
 
 import { initializeWebVitals } from "./vitals";
 
+type WebVitalMetric = {
+  name: string;
+  value: number;
+  rating: string;
+};
+
 describe("initializeWebVitals", () => {
   beforeEach(() => {
     loggerMock.info.mockReset();
@@ -48,9 +54,9 @@ describe("initializeWebVitals", () => {
   it("registers all vitals reporters and logs metric payloads", () => {
     initializeWebVitals();
 
-    const metric = { name: "CLS", value: 0.01, rating: "good" };
+    const metric: WebVitalMetric = { name: "CLS", value: 0.01, rating: "good" };
     for (const spy of [onCLS, onINP, onLCP, onFCP, onTTFB]) {
-      const callback = spy.mock.calls[0]?.[0] as (metric: typeof metric) => void;
+      const callback = spy.mock.calls[0]?.[0] as (metric: WebVitalMetric) => void;
       callback(metric);
     }
 
