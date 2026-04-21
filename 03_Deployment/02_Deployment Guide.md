@@ -232,8 +232,4 @@ git push origin v1.0.0
 
 ## 10. Video hướng dẫn triển khai
 
-> ⚠️ **[TODO] Cần quay và upload YouTube**
->
-> **Nội dung cần có (theo yêu cầu syllabus):** biểu diễn cách triển khai hệ thống của nhóm — từ push code lên GitHub → GitHub Actions trigger → Fly.io deploy backend + Vercel deploy frontend → verify health endpoints.
->
-> **YouTube link:** _(sẽ bổ sung)_
+**YouTube link:** https://youtu.be/mat7P1i47fk

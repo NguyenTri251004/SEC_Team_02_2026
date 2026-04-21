@@ -176,11 +176,8 @@ npm run build && npm run preview
 
 ## 5. Video hướng dẫn cài đặt
 
-> ⚠️ **[TODO] Cần quay và upload YouTube**
->
-> **Nội dung cần có (theo yêu cầu syllabus):** quá trình cài đặt môi trường, biên dịch, cấu hình và chạy mã nguồn trên máy một nhà phát triển.
->
-> **YouTube link:** _(sẽ bổ sung)_
+
+**YouTube link:** https://youtu.be/lHD01nioVL4
 
 ## 6. Hệ thống Source Control
 
