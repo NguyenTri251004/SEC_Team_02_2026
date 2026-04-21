@@ -10,6 +10,7 @@ const redisClient = createClient({
   },
 });
 
+
 redisConnectionStatus.set(0);
 
 redisClient.on("error", (err) => {
