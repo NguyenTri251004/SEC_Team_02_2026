@@ -47,7 +47,7 @@ jobs:
             exit 1
           fi
 
-          if flyctl apps list --json | grep -q '"Name":"'"$APP_NAME"'"'; then
+          if flyctl status -a "$APP_NAME" >/dev/null 2>&1; then
             echo "Fly app already exists: $APP_NAME"
           else
             echo "Fly app does not exist. Creating: $APP_NAME"
