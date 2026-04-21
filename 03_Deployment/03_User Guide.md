@@ -129,11 +129,7 @@ Mỗi vai trò có dashboard riêng khi đăng nhập:
 
 ## 4. Video giới thiệu cách sử dụng hệ thống
 
-> ⚠️ **[TODO] Cần quay và upload YouTube**
->
-> **Nội dung cần có (theo yêu cầu syllabus):** giới thiệu cách sử dụng hệ thống của nhóm — từ đăng nhập → xem dashboard → demo các luồng nghiệp vụ chính (Material → Lot → QC → Production → Label → Report).
->
-> **YouTube link:** _(sẽ bổ sung)_
+**YouTube link:** https://youtu.be/BlttYTs5dYU
 
 ## 5. Hỗ trợ và phản hồi
 

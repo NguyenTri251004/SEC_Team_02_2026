@@ -157,18 +157,7 @@ Frontend coverage report được tạo tại `frontend/coverage/`.
 
 ## 4. Video hướng dẫn kiểm thử
 
-> ⚠️ **[TODO] Cần quay và upload YouTube**
->
-> **Nội dung cần có (theo yêu cầu syllabus):** quá trình đăng ký hoặc cài đặt các công cụ để kiểm thử hệ thống, phương pháp thực thi việc kiểm thử, và các kết quả kiểm thử thu được.
->
-> **Gợi ý kịch bản:**
-> 1. Clone repo → `cd backend` → `npm install`
-> 2. Chạy `npm test` → show 669 tests pass
-> 3. Chạy `npm run test:coverage` → mở HTML coverage report
-> 4. Chạy integration test với Docker Compose up PostgreSQL
-> 5. Show GitHub Actions log type-check trên PR
->
-> **YouTube link:** _(sẽ bổ sung)_
+**YouTube link:** https://youtu.be/D95QcBWw1PY
 
 ## 5. So sánh với các hệ thống tương tự
 
