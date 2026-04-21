@@ -94,7 +94,7 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
   - `Admin` - Quản trị hệ thống, cấu hình, quản lý người dùng
   - `InventoryManager` - Quản lý kho, nhập/xuất hàng, truy xuất, giám sát báo cáo
   - `QualityControl` - Kiểm tra chất lượng, duyệt/từ chối lô hàng
-  - `Operator` - Nhân viên vận hành: nhập hàng, xuất hàng, kiểm kê, in nhãn
+  - `Production` - Nhân viên vận hành: nhập hàng, xuất hàng, kiểm kê, in nhãn
   - `Viewer` - Xem báo cáo, bảng điều khiển (dashboard) chỉ đọc
 - **Quy trình chính:**
   - **Nhập kho (receiving):** Nhập kho → Tạo InventoryLot → Kiểm tra QC → Duyệt/từ chối
@@ -706,7 +706,7 @@ eventBus.on("qc.lot.approved", async (event) => {
 });
 ```
 
-**5. CQRS Light (Command Query Responsibility Segregation)**
+**4. CQRS Light (Command Query Responsibility Segregation)**
 
 ```
 Write Model (Commands):        Read Model (Queries):
@@ -715,7 +715,7 @@ Write Model (Commands):        Read Model (Queries):
 • Eventual consistency         • Materialized views
 ```
 
-**6. Dependency Injection**
+**5. Dependency Injection**
 
 ```typescript
 // Inversion of Control
@@ -727,7 +727,7 @@ class InventoryController {
 }
 ```
 
-**7. Strategy Pattern (AI/ML Models)**
+**6. Strategy Pattern (AI/ML Models)**
 
 ```python
 class ForecastStrategy(ABC):
@@ -873,7 +873,7 @@ Hệ thống backend được tổ chức theo mô hình **Modular Monolith** �
 3. **Shared infrastructure dùng chung** — pool, redis, middleware nằm trong `shared/`
 4. **Có thể tách thành microservice sau** — mỗi module đã có routes/service/types độc lập
 
-#### 2.2.2 Modular Monolith Pattern (Recommended)
+#### 2.3.2 Modular Monolith Pattern (Recommended)
 
 **Lý do chọn Modular Monolith:**
 
@@ -907,9 +907,9 @@ Extracted Services (hot paths):
 
 ---
 
-### 2.3 Góc nhìn quy trình (Process View)
+### 2.4 Góc nhìn quy trình (Process View)
 
-#### 2.3.1 Concurrency & Task Distribution
+#### 2.4.1 Concurrency & Task Distribution
 
 **1. Request Processing Model:**
 
@@ -997,7 +997,7 @@ Read Model (Queries - Eventual Consistency):
 
 ---
 
-### 2.4 Góc nhìn dữ liệu (Data View)
+### 2.5 Góc nhìn dữ liệu (Data View)
 
 Database schema giữ nguyên như đã thiết kế:
 
@@ -1053,9 +1053,9 @@ Database schema giữ nguyên như đã thiết kế:
 
 ---
 
-### 2.5 Góc nhìn triển khai (Deployment/Physical View)
+### 2.6 Góc nhìn triển khai (Deployment/Physical View)
 
-#### 2.5.1 Container Architecture - Modular Monolith
+#### 2.6.1 Container Architecture - Modular Monolith
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -1081,7 +1081,7 @@ Database schema giữ nguyên như đã thiết kế:
 └──────────────────────────────────────────────────────────────┘
 ```
 
-#### 2.5.2 Chi tiết Deployment theo thành phần
+#### 2.6.2 Chi tiết Deployment theo thành phần
 
 ##### A. FRONTEND DEPLOYMENT - Vercel CDN
 
@@ -1295,7 +1295,7 @@ jobs:
 
 ---
 
-#### 2.5.3 Tổng hợp Chi phí & Khuyến nghị Deployment
+#### 2.6.3 Tổng hợp Chi phí & Khuyến nghị Deployment
 
 **RECOMMENDED ARCHITECTURE (Cloud-native, Cost-Optimized):**
 
@@ -1361,7 +1361,7 @@ jobs:
 
 ---
 
-### 2.6 Góc nhìn bảo mật (Security View)
+### 2.7 Góc nhìn bảo mật (Security View)
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -1402,7 +1402,7 @@ jobs:
 │  • Kiểm tra JWT tại Backend                                │
 │  • Phân quyền theo vai trò (RBAC):                         │
 │    admin, inventory_manager, quality_control,              │
-│    operator, viewer                                        │
+│    production, viewer                                        │
 │  • Role lấy từ JWT claim, middleware requireRole           │
 │  • Phân quyền chi tiết theo tài nguyên (resource-level)   │
 │  • Input validation (Zod)                                  │
@@ -1822,7 +1822,7 @@ Return results: "Organic Coffee Beans" (score: 7.35)
 
 ### Immediate Priorities
 
-1. **Keycloak Integration:** Deploy Keycloak on Fly.io, implement RBAC with 5 roles (Admin, InventoryManager, QualityControl, Operator, Viewer)
+1. **Keycloak Integration:** Deploy Keycloak on Fly.io, implement RBAC with 5 roles (Admin, InventoryManager, QualityControl, Production, Viewer)
 2. **Frontend Implementation:** Build core pages — Dashboard, Material CRUD, Transaction history
 3. **Remaining Backend Modules:** Implement inventory-lots, qc, labeling, stock, reporting modules
 
