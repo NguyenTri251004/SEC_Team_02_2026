@@ -46,12 +46,15 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 │  │  ├─ Reporting Module (Analytics, Audit Logs)                             │  │
 │  │  └─ User Management (RBAC integration with Keycloak)                     │  │
 │  │                                                                          │  │
-│  │  AI/ML SERVICES (FastAPI):                                               │  │
-│  │  ├─ Semantic Search (Elasticsearch + Vector Embeddings)                  │  │
-│  │  ├─ Demand Forecasting (Prophet + LSTM)                                  │  │
-│  │  ├─ Anomaly Detection (Isolation Forest)                                 │  │
-│  │  ├─ QC Vision (YOLOv8 - Computer Vision)                                 │  │
-│  │  └─ LLM Chatbot (Claude API)                                             │  │
+│  │  AI/ML SERVICE (FastAPI)                                                 │  │
+│  │  ├─ Answer Questions (POST /v1/answer) - OpenAI gpt-4o-mini              │  │
+│  │  ├─ Retrieve Documents (POST /v1/retrieve)                               │  │
+│  │  ├─ Ingest Documents (POST /v1/ingest/documents)                         │  │
+│  │  ├─ Sync Inventory (POST /v1/ingest/inventory/sync)                      │  │
+│  │  ├─ Reindex Inventory (POST /v1/ingest/inventory/reindex)                │  │
+│  │  ├─ Job Status (GET /v1/ingest/status/{job_id})                          │  │
+│  │  ├─ Metrics Export (GET /metrics) - Prometheus                           │  │
+│  │  └─ Vector Store (MongoDB) + PostgreSQL + OpenAI Embeddings              │  │
 │  └──────────────────────────────────────────────────────────────────────────┘  │
 │                              │                                                 │
 │                              │ Internal Event Emitter                          │
@@ -68,8 +71,11 @@ Hệ thống **Inventory Management System** được thiết kế theo mô hìn
 │  │  └─ Keycloak 24+ (SSO, RBAC, OAuth2/OIDC)                                │  │
 │  │                                                                          │  │
 │  │  OBSERVABILITY STACK:                                                    │  │
+│  │  ├─ Prometheus + prom-client (Metrics collection)                         │  │
+│  │  ├─ OpenTelemetry OTLP (Distributed tracing, auto-instrumentation)        │  │
+│  │  ├─ Pino (Structured JSON logging with requestId correlation)             │  │
 │  │  ├─ Grafana Cloud (Metrics, Logs & Dashboards - Managed)                 │  │
-│  │  └─ Fly.io Metrics (Built-in monitoring)                                 │  │
+│  │  └─ Fly.io Metrics (Built-in monitoring, health checks)                  │  │
 │  └──────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────────────┐  │
@@ -242,19 +248,29 @@ Logical View mô tả **các thành phần chính** của hệ thống, **mối 
 │  │  └────────────────────────────────────────────────────────────────┘  │  │
 │  │                              ▼                                       │  │
 │  │  ┌────────────────────────────────────────────────────────────────┐  │  │
-│  │  │  AI/ML Services Component (FastAPI)                            │  │  │
+│  │  │  AI/ML Service Component (FastAPI)                             │  │  │
 │  │  │  ────────────────────────────────────────────────────────────  │  │  │
 │  │  │  Responsibilities:                                             │  │  │
-│  │  │  • AI model inference & predictions                            │  │  │
-│  │  │  • ML pipeline orchestration                                   │  │  │
-│  │  │  • Semantic search processing                                  │  │  │
+│  │  │  • Retrieval-Augmented Generation (RAG) for Q&A                │  │  │
+│  │  │  • Document ingestion & vector indexing (MongoDB)              │  │  │
+│  │  │  • Inventory knowledge base sync from PostgreSQL                │  │  │
+│  │  │  • Intent classification & operational context building        │  │  │
+│  │  │  • OpenAI API integration (gpt-4o-mini, embeddings)            │  │  │
 │  │  │                                                                │  │  │
-│  │  │  Services:                                                     │  │  │
-│  │  │  • SemanticSearchService (embeddings + kNN search)             │  │  │
-│  │  │  • DemandForecastService (Prophet + LSTM)                      │  │  │
-│  │  │  • AnomalyDetectionService (Isolation Forest)                  │  │  │
-│  │  │  • ComputerVisionService (YOLOv8 QC)                           │  │  │
-│  │  │  • ChatbotService (Claude API integration)                     │  │  │
+│  │  │  Core Endpoints:                                               │  │  │
+│  │  │  • POST /v1/answer (answer inventory questions + context)       │  │  │
+│  │  │  • POST /v1/retrieve (search documents by semantic query)       │  │  │
+│  │  │  • POST /v1/ingest/documents (add documents to knowledge)       │  │  │
+│  │  │  • POST /v1/ingest/inventory/sync (incremental index)           │  │  │
+│  │  │  • POST /v1/ingest/inventory/reindex (full reindex)             │  │  │
+│  │  │  • GET /v1/ingest/status/{job_id} (check job status)            │  │  │
+│  │  │  • GET /metrics (Prometheus metrics)                            │  │  │
+│  │  │  • GET /health (service health check)                           │  │  │
+│  │  │                                                                │  │  │
+│  │  │  Features:                                                     │  │  │
+│  │  │  • Vietnamese language support (vi-VN)                        │  │  │
+│  │  │  • Service-to-service HMAC-SHA256 authentication               │  │  │
+│  │  │  • Scheduled inventory sync (configurable interval)            │  │  │
 │  │  └────────────────────────────────────────────────────────────────┘  │  │
 │  └──────────────────────────────────────────────────────────────────────┘  │
 │                              │                                             │
