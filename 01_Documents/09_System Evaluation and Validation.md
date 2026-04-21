@@ -74,17 +74,17 @@ npm run build                  # Type check + Vite build
 
 ## 3. Kết quả kiểm thử (Test Results)
 
-Kết quả chạy trên branch `master` (2026-04-20):
+Kết quả chạy trên branch `master` (2026-04-21):
 
 ### 3.1. Backend Unit Tests
 
 ```
-Test Suites: 26 passed, 26 total
-Tests:       669 passed, 669 total
-Time:        1.992 s
+Test Suites: 28 passed, 28 total
+Tests:       674 passed, 674 total
+Time:        8.349 s
 ```
 
-**Tỉ lệ pass: 100%** (669/669)
+**Tỉ lệ pass: 100%** (674/674)
 
 ### 3.2. Frontend Unit/Component Tests
 
@@ -121,23 +121,35 @@ Duration:    14.74 s
 
 | Metric | Giá trị |
 |--------|---------|
-| Statements | **84.26%** |
-| Branches | **73.77%** |
-| Functions | **83.60%** |
-| Lines | **84.00%** |
+| Statements | **80.49%** |
+| Branches | **69.51%** |
+| Functions | **78.75%** |
+| Lines | **80.50%** |
 
 ### 3.6. Coverage chi tiết theo module backend
 
 | Module | Statements | Branches | Functions | Lines |
 |--------|-----------|----------|-----------|-------|
+| `src/server.ts` | 0.00% | 0.00% | 0.00% | 0.00% |
+| `modules/admin` | 70.64% | 54.08% | 66.66% | 70.96% |
+| `modules/auth` | 0.00% | 100.00% | 100.00% | 0.00% |
+| `modules/chat` | 25.00% | 7.14% | 11.11% | 26.08% |
+| `modules/dashboard` | 100.00% | 100.00% | 100.00% | 100.00% |
+| `modules/labels` | 90.68% | 74.10% | 94.73% | 90.03% |
+| `modules/lots` | 85.20% | 76.63% | 88.23% | 84.86% |
+| `modules/materials` | 98.30% | 92.30% | 100.00% | 98.19% |
+| `modules/production` | 96.44% | 86.81% | 100.00% | 96.33% |
+| `modules/qc` | 95.05% | 78.57% | 93.75% | 94.84% |
+| `modules/rag` | 35.00% | 68.75% | 57.14% | 35.89% |
 | `modules/search` | 100% | 100% | 100% | 100% |
 | `modules/reports` | 95.94% | 80.70% | 95.00% | 96.47% |
-| `modules/qc` | 93.91% | 77.38% | 93.75% | 93.65% |
-| `modules/production` | 91.37% | 72.54% | 100% | 90.96% |
-| `modules/transactions` | 90.90% | 91.17% | 100% | 90.41% |
-| `security/auth` | 90.21% | 58.13% | 87.50% | 92.94% |
+| `modules/transactions` | 96.20% | 94.11% | 100.00% | 96.00% |
+| `security/auth` | 90.90% | 58.13% | 87.50% | 93.47% |
 | `security/rbac` | 64.00% | 33.33% | 75.00% | 57.14% |
-| `shared/db/pool` | 100% | 78.57% | 100% | 100% |
+| `shared/cache` | 57.89% | 100.00% | 0.00% | 55.55% |
+| `shared/db` | 96.00% | 68.42% | 100.00% | 96.00% |
+| `shared/elasticsearch` | 83.33% | 50.00% | 50.00% | 83.33% |
+| `shared/observability` | 20.45% | 13.88% | 0.00% | 20.00% |
 
 ### 3.7. Integration Tests
 
