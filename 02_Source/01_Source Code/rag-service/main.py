@@ -1253,14 +1253,16 @@ def build_user_prompt(
             f"Câu hỏi:\n{question}\n\n"
             f"Ngữ cảnh vận hành:\n{operational_json}\n\n"
             f"Ngữ cảnh tri thức đã truy xuất:\n{context_text}\n\n"
-            "Hãy trả lời bằng tiếng Việt, ngắn gọn, nêu rõ số liệu chính và nguồn nếu có."
+            "Hãy trả lời bằng tiếng Việt, ngắn gọn, nêu rõ số liệu chính. "
+            "KHÔNG liệt kê nguồn hay URL trong câu trả lời."
         )
 
     return (
         f"Question:\n{question}\n\n"
         f"Operational context:\n{operational_json}\n\n"
         f"Retrieved knowledge context:\n{context_text}\n\n"
-        "Return a concise answer with clear facts and mention if uncertainty exists."
+        "Return a concise answer with clear facts and mention if uncertainty exists. "
+        "DO NOT include source URLs or citation references in the answer text."
     )
 
 
