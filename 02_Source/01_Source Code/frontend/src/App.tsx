@@ -8,6 +8,7 @@ import { antTheme } from "./constants/theme";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { frontendLogger } from "./lib/observability/logger";
 
+
 // React Query client (shared across app)
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
