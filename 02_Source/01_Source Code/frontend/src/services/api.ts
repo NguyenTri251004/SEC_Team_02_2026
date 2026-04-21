@@ -27,6 +27,8 @@ import type {
   GenerateLabelFromTemplateInput,
   GeneratedLabel,
   SystemHealth,
+  ChatAskRequest,
+  ChatAnswerData,
 } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -381,6 +383,18 @@ export const labelApi = {
     apiRequest<ApiResponse<{ message: string }>>({
       url: `/api/labels/${id}`,
       method: "DELETE",
+    }),
+};
+
+// ────────────────────────────────────────────────────────────
+// Chatbot
+// ────────────────────────────────────────────────────────────
+export const chatApi = {
+  ask: (payload: ChatAskRequest) =>
+    apiRequest<ApiResponse<ChatAnswerData>>({
+      url: "/api/chat/ask",
+      method: "POST",
+      data: payload,
     }),
 };
 

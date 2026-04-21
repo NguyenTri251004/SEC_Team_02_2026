@@ -99,8 +99,11 @@ export const useSaveLot = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lots"] });
+      queryClient.invalidateQueries({ queryKey: ["lots", "parent-candidates"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", "inventory-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "transaction-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 };
@@ -114,8 +117,11 @@ export const useUpdateLotStatus = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lots"] });
+      queryClient.invalidateQueries({ queryKey: ["lots", "parent-candidates"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", "inventory-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "transaction-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 };
@@ -129,8 +135,11 @@ export const useDeleteLot = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lots"] });
+      queryClient.invalidateQueries({ queryKey: ["lots", "parent-candidates"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", "inventory-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "transaction-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 };

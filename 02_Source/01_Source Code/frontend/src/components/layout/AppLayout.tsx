@@ -28,6 +28,7 @@ import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../auth/context";
 import type { UserRole } from "../../types";
 import { ROLE_TAG } from "../../constants/roles";
+import ChatAssistant from "../chat/ChatAssistant";
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -101,6 +102,7 @@ export default function AppLayout() {
 
   const role = user?.role ?? "viewer";
   const items = useMemo(() => getSidebarItems(role), [role]);
+  const showChatAssistant = role !== "viewer" && location.pathname.startsWith("/dashboard");
 
   // Breadcrumb from pathname
   const pathSegments = location.pathname.split("/").filter(Boolean);
@@ -251,6 +253,8 @@ export default function AppLayout() {
           <Outlet />
         </Content>
       </Layout>
+
+      <ChatAssistant enabled={showChatAssistant} />
     </Layout>
   );
 }

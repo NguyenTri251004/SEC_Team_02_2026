@@ -1,0 +1,10 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+httpx==0.26.0
+prometheus-client==0.20.0
+python-dotenv==1.0.1
+numpy==1.26.4
+apscheduler==3.10.4
+psycopg[binary]==3.2.3
+pymongo==4.10.1

@@ -17,9 +17,15 @@ import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import reportRoutes from "./modules/reports/reports.routes";
 import productionRoutes from "./modules/production/production.routes";
 import adminRoutes from "./modules/admin/admin.routes";
+import chatRoutes from "./modules/chat/chat.routes";
+import ragRoutes from "./modules/rag/rag.routes";
 
 dotenv.config();
 startTracing();
+
+if (process.env.NODE_ENV === "production" && process.env.BYPASS_AUTH === "true") {
+  throw new Error("BYPASS_AUTH cannot be enabled in production");
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -84,6 +90,9 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/production", productionRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/rag", ragRoutes);
+app.use("/rag", ragRoutes);
 
 // Khởi động server
 const start = async (): Promise<void> => {

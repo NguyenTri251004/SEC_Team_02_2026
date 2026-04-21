@@ -205,6 +205,14 @@ const CACHE_KEY_PREFIX = "users:";
 const CACHE_KEY_ALL = "users:all";
 const CACHE_KEY_STATS = "admin:stats";
 
+export const invalidateAdminStatsCache = async (): Promise<void> => {
+  try {
+    await redisClient.del(CACHE_KEY_STATS);
+  } catch (error) {
+    console.warn("Redis admin stats cache invalidation failed:", error);
+  }
+};
+
 /**
  * Invalidate user caches
  */

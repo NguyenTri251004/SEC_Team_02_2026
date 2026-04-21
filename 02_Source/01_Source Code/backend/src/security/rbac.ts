@@ -120,6 +120,16 @@ export const PERMISSIONS = {
       UserRole.PRODUCTION,
     ],
   },
+  chat: {
+    ask: [
+      UserRole.ADMIN,
+      UserRole.INVENTORY_MANAGER,
+      UserRole.QUALITY_CONTROL,
+      UserRole.PRODUCTION,
+      UserRole.VIEWER,
+    ],
+    reindex: [UserRole.ADMIN, UserRole.INVENTORY_MANAGER],
+  },
   config: {
     read: [UserRole.ADMIN],
     update: [UserRole.ADMIN],
