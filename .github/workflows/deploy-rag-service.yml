@@ -36,7 +36,25 @@ jobs:
 
       - uses: superfly/flyctl-actions/setup-flyctl@v1
 
+      - name: Ensure Fly app exists
+        shell: bash
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          APP_NAME=$(sed -n 's/^app = "\(.*\)"/\1/p' fly.toml)
+          if [ -z "$APP_NAME" ]; then
+            echo "Could not resolve app name from fly.toml"
+            exit 1
+          fi
+
+          if flyctl apps list --json | grep -q '"Name":"'"$APP_NAME"'"'; then
+            echo "Fly app already exists: $APP_NAME"
+          else
+            echo "Fly app does not exist. Creating: $APP_NAME"
+            flyctl apps create "$APP_NAME"
+          fi
+
       - name: Deploy to Fly.io
-        run: flyctl deploy --remote-only -a ims-rag-service-sec02
+        run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
