@@ -39,7 +39,7 @@ jobs:
       - name: Ensure Fly app exists
         shell: bash
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_RAG }}
         run: |
           APP_NAME=$(sed -n 's/^app = "\(.*\)"/\1/p' fly.toml)
           if [ -z "$APP_NAME" ]; then
@@ -57,4 +57,4 @@ jobs:
       - name: Deploy to Fly.io
         run: flyctl deploy --remote-only
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_RAG }}
