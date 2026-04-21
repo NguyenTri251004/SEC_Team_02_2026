@@ -1,0 +1,60 @@
+name: Deploy RAG Service
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "02_Source/01_Source Code/rag-service/**"
+      - ".github/workflows/deploy-rag-service.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy RAG service to Fly.io
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "02_Source/01_Source Code/rag-service"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "02_Source/01_Source Code/rag-service/requirements.txt"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Syntax check
+        run: python -m py_compile main.py
+
+      - name: Run tests
+        run: python -m unittest -v test_rag_service.py
+
+      - uses: superfly/flyctl-actions/setup-flyctl@v1
+
+      - name: Ensure Fly app exists
+        shell: bash
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          APP_NAME=$(sed -n 's/^app = "\(.*\)"/\1/p' fly.toml)
+          if [ -z "$APP_NAME" ]; then
+            echo "Could not resolve app name from fly.toml"
+            exit 1
+          fi
+
+          if flyctl apps list --json | grep -q '"Name":"'"$APP_NAME"'"'; then
+            echo "Fly app already exists: $APP_NAME"
+          else
+            echo "Fly app does not exist. Creating: $APP_NAME"
+            flyctl apps create "$APP_NAME"
+          fi
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

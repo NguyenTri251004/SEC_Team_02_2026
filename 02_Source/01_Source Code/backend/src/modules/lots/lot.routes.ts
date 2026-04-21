@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import * as lotService from "./lot.service";
 import * as transactionService from "../transactions/transaction.service";
+import { triggerIncrementalInventorySync } from "../rag/rag.service";
+import { invalidateAdminStatsCache } from "../admin/admin.service";
 import { authenticateJWT } from "../../security/auth";
 import { requirePermission } from "../../security/rbac";
 import { LotStatus } from "./lot.types";
@@ -120,6 +122,13 @@ router.post(
         console.warn("Auto-log Receipt transaction failed:", e);
       }
 
+      await triggerIncrementalInventorySync({
+        lot_ids: [lot.lot_id],
+        material_ids: [lot.material_id],
+        reason: "lot_created",
+      });
+      await invalidateAdminStatsCache();
+
       res.status(201).json({ success: true, data: lot });
     } catch (error: unknown) {
       console.error("Loi tao lot:", error);
@@ -176,6 +185,13 @@ router.put(
         }
       }
 
+      await triggerIncrementalInventorySync({
+        lot_ids: [lot.lot_id],
+        material_ids: [lot.material_id],
+        reason: "lot_updated",
+      });
+      await invalidateAdminStatsCache();
+
       res.json({ success: true, data: lot });
     } catch (error) {
       console.error("Loi cap nhat lot:", error);
@@ -228,6 +244,13 @@ router.patch(
         }
       }
 
+      await triggerIncrementalInventorySync({
+        lot_ids: [lot.lot_id],
+        material_ids: [lot.material_id],
+        reason: "lot_status_updated",
+      });
+      await invalidateAdminStatsCache();
+
       res.json({ success: true, data: lot });
     } catch (error) {
       console.error("Loi cap nhat trang thai lot:", error);
@@ -244,11 +267,22 @@ router.delete(
   requirePermission("lots", "delete"),
   async (req: Request, res: Response) => {
     try {
+      const lotBeforeDelete = await lotService.getLotById(req.params.id);
       const deleted = await lotService.deleteLot(req.params.id);
       if (!deleted) {
         res.status(404).json({ success: false, error: "Khong tim thay lot" });
         return;
       }
+
+      if (lotBeforeDelete) {
+        await triggerIncrementalInventorySync({
+          lot_ids: [lotBeforeDelete.lot_id],
+          material_ids: [lotBeforeDelete.material_id],
+          reason: "lot_deleted",
+        });
+      }
+
+      await invalidateAdminStatsCache();
       res.json({ success: true, message: "Da xoa lot thanh cong" });
     } catch (error) {
       console.error("Loi xoa lot:", error);

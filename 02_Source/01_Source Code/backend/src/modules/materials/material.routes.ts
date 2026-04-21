@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import * as materialService from "./material.service";
 import { authenticateJWT } from "../../security/auth";
 import { requirePermission } from "../../security/rbac";
+import { triggerIncrementalInventorySync } from "../rag/rag.service";
 
 const router = Router();
 
@@ -59,6 +60,10 @@ router.post(
       }
 
       const material = await materialService.createMaterial(req.body);
+      await triggerIncrementalInventorySync({
+        material_ids: [material.material_id],
+        reason: "material_created",
+      });
       res.status(201).json({ success: true, data: material });
     } catch (error: unknown) {
       console.error("Lỗi tạo vật tư:", error);
@@ -89,6 +94,10 @@ router.put(
         res.status(404).json({ success: false, error: "Không tìm thấy vật tư" });
         return;
       }
+      await triggerIncrementalInventorySync({
+        material_ids: [material.material_id],
+        reason: "material_updated",
+      });
       res.json({ success: true, data: material });
     } catch (error) {
       console.error("Lỗi cập nhật vật tư:", error);

@@ -376,3 +376,36 @@ export interface SystemHealth {
   services: ServiceHealth[];
   timestamp: string;
 }
+
+// ============================================================
+// Chatbot
+// ============================================================
+export interface ChatContextFilters {
+  material_id?: string;
+  lot_id?: string;
+  date_from?: string;
+  date_to?: string;
+}
+
+export interface ChatAskRequest {
+  question: string;
+  locale?: string;
+  context?: ChatContextFilters;
+}
+
+export interface ChatCitation {
+  chunk_id: string;
+  source_uri: string;
+  section_path?: string;
+  score: number;
+}
+
+export interface ChatAnswerData {
+  answer: string;
+  confidence: number;
+  intent: string;
+  citations: ChatCitation[];
+  retrieval_trace_id: string;
+  warnings?: string[];
+  generated_at: string;
+}
